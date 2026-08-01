@@ -63,43 +63,68 @@ O L'Mere Studio é uma aplicação Web Multi-Tenant White-Label projetada para a
 ## Arquitetura do Sistema
 
 ```mermaid
-graph TD
-    User(["Cliente"])
-    Admin(["Confeiteira / Admin"])
+flowchart TD
+    Customer(["Cliente"])
+    Owner(["Confeiteira / Admin"])
 
-    subgraph Frontend ["Next.js 16 App Router"]
-        Simulator["Simulador Público"]
-        CMS["Painel CMS Admin"]
+    subgraph Frontend["Camada Frontend (Next.js 16 App Router)"]
+        direction TD
+        Simulator["Simulador Público de Encomendas"]
+        CMS["Painel CMS Administrativo"]
         
-        Simulator --> Step1["1. Calendário"]
-        Simulator --> Step2["2. Tamanho"]
-        Simulator --> Step3["3. Sabores & Adicionais"]
-        Simulator --> Step4["4. Detalhes"]
-        Simulator --> Step5["5. Resumo & WhatsApp"]
+        S1["1. Calendário"]
+        S2["2. Tamanho & Porções"]
+        S3["3. Sabores & Adicionais"]
+        S4["4. Detalhes & Personalização"]
+        S5["5. Resumo & WhatsApp"]
 
-        CMS --> Orders["Kanban de Pedidos"]
-        CMS --> Menu["Gestão de Cardápio"]
-        CMS --> Schedule["Controle de Agenda"]
-        CMS --> Brand["Editor de Marca & Cores"]
-        CMS --> Flags["Feature Flags"]
+        M1["Kanban de Pedidos"]
+        M2["Gestão de Cardápio"]
+        M3["Controle de Agenda"]
+        M4["Editor de Marca & Cores"]
+        M5["Feature Flags"]
+
+        Simulator --> S1
+        Simulator --> S2
+        Simulator --> S3
+        Simulator --> S4
+        Simulator --> S5
+
+        CMS --> M1
+        CMS --> M2
+        CMS --> M3
+        CMS --> M4
+        CMS --> M5
     end
 
-    subgraph Backend ["Rotas API & Banco de Dados"]
-        API_Public["Rotas Públicas"]
-        API_Admin["Rotas Administrativas"]
-        Prisma["Prisma 7 ORM"]
-        SQLite[("Banco SQLite")]
-        
-        API_Public --> Prisma
-        API_Admin --> Prisma
-        Prisma --> SQLite
+    subgraph Backend["Camada Backend & Dados"]
+        direction TD
+        APIPub["Rotas API Públicas"]
+        APIAdm["Rotas API Admin"]
+        ORM["Prisma 7 ORM"]
+        DB[("Banco SQLite")]
+
+        APIPub ~~~ APIAdm
+        APIPub --> ORM
+        APIAdm --> ORM
+        ORM --> DB
     end
 
-    User -->|"Acessa /[slug]"| Simulator
-    Admin -->|"Acessa /admin"| CMS
+    Customer -->|"Acessa /[slug]"| Simulator
+    Owner -->|"Acessa /admin"| CMS
 
-    Simulator --> API_Public
-    CMS --> API_Admin
+    Simulator --> APIPub
+    CMS --> APIAdm
+
+    classDef actor fill:#1e293b,stroke:#475569,color:#ffffff;
+    classDef fe fill:#4f46e5,stroke:#3730a3,color:#ffffff;
+    classDef be fill:#0f766e,stroke:#115e59,color:#ffffff;
+    classDef db fill:#0369a1,stroke:#075985,color:#ffffff;
+
+    class Customer,Owner actor;
+    class Simulator,CMS,S1,S2,S3,S4,S5,M1,M2,M3,M4,M5 fe;
+    class APIPub,APIAdm,ORM be;
+    class DB db;
 ```
 
 ---

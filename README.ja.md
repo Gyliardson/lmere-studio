@@ -63,43 +63,68 @@ L'Mere Studioは、洋菓子店やオーダーメイドケーキデザイナー�
 ## システム構成図
 
 ```mermaid
-graph TD
-    User(["顧客"])
-    Admin(["店舗管理者"])
+flowchart TD
+    Customer(["顧客"])
+    Owner(["店舗管理者"])
 
-    subgraph Frontend ["Next.js 16 App Router"]
+    subgraph Frontend["フロントエンド層 (Next.js 16 App Router)"]
+        direction TD
         Simulator["注文シミュレーター"]
         CMS["CMS管理画面"]
         
-        Simulator --> Step1["1. カレンダー"]
-        Simulator --> Step2["2. サイズ選択"]
-        Simulator --> Step3["3. 味・トッピング"]
-        Simulator --> Step4["4. 詳細設定"]
-        Simulator --> Step5["5. 確認 & WhatsApp"]
+        S1["1. カレンダー"]
+        S2["2. サイズ・分量"]
+        S3["3. 味・トッピング"]
+        S4["4. 詳細設定"]
+        S5["5. 確認 & WhatsApp"]
 
-        CMS --> Orders["注文カンバン"]
-        CMS --> Menu["メニュー管理"]
-        CMS --> Schedule["スケジュール管理"]
-        CMS --> Brand["ブランド・カラー設定"]
-        CMS --> Flags["機能フラグ"]
+        M1["注文カンバン"]
+        M2["メニュー管理"]
+        M3["スケジュール管理"]
+        M4["ブランド・カラー設定"]
+        M5["機能フラグ"]
+
+        Simulator --> S1
+        Simulator --> S2
+        Simulator --> S3
+        Simulator --> S4
+        Simulator --> S5
+
+        CMS --> M1
+        CMS --> M2
+        CMS --> M3
+        CMS --> M4
+        CMS --> M5
     end
 
-    subgraph Backend ["APIルート & データベース"]
-        API_Public["公開APIルート"]
-        API_Admin["管理APIルート"]
-        Prisma["Prisma 7 ORM"]
-        SQLite[("SQLite DB")]
-        
-        API_Public --> Prisma
-        API_Admin --> Prisma
-        Prisma --> SQLite
+    subgraph Backend["バックエンド & データ層"]
+        direction TD
+        APIPub["公開APIルート"]
+        APIAdm["管理APIルート"]
+        ORM["Prisma 7 ORM"]
+        DB[("SQLite データベース")]
+
+        APIPub ~~~ APIAdm
+        APIPub --> ORM
+        APIAdm --> ORM
+        ORM --> DB
     end
 
-    User -->|"アクセス /[slug]"| Simulator
-    Admin -->|"アクセス /admin"| CMS
+    Customer -->|"アクセス /[slug]"| Simulator
+    Owner -->|"アクセス /admin"| CMS
 
-    Simulator --> API_Public
-    CMS --> API_Admin
+    Simulator --> APIPub
+    CMS --> APIAdm
+
+    classDef actor fill:#1e293b,stroke:#475569,color:#ffffff;
+    classDef fe fill:#4f46e5,stroke:#3730a3,color:#ffffff;
+    classDef be fill:#0f766e,stroke:#115e59,color:#ffffff;
+    classDef db fill:#0369a1,stroke:#075985,color:#ffffff;
+
+    class Customer,Owner actor;
+    class Simulator,CMS,S1,S2,S3,S4,S5,M1,M2,M3,M4,M5 fe;
+    class APIPub,APIAdm,ORM be;
+    class DB db;
 ```
 
 ---

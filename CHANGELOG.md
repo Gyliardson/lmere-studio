@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Documentation Video Embeds**: Replaced placeholder user-attachments links with relative `<video>` HTML tags in all multi-language READMEs, ensuring local demo videos render natively without requiring external GitHub uploads.
+- **Architecture Mermaid Diagrams**: Replaced skewed graph layouts with professional, centered `flowchart TD` diagrams following strict `mermaid-diagram-expert` standards, custom `classDef` color palettes, and rank constraint links.
 
 ## [1.1.1] - 2026-08-01
 

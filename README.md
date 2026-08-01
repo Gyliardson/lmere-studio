@@ -63,43 +63,68 @@ L'Mere Studio is a white-label, multi-tenant Web Application designed for artisa
 ## Architecture Overview
 
 ```mermaid
-graph TD
-    User(["Customer"])
-    Admin(["Bakery Owner"])
+flowchart TD
+    Customer(["Customer"])
+    Owner(["Bakery Owner"])
 
-    subgraph Frontend ["Next.js 16 App Router"]
+    subgraph Frontend["Frontend Layer (Next.js 16 App Router)"]
+        direction TD
         Simulator["Public Order Simulator"]
         CMS["Admin Dashboard CMS"]
         
-        Simulator --> Step1["1. Calendar"]
-        Simulator --> Step2["2. Cake Size"]
-        Simulator --> Step3["3. Flavors & Addons"]
-        Simulator --> Step4["4. Custom Details"]
-        Simulator --> Step5["5. Summary & WhatsApp"]
+        S1["1. Calendar"]
+        S2["2. Cake Size"]
+        S3["3. Flavors & Addons"]
+        S4["4. Custom Details"]
+        S5["5. Summary & WhatsApp"]
 
-        CMS --> Orders["Orders Kanban"]
-        CMS --> Menu["Menu Manager"]
-        CMS --> Schedule["Calendar Control"]
-        CMS --> Brand["Brand & Color Customizer"]
-        CMS --> Flags["Feature Flags"]
+        M1["Orders Kanban"]
+        M2["Menu Manager"]
+        M3["Calendar Control"]
+        M4["Brand Customizer"]
+        M5["Feature Flags"]
+
+        Simulator --> S1
+        Simulator --> S2
+        Simulator --> S3
+        Simulator --> S4
+        Simulator --> S5
+
+        CMS --> M1
+        CMS --> M2
+        CMS --> M3
+        CMS --> M4
+        CMS --> M5
     end
 
-    subgraph Backend ["API Routes & Database"]
-        API_Public["Public API Routes"]
-        API_Admin["Admin API Routes"]
-        Prisma["Prisma 7 ORM"]
-        SQLite[("SQLite Database")]
-        
-        API_Public --> Prisma
-        API_Admin --> Prisma
-        Prisma --> SQLite
+    subgraph Backend["Backend & Data Layer"]
+        direction TD
+        APIPub["Public API Routes"]
+        APIAdm["Admin API Routes"]
+        ORM["Prisma 7 ORM"]
+        DB[("SQLite Database")]
+
+        APIPub ~~~ APIAdm
+        APIPub --> ORM
+        APIAdm --> ORM
+        ORM --> DB
     end
 
-    User -->|"Visits /[slug]"| Simulator
-    Admin -->|"Visits /admin"| CMS
+    Customer -->|"Visits /[slug]"| Simulator
+    Owner -->|"Visits /admin"| CMS
 
-    Simulator --> API_Public
-    CMS --> API_Admin
+    Simulator --> APIPub
+    CMS --> APIAdm
+
+    classDef actor fill:#1e293b,stroke:#475569,color:#ffffff;
+    classDef fe fill:#4f46e5,stroke:#3730a3,color:#ffffff;
+    classDef be fill:#0f766e,stroke:#115e59,color:#ffffff;
+    classDef db fill:#0369a1,stroke:#075985,color:#ffffff;
+
+    class Customer,Owner actor;
+    class Simulator,CMS,S1,S2,S3,S4,S5,M1,M2,M3,M4,M5 fe;
+    class APIPub,APIAdm,ORM be;
+    class DB db;
 ```
 
 ---
