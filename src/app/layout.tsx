@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "L'Mere Studio - Simulador de Encomendas para Confeitarias",
-  description: "Sistema de simulacao de encomendas e agendamento para confeiteiras e atelies. Monte seu bolo personalizado com facilidade.",
+  description: "Sistema de simulação de encomendas e agendamento para confeiteiras e ateliês. Monte seu bolo personalizado com facilidade.",
 };
 
 export default function RootLayout({

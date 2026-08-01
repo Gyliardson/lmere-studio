@@ -5,6 +5,21 @@ All notable changes to the L'Mere Studio project will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-08-01
+
+### Added
+- **Dynamic Theme & Brand Color Engine**: Replaced build-time Tailwind color tokens with runtime `:root` CSS custom properties and `@theme inline` utilities, allowing instant preset switching and real-time color customizers.
+- **Custom Select Component (`CustomSelect`)**: Replaced native browser dropdowns in the Admin CMS with dark glassmorphism popovers with active state checkmarks and smooth transitions.
+- **Custom Confirm Modal (`ConfirmModal`)**: Replaced native browser `confirm()` popups with styled dark glassmorphism confirmation dialogs.
+- **Enhanced Date Blocking UX**: Added 1-click quick-preset buttons ("Hoje", "Amanhã") for rapid date blocking in the Admin Calendar.
+- **Image Fallback Engine for Addons**: Added fallback icon containers (`Sparkles`) in both Simulator and Admin CMS so text-only addons render with the same visual harmony as photo addons.
+
+### Changed
+- **Admin Mobile UX Overhaul**: Redesigned Order Management cards, status filters, and drawer navigation for seamless usability on mobile devices (375px+).
+- **Grid Alignment Fixes**: Aligned "Sabor Especial" checkbox height (46px) and label baselines with "Valor Adicional" input boxes across all edit modals.
+- **Payload Sanitization**: Added strict field whitelist sanitization on `PUT /api/admin/menu` and `PUT /api/admin/settings` endpoints to eliminate Prisma relation mutation errors.
+- **Grammar & Accent Corrections**: Corrected 100% of Portuguese accents (`Ateliê`, `Cardápio`, `Configurações`, `Observações`, `Preço`, `Subtotal`, `Informações`, `Indisponível`) across all UI strings, toast messages, and API error envelopes.
+
 ## [1.0.0] - 2026-08-01
 
 ### Added

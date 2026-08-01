@@ -21,7 +21,7 @@ export async function GET(
 
     if (!tenant) {
       return NextResponse.json(
-        { error: "Atelie nao encontrado" },
+        { error: "Ateliê não encontrado" },
         { status: 404 }
       );
     }

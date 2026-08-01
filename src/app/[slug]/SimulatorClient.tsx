@@ -39,7 +39,7 @@ export function SimulatorClient({ slug }: { slug: string }) {
     async function fetchData() {
       try {
         const res = await fetch(`/api/tenants/${slug}`);
-        if (!res.ok) throw new Error("Atelie nao encontrado");
+        if (!res.ok) throw new Error("Ateliê não encontrado");
         const json = await res.json();
         setData(json);
       } catch (err) {
@@ -86,8 +86,8 @@ export function SimulatorClient({ slug }: { slug: string }) {
       <div className="min-h-dvh flex items-center justify-center px-4">
         <div className="glass-card p-8 text-center max-w-md">
           <Ban className="w-12 h-12 text-error mx-auto mb-4" />
-          <h1 className="text-xl font-bold mb-2">Atelie nao encontrado</h1>
-          <p className="text-white/60 text-sm">{error || "O atelie solicitado nao existe ou esta indisponivel."}</p>
+          <h1 className="text-xl font-bold mb-2">Ateliê não encontrado</h1>
+          <p className="text-white/60 text-sm">{error || "O ateliê solicitado não existe ou está indisponível."}</p>
         </div>
       </div>
     );
@@ -108,15 +108,28 @@ export function SimulatorClient({ slug }: { slug: string }) {
     "--brand-primary": hexToHsl(tenant.primaryColor || "#8B5CF6"),
     "--brand-secondary": hexToHsl(tenant.secondaryColor || "#EC4899"),
     "--brand-bg": hexToHsl(tenant.backgroundColor || "#0F0A1A"),
-    "--tenant-primary": tenant.primaryColor,
-    "--tenant-secondary": tenant.secondaryColor,
-    "--tenant-bg": tenant.backgroundColor,
-    "--tenant-button": tenant.buttonColor,
-    "--tenant-text": tenant.textColor,
+    "--tenant-primary": tenant.primaryColor || "#8B5CF6",
+    "--tenant-secondary": tenant.secondaryColor || "#EC4899",
+    "--tenant-bg": tenant.backgroundColor || "#0F0A1A",
+    "--tenant-button": tenant.buttonColor || tenant.primaryColor || "#8B5CF6",
+    "--tenant-text": tenant.textColor || "#FFFFFF",
+    "--color-brand-primary": tenant.primaryColor || "#8B5CF6",
+    "--color-brand-secondary": tenant.secondaryColor || "#EC4899",
+    "--color-brand-bg": tenant.backgroundColor || "#0F0A1A",
+    "--color-brand-button": tenant.buttonColor || tenant.primaryColor || "#8B5CF6",
+    "--color-brand-text": tenant.textColor || "#FFFFFF",
   } as React.CSSProperties;
 
   return (
-    <div style={style} className="min-h-dvh" id="simulator-root">
+    <div
+      style={{
+        ...style,
+        backgroundColor: tenant.backgroundColor || "#0F0A1A",
+        color: tenant.textColor || "#FFFFFF",
+      }}
+      className="min-h-dvh transition-colors duration-300"
+      id="simulator-root"
+    >
       {/* Header */}
       <header className="relative overflow-hidden">
         {tenant.bannerUrl && (
@@ -430,7 +443,7 @@ function StepCalendar({
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-white/15" />
-            Indisponivel
+            Indisponível
           </div>
         </div>
       </div>
@@ -476,7 +489,7 @@ function StepSize({
         <Cake className="w-5 h-5 text-brand-primary" />
         Qual o tamanho ideal?
       </h2>
-      <p className="text-white/50 text-sm mb-5">Escolha o tamanho do bolo baseado no numero de convidados</p>
+      <p className="text-white/50 text-sm mb-5">Escolha o tamanho do bolo baseado no número de convidados</p>
 
       <div className="space-y-3">
         {sizes.map((size) => {
@@ -561,7 +574,7 @@ function StepFlavors({
   const handleFillingClick = (filling: CakeFlavorData) => {
     const isSelected = selectedFillings.some((f) => f.id === filling.id);
     if (!isSelected && selectedFillings.length >= maxFillings) {
-      showToast(`Este tamanho permite no maximo ${maxFillings} recheio${maxFillings > 1 ? "s" : ""}.`);
+      showToast(`Este tamanho permite no máximo ${maxFillings} recheio${maxFillings > 1 ? "s" : ""}.`);
       return;
     }
     onToggleFilling(filling);
@@ -574,7 +587,7 @@ function StepFlavors({
           <Layers className="w-5 h-5 text-brand-primary" />
           Escolha a Massa
         </h2>
-        <p className="text-white/50 text-sm mb-4">Selecione uma opcao de massa</p>
+        <p className="text-white/50 text-sm mb-4">Selecione uma opção de massa</p>
 
         <div className="grid grid-cols-2 gap-3">
           {doughs.map((dough) => {
@@ -682,22 +695,32 @@ function StepFlavors({
                   id={`addon-${addon.id}`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className={cn(
-                      "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0",
-                      isSelected ? "bg-brand-primary/20" : "bg-white/5"
-                    )}>
-                      <Plus className={cn("w-5 h-5", isSelected ? "text-brand-primary" : "text-white/40")} />
-                    </div>
+                    {addon.imageUrl ? (
+                      <img src={addon.imageUrl} alt="" className="w-11 h-11 rounded-lg object-cover flex-shrink-0" />
+                    ) : (
+                      <div className={cn(
+                        "w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors",
+                        isSelected ? "bg-brand-primary/20 text-brand-primary" : "bg-white/5 text-white/40"
+                      )}>
+                        <Sparkles className="w-5 h-5" />
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm">{addon.name}</p>
+                      <p className="font-medium text-sm text-white">{addon.name}</p>
                       {addon.description && (
                         <p className="text-xs text-white/40 mt-0.5 truncate">{addon.description}</p>
                       )}
                     </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className={cn("font-semibold text-sm", isSelected ? "text-brand-primary" : "text-white/70")}>
+                    <div className="flex items-center gap-2.5 flex-shrink-0">
+                      <span className={cn("font-bold text-xs sm:text-sm", isSelected ? "text-brand-primary" : "text-white/70")}>
                         +{formatCurrency(addon.price)}
-                      </p>
+                      </span>
+                      <div className={cn(
+                        "w-6 h-6 rounded-full flex items-center justify-center border transition-all",
+                        isSelected ? "bg-brand-primary border-brand-primary text-white shadow-sm" : "border-white/20 text-white/30"
+                      )}>
+                        {isSelected ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                      </div>
                     </div>
                   </div>
                 </button>
@@ -764,7 +787,7 @@ function StepDetails({
         <FileText className="w-5 h-5 text-brand-primary" />
         Detalhes do Pedido
       </h2>
-      <p className="text-white/50 text-sm mb-5">Informacoes adicionais para personalizar seu bolo</p>
+      <p className="text-white/50 text-sm mb-5">Informações adicionais para personalizar seu bolo</p>
 
       <div>
         <label className="block text-sm font-medium mb-2 text-white/80">
@@ -774,7 +797,7 @@ function StepDetails({
           type="text"
           value={state.cakeMessage}
           onChange={(e) => onChange({ cakeMessage: e.target.value })}
-          placeholder='Ex: "Parabens Maria - 30 anos"'
+          placeholder='Ex: "Parabéns Maria - 30 anos"'
           className="input-field"
           id="input-cake-message"
         />
@@ -782,12 +805,12 @@ function StepDetails({
 
       <div>
         <label className="block text-sm font-medium mb-2 text-white/80">
-          Observacoes adicionais
+          Observações adicionais
         </label>
         <textarea
           value={state.details}
           onChange={(e) => onChange({ details: e.target.value })}
-          placeholder="Descreva detalhes da decoracao, tema, alergias, etc."
+          placeholder="Descreva detalhes da decoração, tema, alergias, etc."
           rows={3}
           className="input-field resize-none"
           id="input-details"
@@ -797,7 +820,7 @@ function StepDetails({
       {allowUpload && (
         <div>
           <label className="block text-sm font-medium mb-2 text-white/80">
-            Foto de Referencia (opcional)
+            Foto de Referência (opcional)
           </label>
 
           {state.referenceImage ? (
@@ -805,11 +828,11 @@ function StepDetails({
               <div className="flex items-center gap-3 min-w-0">
                 <img
                   src={state.referenceImage}
-                  alt="Foto de referencia"
+                  alt="Foto de referência"
                   className="w-16 h-16 rounded-lg object-cover border border-white/10 flex-shrink-0"
                 />
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-white/90">Foto de referencia enviada</p>
+                  <p className="text-sm font-medium text-white/90">Foto de referência enviada</p>
                   <p className="text-xs text-success flex items-center gap-1 mt-0.5">
                     <Check className="w-3.5 h-3.5" /> Pronta para o pedido
                   </p>
@@ -850,7 +873,7 @@ function StepDetails({
                 <p className="text-sm font-medium text-white/80">
                   Clique aqui ou arraste uma foto para enviar
                 </p>
-                <p className="text-xs text-white/40 mt-1">Formatos suportados: PNG, JPG ou WEBP (ate 5MB)</p>
+                <p className="text-xs text-white/40 mt-1">Formatos suportados: PNG, JPG ou WEBP (até 5MB)</p>
               </label>
 
               <div className="relative flex items-center justify-center my-2">
@@ -862,7 +885,7 @@ function StepDetails({
                 type="url"
                 value={state.referenceImage || ""}
                 onChange={(e) => onChange({ referenceImage: e.target.value || null })}
-                placeholder="Cole a URL da imagem de referencia (ex: https://...)"
+                placeholder="Cole a URL da imagem de referência (ex: https://...)"
                 className="input-field text-xs"
                 id="input-reference-url"
               />

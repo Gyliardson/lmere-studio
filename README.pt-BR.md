@@ -1,6 +1,6 @@
 # L'Mere Studio - Simulador de Encomendas & CMS Multi-Tenant para Confeiteiras
 
-[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.0.0-purple.svg)](CHANGELOG.md)
+[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.1.0-purple.svg)](CHANGELOG.md)
 [![Next.js](https://img.shields.io/badge/Next.js-16.2.12-black.svg)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.0.0-blue.svg)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)

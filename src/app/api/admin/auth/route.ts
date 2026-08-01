@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     const tenant = await prisma.tenant.findUnique({ where: { slug } });
 
     if (!tenant) {
-      return NextResponse.json({ error: "Atelie nao encontrado" }, { status: 404 });
+      return NextResponse.json({ error: "Ateliê não encontrado" }, { status: 404 });
     }
 
     const valid = compareSync(password, tenant.adminPasswordHash);
@@ -33,6 +33,6 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("[ERROR] Auth failed:", error);
-    return NextResponse.json({ error: "Erro na autenticacao" }, { status: 500 });
+    return NextResponse.json({ error: "Erro na autenticação" }, { status: 500 });
   }
 }
