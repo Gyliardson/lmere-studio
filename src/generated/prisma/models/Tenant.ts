@@ -28,10 +28,12 @@ export type AggregateTenant = {
 
 export type TenantAvgAggregateOutputType = {
   maxOrdersPerDay: number | null
+  minLeadDays: number | null
 }
 
 export type TenantSumAggregateOutputType = {
   maxOrdersPerDay: number | null
+  minLeadDays: number | null
 }
 
 export type TenantMinAggregateOutputType = {
@@ -49,6 +51,7 @@ export type TenantMinAggregateOutputType = {
   textColor: string | null
   adminPasswordHash: string | null
   maxOrdersPerDay: number | null
+  minLeadDays: number | null
   featuresConfig: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -69,6 +72,7 @@ export type TenantMaxAggregateOutputType = {
   textColor: string | null
   adminPasswordHash: string | null
   maxOrdersPerDay: number | null
+  minLeadDays: number | null
   featuresConfig: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -89,6 +93,7 @@ export type TenantCountAggregateOutputType = {
   textColor: number
   adminPasswordHash: number
   maxOrdersPerDay: number
+  minLeadDays: number
   featuresConfig: number
   createdAt: number
   updatedAt: number
@@ -98,10 +103,12 @@ export type TenantCountAggregateOutputType = {
 
 export type TenantAvgAggregateInputType = {
   maxOrdersPerDay?: true
+  minLeadDays?: true
 }
 
 export type TenantSumAggregateInputType = {
   maxOrdersPerDay?: true
+  minLeadDays?: true
 }
 
 export type TenantMinAggregateInputType = {
@@ -119,6 +126,7 @@ export type TenantMinAggregateInputType = {
   textColor?: true
   adminPasswordHash?: true
   maxOrdersPerDay?: true
+  minLeadDays?: true
   featuresConfig?: true
   createdAt?: true
   updatedAt?: true
@@ -139,6 +147,7 @@ export type TenantMaxAggregateInputType = {
   textColor?: true
   adminPasswordHash?: true
   maxOrdersPerDay?: true
+  minLeadDays?: true
   featuresConfig?: true
   createdAt?: true
   updatedAt?: true
@@ -159,6 +168,7 @@ export type TenantCountAggregateInputType = {
   textColor?: true
   adminPasswordHash?: true
   maxOrdersPerDay?: true
+  minLeadDays?: true
   featuresConfig?: true
   createdAt?: true
   updatedAt?: true
@@ -266,6 +276,7 @@ export type TenantGroupByOutputType = {
   textColor: string
   adminPasswordHash: string
   maxOrdersPerDay: number
+  minLeadDays: number
   featuresConfig: string
   createdAt: Date
   updatedAt: Date
@@ -309,6 +320,7 @@ export type TenantWhereInput = {
   textColor?: Prisma.StringFilter<"Tenant"> | string
   adminPasswordHash?: Prisma.StringFilter<"Tenant"> | string
   maxOrdersPerDay?: Prisma.IntFilter<"Tenant"> | number
+  minLeadDays?: Prisma.IntFilter<"Tenant"> | number
   featuresConfig?: Prisma.StringFilter<"Tenant"> | string
   createdAt?: Prisma.DateTimeFilter<"Tenant"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Tenant"> | Date | string
@@ -336,6 +348,7 @@ export type TenantOrderByWithRelationInput = {
   textColor?: Prisma.SortOrder
   adminPasswordHash?: Prisma.SortOrder
   maxOrdersPerDay?: Prisma.SortOrder
+  minLeadDays?: Prisma.SortOrder
   featuresConfig?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -366,6 +379,7 @@ export type TenantWhereUniqueInput = Prisma.AtLeast<{
   textColor?: Prisma.StringFilter<"Tenant"> | string
   adminPasswordHash?: Prisma.StringFilter<"Tenant"> | string
   maxOrdersPerDay?: Prisma.IntFilter<"Tenant"> | number
+  minLeadDays?: Prisma.IntFilter<"Tenant"> | number
   featuresConfig?: Prisma.StringFilter<"Tenant"> | string
   createdAt?: Prisma.DateTimeFilter<"Tenant"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Tenant"> | Date | string
@@ -393,6 +407,7 @@ export type TenantOrderByWithAggregationInput = {
   textColor?: Prisma.SortOrder
   adminPasswordHash?: Prisma.SortOrder
   maxOrdersPerDay?: Prisma.SortOrder
+  minLeadDays?: Prisma.SortOrder
   featuresConfig?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -421,6 +436,7 @@ export type TenantScalarWhereWithAggregatesInput = {
   textColor?: Prisma.StringWithAggregatesFilter<"Tenant"> | string
   adminPasswordHash?: Prisma.StringWithAggregatesFilter<"Tenant"> | string
   maxOrdersPerDay?: Prisma.IntWithAggregatesFilter<"Tenant"> | number
+  minLeadDays?: Prisma.IntWithAggregatesFilter<"Tenant"> | number
   featuresConfig?: Prisma.StringWithAggregatesFilter<"Tenant"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Tenant"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Tenant"> | Date | string
@@ -441,6 +457,7 @@ export type TenantCreateInput = {
   textColor?: string
   adminPasswordHash?: string
   maxOrdersPerDay?: number
+  minLeadDays?: number
   featuresConfig?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -468,6 +485,7 @@ export type TenantUncheckedCreateInput = {
   textColor?: string
   adminPasswordHash?: string
   maxOrdersPerDay?: number
+  minLeadDays?: number
   featuresConfig?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -495,6 +513,7 @@ export type TenantUpdateInput = {
   textColor?: Prisma.StringFieldUpdateOperationsInput | string
   adminPasswordHash?: Prisma.StringFieldUpdateOperationsInput | string
   maxOrdersPerDay?: Prisma.IntFieldUpdateOperationsInput | number
+  minLeadDays?: Prisma.IntFieldUpdateOperationsInput | number
   featuresConfig?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -522,6 +541,7 @@ export type TenantUncheckedUpdateInput = {
   textColor?: Prisma.StringFieldUpdateOperationsInput | string
   adminPasswordHash?: Prisma.StringFieldUpdateOperationsInput | string
   maxOrdersPerDay?: Prisma.IntFieldUpdateOperationsInput | number
+  minLeadDays?: Prisma.IntFieldUpdateOperationsInput | number
   featuresConfig?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -549,6 +569,7 @@ export type TenantCreateManyInput = {
   textColor?: string
   adminPasswordHash?: string
   maxOrdersPerDay?: number
+  minLeadDays?: number
   featuresConfig?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -569,6 +590,7 @@ export type TenantUpdateManyMutationInput = {
   textColor?: Prisma.StringFieldUpdateOperationsInput | string
   adminPasswordHash?: Prisma.StringFieldUpdateOperationsInput | string
   maxOrdersPerDay?: Prisma.IntFieldUpdateOperationsInput | number
+  minLeadDays?: Prisma.IntFieldUpdateOperationsInput | number
   featuresConfig?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -589,6 +611,7 @@ export type TenantUncheckedUpdateManyInput = {
   textColor?: Prisma.StringFieldUpdateOperationsInput | string
   adminPasswordHash?: Prisma.StringFieldUpdateOperationsInput | string
   maxOrdersPerDay?: Prisma.IntFieldUpdateOperationsInput | number
+  minLeadDays?: Prisma.IntFieldUpdateOperationsInput | number
   featuresConfig?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -609,6 +632,7 @@ export type TenantCountOrderByAggregateInput = {
   textColor?: Prisma.SortOrder
   adminPasswordHash?: Prisma.SortOrder
   maxOrdersPerDay?: Prisma.SortOrder
+  minLeadDays?: Prisma.SortOrder
   featuresConfig?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -616,6 +640,7 @@ export type TenantCountOrderByAggregateInput = {
 
 export type TenantAvgOrderByAggregateInput = {
   maxOrdersPerDay?: Prisma.SortOrder
+  minLeadDays?: Prisma.SortOrder
 }
 
 export type TenantMaxOrderByAggregateInput = {
@@ -633,6 +658,7 @@ export type TenantMaxOrderByAggregateInput = {
   textColor?: Prisma.SortOrder
   adminPasswordHash?: Prisma.SortOrder
   maxOrdersPerDay?: Prisma.SortOrder
+  minLeadDays?: Prisma.SortOrder
   featuresConfig?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -653,6 +679,7 @@ export type TenantMinOrderByAggregateInput = {
   textColor?: Prisma.SortOrder
   adminPasswordHash?: Prisma.SortOrder
   maxOrdersPerDay?: Prisma.SortOrder
+  minLeadDays?: Prisma.SortOrder
   featuresConfig?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -660,6 +687,7 @@ export type TenantMinOrderByAggregateInput = {
 
 export type TenantSumOrderByAggregateInput = {
   maxOrdersPerDay?: Prisma.SortOrder
+  minLeadDays?: Prisma.SortOrder
 }
 
 export type TenantScalarRelationFilter = {
@@ -796,6 +824,7 @@ export type TenantCreateWithoutCakeSizesInput = {
   textColor?: string
   adminPasswordHash?: string
   maxOrdersPerDay?: number
+  minLeadDays?: number
   featuresConfig?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -822,6 +851,7 @@ export type TenantUncheckedCreateWithoutCakeSizesInput = {
   textColor?: string
   adminPasswordHash?: string
   maxOrdersPerDay?: number
+  minLeadDays?: number
   featuresConfig?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -864,6 +894,7 @@ export type TenantUpdateWithoutCakeSizesInput = {
   textColor?: Prisma.StringFieldUpdateOperationsInput | string
   adminPasswordHash?: Prisma.StringFieldUpdateOperationsInput | string
   maxOrdersPerDay?: Prisma.IntFieldUpdateOperationsInput | number
+  minLeadDays?: Prisma.IntFieldUpdateOperationsInput | number
   featuresConfig?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -890,6 +921,7 @@ export type TenantUncheckedUpdateWithoutCakeSizesInput = {
   textColor?: Prisma.StringFieldUpdateOperationsInput | string
   adminPasswordHash?: Prisma.StringFieldUpdateOperationsInput | string
   maxOrdersPerDay?: Prisma.IntFieldUpdateOperationsInput | number
+  minLeadDays?: Prisma.IntFieldUpdateOperationsInput | number
   featuresConfig?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -916,6 +948,7 @@ export type TenantCreateWithoutCakeFlavorsInput = {
   textColor?: string
   adminPasswordHash?: string
   maxOrdersPerDay?: number
+  minLeadDays?: number
   featuresConfig?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -942,6 +975,7 @@ export type TenantUncheckedCreateWithoutCakeFlavorsInput = {
   textColor?: string
   adminPasswordHash?: string
   maxOrdersPerDay?: number
+  minLeadDays?: number
   featuresConfig?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -984,6 +1018,7 @@ export type TenantUpdateWithoutCakeFlavorsInput = {
   textColor?: Prisma.StringFieldUpdateOperationsInput | string
   adminPasswordHash?: Prisma.StringFieldUpdateOperationsInput | string
   maxOrdersPerDay?: Prisma.IntFieldUpdateOperationsInput | number
+  minLeadDays?: Prisma.IntFieldUpdateOperationsInput | number
   featuresConfig?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1010,6 +1045,7 @@ export type TenantUncheckedUpdateWithoutCakeFlavorsInput = {
   textColor?: Prisma.StringFieldUpdateOperationsInput | string
   adminPasswordHash?: Prisma.StringFieldUpdateOperationsInput | string
   maxOrdersPerDay?: Prisma.IntFieldUpdateOperationsInput | number
+  minLeadDays?: Prisma.IntFieldUpdateOperationsInput | number
   featuresConfig?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1036,6 +1072,7 @@ export type TenantCreateWithoutAddonsInput = {
   textColor?: string
   adminPasswordHash?: string
   maxOrdersPerDay?: number
+  minLeadDays?: number
   featuresConfig?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1062,6 +1099,7 @@ export type TenantUncheckedCreateWithoutAddonsInput = {
   textColor?: string
   adminPasswordHash?: string
   maxOrdersPerDay?: number
+  minLeadDays?: number
   featuresConfig?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1104,6 +1142,7 @@ export type TenantUpdateWithoutAddonsInput = {
   textColor?: Prisma.StringFieldUpdateOperationsInput | string
   adminPasswordHash?: Prisma.StringFieldUpdateOperationsInput | string
   maxOrdersPerDay?: Prisma.IntFieldUpdateOperationsInput | number
+  minLeadDays?: Prisma.IntFieldUpdateOperationsInput | number
   featuresConfig?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1130,6 +1169,7 @@ export type TenantUncheckedUpdateWithoutAddonsInput = {
   textColor?: Prisma.StringFieldUpdateOperationsInput | string
   adminPasswordHash?: Prisma.StringFieldUpdateOperationsInput | string
   maxOrdersPerDay?: Prisma.IntFieldUpdateOperationsInput | number
+  minLeadDays?: Prisma.IntFieldUpdateOperationsInput | number
   featuresConfig?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1156,6 +1196,7 @@ export type TenantCreateWithoutBlockedDatesInput = {
   textColor?: string
   adminPasswordHash?: string
   maxOrdersPerDay?: number
+  minLeadDays?: number
   featuresConfig?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1182,6 +1223,7 @@ export type TenantUncheckedCreateWithoutBlockedDatesInput = {
   textColor?: string
   adminPasswordHash?: string
   maxOrdersPerDay?: number
+  minLeadDays?: number
   featuresConfig?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1224,6 +1266,7 @@ export type TenantUpdateWithoutBlockedDatesInput = {
   textColor?: Prisma.StringFieldUpdateOperationsInput | string
   adminPasswordHash?: Prisma.StringFieldUpdateOperationsInput | string
   maxOrdersPerDay?: Prisma.IntFieldUpdateOperationsInput | number
+  minLeadDays?: Prisma.IntFieldUpdateOperationsInput | number
   featuresConfig?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1250,6 +1293,7 @@ export type TenantUncheckedUpdateWithoutBlockedDatesInput = {
   textColor?: Prisma.StringFieldUpdateOperationsInput | string
   adminPasswordHash?: Prisma.StringFieldUpdateOperationsInput | string
   maxOrdersPerDay?: Prisma.IntFieldUpdateOperationsInput | number
+  minLeadDays?: Prisma.IntFieldUpdateOperationsInput | number
   featuresConfig?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1276,6 +1320,7 @@ export type TenantCreateWithoutWorkScheduleInput = {
   textColor?: string
   adminPasswordHash?: string
   maxOrdersPerDay?: number
+  minLeadDays?: number
   featuresConfig?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1302,6 +1347,7 @@ export type TenantUncheckedCreateWithoutWorkScheduleInput = {
   textColor?: string
   adminPasswordHash?: string
   maxOrdersPerDay?: number
+  minLeadDays?: number
   featuresConfig?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1344,6 +1390,7 @@ export type TenantUpdateWithoutWorkScheduleInput = {
   textColor?: Prisma.StringFieldUpdateOperationsInput | string
   adminPasswordHash?: Prisma.StringFieldUpdateOperationsInput | string
   maxOrdersPerDay?: Prisma.IntFieldUpdateOperationsInput | number
+  minLeadDays?: Prisma.IntFieldUpdateOperationsInput | number
   featuresConfig?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1370,6 +1417,7 @@ export type TenantUncheckedUpdateWithoutWorkScheduleInput = {
   textColor?: Prisma.StringFieldUpdateOperationsInput | string
   adminPasswordHash?: Prisma.StringFieldUpdateOperationsInput | string
   maxOrdersPerDay?: Prisma.IntFieldUpdateOperationsInput | number
+  minLeadDays?: Prisma.IntFieldUpdateOperationsInput | number
   featuresConfig?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1396,6 +1444,7 @@ export type TenantCreateWithoutOrdersInput = {
   textColor?: string
   adminPasswordHash?: string
   maxOrdersPerDay?: number
+  minLeadDays?: number
   featuresConfig?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1422,6 +1471,7 @@ export type TenantUncheckedCreateWithoutOrdersInput = {
   textColor?: string
   adminPasswordHash?: string
   maxOrdersPerDay?: number
+  minLeadDays?: number
   featuresConfig?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1464,6 +1514,7 @@ export type TenantUpdateWithoutOrdersInput = {
   textColor?: Prisma.StringFieldUpdateOperationsInput | string
   adminPasswordHash?: Prisma.StringFieldUpdateOperationsInput | string
   maxOrdersPerDay?: Prisma.IntFieldUpdateOperationsInput | number
+  minLeadDays?: Prisma.IntFieldUpdateOperationsInput | number
   featuresConfig?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1490,6 +1541,7 @@ export type TenantUncheckedUpdateWithoutOrdersInput = {
   textColor?: Prisma.StringFieldUpdateOperationsInput | string
   adminPasswordHash?: Prisma.StringFieldUpdateOperationsInput | string
   maxOrdersPerDay?: Prisma.IntFieldUpdateOperationsInput | number
+  minLeadDays?: Prisma.IntFieldUpdateOperationsInput | number
   featuresConfig?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1516,6 +1568,7 @@ export type TenantCreateWithoutCustomFieldsInput = {
   textColor?: string
   adminPasswordHash?: string
   maxOrdersPerDay?: number
+  minLeadDays?: number
   featuresConfig?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1542,6 +1595,7 @@ export type TenantUncheckedCreateWithoutCustomFieldsInput = {
   textColor?: string
   adminPasswordHash?: string
   maxOrdersPerDay?: number
+  minLeadDays?: number
   featuresConfig?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1584,6 +1638,7 @@ export type TenantUpdateWithoutCustomFieldsInput = {
   textColor?: Prisma.StringFieldUpdateOperationsInput | string
   adminPasswordHash?: Prisma.StringFieldUpdateOperationsInput | string
   maxOrdersPerDay?: Prisma.IntFieldUpdateOperationsInput | number
+  minLeadDays?: Prisma.IntFieldUpdateOperationsInput | number
   featuresConfig?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1610,6 +1665,7 @@ export type TenantUncheckedUpdateWithoutCustomFieldsInput = {
   textColor?: Prisma.StringFieldUpdateOperationsInput | string
   adminPasswordHash?: Prisma.StringFieldUpdateOperationsInput | string
   maxOrdersPerDay?: Prisma.IntFieldUpdateOperationsInput | number
+  minLeadDays?: Prisma.IntFieldUpdateOperationsInput | number
   featuresConfig?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1721,6 +1777,7 @@ export type TenantSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   textColor?: boolean
   adminPasswordHash?: boolean
   maxOrdersPerDay?: boolean
+  minLeadDays?: boolean
   featuresConfig?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -1749,6 +1806,7 @@ export type TenantSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   textColor?: boolean
   adminPasswordHash?: boolean
   maxOrdersPerDay?: boolean
+  minLeadDays?: boolean
   featuresConfig?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -1769,6 +1827,7 @@ export type TenantSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   textColor?: boolean
   adminPasswordHash?: boolean
   maxOrdersPerDay?: boolean
+  minLeadDays?: boolean
   featuresConfig?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -1789,12 +1848,13 @@ export type TenantSelectScalar = {
   textColor?: boolean
   adminPasswordHash?: boolean
   maxOrdersPerDay?: boolean
+  minLeadDays?: boolean
   featuresConfig?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type TenantOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "slug" | "name" | "logoUrl" | "bannerUrl" | "whatsapp" | "pixKey" | "primaryColor" | "secondaryColor" | "backgroundColor" | "buttonColor" | "textColor" | "adminPasswordHash" | "maxOrdersPerDay" | "featuresConfig" | "createdAt" | "updatedAt", ExtArgs["result"]["tenant"]>
+export type TenantOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "slug" | "name" | "logoUrl" | "bannerUrl" | "whatsapp" | "pixKey" | "primaryColor" | "secondaryColor" | "backgroundColor" | "buttonColor" | "textColor" | "adminPasswordHash" | "maxOrdersPerDay" | "minLeadDays" | "featuresConfig" | "createdAt" | "updatedAt", ExtArgs["result"]["tenant"]>
 export type TenantInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   cakeSizes?: boolean | Prisma.Tenant$cakeSizesArgs<ExtArgs>
   cakeFlavors?: boolean | Prisma.Tenant$cakeFlavorsArgs<ExtArgs>
@@ -1834,6 +1894,7 @@ export type $TenantPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     textColor: string
     adminPasswordHash: string
     maxOrdersPerDay: number
+    minLeadDays: number
     featuresConfig: string
     createdAt: Date
     updatedAt: Date
@@ -2281,6 +2342,7 @@ export interface TenantFieldRefs {
   readonly textColor: Prisma.FieldRef<"Tenant", 'String'>
   readonly adminPasswordHash: Prisma.FieldRef<"Tenant", 'String'>
   readonly maxOrdersPerDay: Prisma.FieldRef<"Tenant", 'Int'>
+  readonly minLeadDays: Prisma.FieldRef<"Tenant", 'Int'>
   readonly featuresConfig: Prisma.FieldRef<"Tenant", 'String'>
   readonly createdAt: Prisma.FieldRef<"Tenant", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Tenant", 'DateTime'>

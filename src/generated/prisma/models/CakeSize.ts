@@ -29,12 +29,14 @@ export type AggregateCakeSize = {
 export type CakeSizeAvgAggregateOutputType = {
   weightKg: number | null
   basePrice: number | null
+  maxFillings: number | null
   sortOrder: number | null
 }
 
 export type CakeSizeSumAggregateOutputType = {
   weightKg: number | null
   basePrice: number | null
+  maxFillings: number | null
   sortOrder: number | null
 }
 
@@ -45,6 +47,7 @@ export type CakeSizeMinAggregateOutputType = {
   servings: string | null
   weightKg: number | null
   basePrice: number | null
+  maxFillings: number | null
   sortOrder: number | null
   active: boolean | null
 }
@@ -56,6 +59,7 @@ export type CakeSizeMaxAggregateOutputType = {
   servings: string | null
   weightKg: number | null
   basePrice: number | null
+  maxFillings: number | null
   sortOrder: number | null
   active: boolean | null
 }
@@ -67,6 +71,7 @@ export type CakeSizeCountAggregateOutputType = {
   servings: number
   weightKg: number
   basePrice: number
+  maxFillings: number
   sortOrder: number
   active: number
   _all: number
@@ -76,12 +81,14 @@ export type CakeSizeCountAggregateOutputType = {
 export type CakeSizeAvgAggregateInputType = {
   weightKg?: true
   basePrice?: true
+  maxFillings?: true
   sortOrder?: true
 }
 
 export type CakeSizeSumAggregateInputType = {
   weightKg?: true
   basePrice?: true
+  maxFillings?: true
   sortOrder?: true
 }
 
@@ -92,6 +99,7 @@ export type CakeSizeMinAggregateInputType = {
   servings?: true
   weightKg?: true
   basePrice?: true
+  maxFillings?: true
   sortOrder?: true
   active?: true
 }
@@ -103,6 +111,7 @@ export type CakeSizeMaxAggregateInputType = {
   servings?: true
   weightKg?: true
   basePrice?: true
+  maxFillings?: true
   sortOrder?: true
   active?: true
 }
@@ -114,6 +123,7 @@ export type CakeSizeCountAggregateInputType = {
   servings?: true
   weightKg?: true
   basePrice?: true
+  maxFillings?: true
   sortOrder?: true
   active?: true
   _all?: true
@@ -212,6 +222,7 @@ export type CakeSizeGroupByOutputType = {
   servings: string
   weightKg: number
   basePrice: number
+  maxFillings: number
   sortOrder: number
   active: boolean
   _count: CakeSizeCountAggregateOutputType | null
@@ -246,6 +257,7 @@ export type CakeSizeWhereInput = {
   servings?: Prisma.StringFilter<"CakeSize"> | string
   weightKg?: Prisma.FloatFilter<"CakeSize"> | number
   basePrice?: Prisma.FloatFilter<"CakeSize"> | number
+  maxFillings?: Prisma.IntFilter<"CakeSize"> | number
   sortOrder?: Prisma.IntFilter<"CakeSize"> | number
   active?: Prisma.BoolFilter<"CakeSize"> | boolean
   tenant?: Prisma.XOR<Prisma.TenantScalarRelationFilter, Prisma.TenantWhereInput>
@@ -259,6 +271,7 @@ export type CakeSizeOrderByWithRelationInput = {
   servings?: Prisma.SortOrder
   weightKg?: Prisma.SortOrder
   basePrice?: Prisma.SortOrder
+  maxFillings?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   active?: Prisma.SortOrder
   tenant?: Prisma.TenantOrderByWithRelationInput
@@ -275,6 +288,7 @@ export type CakeSizeWhereUniqueInput = Prisma.AtLeast<{
   servings?: Prisma.StringFilter<"CakeSize"> | string
   weightKg?: Prisma.FloatFilter<"CakeSize"> | number
   basePrice?: Prisma.FloatFilter<"CakeSize"> | number
+  maxFillings?: Prisma.IntFilter<"CakeSize"> | number
   sortOrder?: Prisma.IntFilter<"CakeSize"> | number
   active?: Prisma.BoolFilter<"CakeSize"> | boolean
   tenant?: Prisma.XOR<Prisma.TenantScalarRelationFilter, Prisma.TenantWhereInput>
@@ -288,6 +302,7 @@ export type CakeSizeOrderByWithAggregationInput = {
   servings?: Prisma.SortOrder
   weightKg?: Prisma.SortOrder
   basePrice?: Prisma.SortOrder
+  maxFillings?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   active?: Prisma.SortOrder
   _count?: Prisma.CakeSizeCountOrderByAggregateInput
@@ -307,6 +322,7 @@ export type CakeSizeScalarWhereWithAggregatesInput = {
   servings?: Prisma.StringWithAggregatesFilter<"CakeSize"> | string
   weightKg?: Prisma.FloatWithAggregatesFilter<"CakeSize"> | number
   basePrice?: Prisma.FloatWithAggregatesFilter<"CakeSize"> | number
+  maxFillings?: Prisma.IntWithAggregatesFilter<"CakeSize"> | number
   sortOrder?: Prisma.IntWithAggregatesFilter<"CakeSize"> | number
   active?: Prisma.BoolWithAggregatesFilter<"CakeSize"> | boolean
 }
@@ -317,6 +333,7 @@ export type CakeSizeCreateInput = {
   servings: string
   weightKg: number
   basePrice: number
+  maxFillings?: number
   sortOrder?: number
   active?: boolean
   tenant: Prisma.TenantCreateNestedOneWithoutCakeSizesInput
@@ -330,6 +347,7 @@ export type CakeSizeUncheckedCreateInput = {
   servings: string
   weightKg: number
   basePrice: number
+  maxFillings?: number
   sortOrder?: number
   active?: boolean
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutCakeSizeInput
@@ -341,6 +359,7 @@ export type CakeSizeUpdateInput = {
   servings?: Prisma.StringFieldUpdateOperationsInput | string
   weightKg?: Prisma.FloatFieldUpdateOperationsInput | number
   basePrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  maxFillings?: Prisma.IntFieldUpdateOperationsInput | number
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   tenant?: Prisma.TenantUpdateOneRequiredWithoutCakeSizesNestedInput
@@ -354,6 +373,7 @@ export type CakeSizeUncheckedUpdateInput = {
   servings?: Prisma.StringFieldUpdateOperationsInput | string
   weightKg?: Prisma.FloatFieldUpdateOperationsInput | number
   basePrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  maxFillings?: Prisma.IntFieldUpdateOperationsInput | number
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   orders?: Prisma.OrderUncheckedUpdateManyWithoutCakeSizeNestedInput
@@ -366,6 +386,7 @@ export type CakeSizeCreateManyInput = {
   servings: string
   weightKg: number
   basePrice: number
+  maxFillings?: number
   sortOrder?: number
   active?: boolean
 }
@@ -376,6 +397,7 @@ export type CakeSizeUpdateManyMutationInput = {
   servings?: Prisma.StringFieldUpdateOperationsInput | string
   weightKg?: Prisma.FloatFieldUpdateOperationsInput | number
   basePrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  maxFillings?: Prisma.IntFieldUpdateOperationsInput | number
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
@@ -387,6 +409,7 @@ export type CakeSizeUncheckedUpdateManyInput = {
   servings?: Prisma.StringFieldUpdateOperationsInput | string
   weightKg?: Prisma.FloatFieldUpdateOperationsInput | number
   basePrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  maxFillings?: Prisma.IntFieldUpdateOperationsInput | number
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
@@ -408,6 +431,7 @@ export type CakeSizeCountOrderByAggregateInput = {
   servings?: Prisma.SortOrder
   weightKg?: Prisma.SortOrder
   basePrice?: Prisma.SortOrder
+  maxFillings?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   active?: Prisma.SortOrder
 }
@@ -415,6 +439,7 @@ export type CakeSizeCountOrderByAggregateInput = {
 export type CakeSizeAvgOrderByAggregateInput = {
   weightKg?: Prisma.SortOrder
   basePrice?: Prisma.SortOrder
+  maxFillings?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
 }
 
@@ -425,6 +450,7 @@ export type CakeSizeMaxOrderByAggregateInput = {
   servings?: Prisma.SortOrder
   weightKg?: Prisma.SortOrder
   basePrice?: Prisma.SortOrder
+  maxFillings?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   active?: Prisma.SortOrder
 }
@@ -436,6 +462,7 @@ export type CakeSizeMinOrderByAggregateInput = {
   servings?: Prisma.SortOrder
   weightKg?: Prisma.SortOrder
   basePrice?: Prisma.SortOrder
+  maxFillings?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   active?: Prisma.SortOrder
 }
@@ -443,6 +470,7 @@ export type CakeSizeMinOrderByAggregateInput = {
 export type CakeSizeSumOrderByAggregateInput = {
   weightKg?: Prisma.SortOrder
   basePrice?: Prisma.SortOrder
+  maxFillings?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
 }
 
@@ -525,6 +553,7 @@ export type CakeSizeCreateWithoutTenantInput = {
   servings: string
   weightKg: number
   basePrice: number
+  maxFillings?: number
   sortOrder?: number
   active?: boolean
   orders?: Prisma.OrderCreateNestedManyWithoutCakeSizeInput
@@ -536,6 +565,7 @@ export type CakeSizeUncheckedCreateWithoutTenantInput = {
   servings: string
   weightKg: number
   basePrice: number
+  maxFillings?: number
   sortOrder?: number
   active?: boolean
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutCakeSizeInput
@@ -576,6 +606,7 @@ export type CakeSizeScalarWhereInput = {
   servings?: Prisma.StringFilter<"CakeSize"> | string
   weightKg?: Prisma.FloatFilter<"CakeSize"> | number
   basePrice?: Prisma.FloatFilter<"CakeSize"> | number
+  maxFillings?: Prisma.IntFilter<"CakeSize"> | number
   sortOrder?: Prisma.IntFilter<"CakeSize"> | number
   active?: Prisma.BoolFilter<"CakeSize"> | boolean
 }
@@ -586,6 +617,7 @@ export type CakeSizeCreateWithoutOrdersInput = {
   servings: string
   weightKg: number
   basePrice: number
+  maxFillings?: number
   sortOrder?: number
   active?: boolean
   tenant: Prisma.TenantCreateNestedOneWithoutCakeSizesInput
@@ -598,6 +630,7 @@ export type CakeSizeUncheckedCreateWithoutOrdersInput = {
   servings: string
   weightKg: number
   basePrice: number
+  maxFillings?: number
   sortOrder?: number
   active?: boolean
 }
@@ -624,6 +657,7 @@ export type CakeSizeUpdateWithoutOrdersInput = {
   servings?: Prisma.StringFieldUpdateOperationsInput | string
   weightKg?: Prisma.FloatFieldUpdateOperationsInput | number
   basePrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  maxFillings?: Prisma.IntFieldUpdateOperationsInput | number
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   tenant?: Prisma.TenantUpdateOneRequiredWithoutCakeSizesNestedInput
@@ -636,6 +670,7 @@ export type CakeSizeUncheckedUpdateWithoutOrdersInput = {
   servings?: Prisma.StringFieldUpdateOperationsInput | string
   weightKg?: Prisma.FloatFieldUpdateOperationsInput | number
   basePrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  maxFillings?: Prisma.IntFieldUpdateOperationsInput | number
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
@@ -646,6 +681,7 @@ export type CakeSizeCreateManyTenantInput = {
   servings: string
   weightKg: number
   basePrice: number
+  maxFillings?: number
   sortOrder?: number
   active?: boolean
 }
@@ -656,6 +692,7 @@ export type CakeSizeUpdateWithoutTenantInput = {
   servings?: Prisma.StringFieldUpdateOperationsInput | string
   weightKg?: Prisma.FloatFieldUpdateOperationsInput | number
   basePrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  maxFillings?: Prisma.IntFieldUpdateOperationsInput | number
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   orders?: Prisma.OrderUpdateManyWithoutCakeSizeNestedInput
@@ -667,6 +704,7 @@ export type CakeSizeUncheckedUpdateWithoutTenantInput = {
   servings?: Prisma.StringFieldUpdateOperationsInput | string
   weightKg?: Prisma.FloatFieldUpdateOperationsInput | number
   basePrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  maxFillings?: Prisma.IntFieldUpdateOperationsInput | number
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   orders?: Prisma.OrderUncheckedUpdateManyWithoutCakeSizeNestedInput
@@ -678,6 +716,7 @@ export type CakeSizeUncheckedUpdateManyWithoutTenantInput = {
   servings?: Prisma.StringFieldUpdateOperationsInput | string
   weightKg?: Prisma.FloatFieldUpdateOperationsInput | number
   basePrice?: Prisma.FloatFieldUpdateOperationsInput | number
+  maxFillings?: Prisma.IntFieldUpdateOperationsInput | number
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
@@ -720,6 +759,7 @@ export type CakeSizeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   servings?: boolean
   weightKg?: boolean
   basePrice?: boolean
+  maxFillings?: boolean
   sortOrder?: boolean
   active?: boolean
   tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
@@ -734,6 +774,7 @@ export type CakeSizeSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   servings?: boolean
   weightKg?: boolean
   basePrice?: boolean
+  maxFillings?: boolean
   sortOrder?: boolean
   active?: boolean
   tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
@@ -746,6 +787,7 @@ export type CakeSizeSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   servings?: boolean
   weightKg?: boolean
   basePrice?: boolean
+  maxFillings?: boolean
   sortOrder?: boolean
   active?: boolean
   tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
@@ -758,11 +800,12 @@ export type CakeSizeSelectScalar = {
   servings?: boolean
   weightKg?: boolean
   basePrice?: boolean
+  maxFillings?: boolean
   sortOrder?: boolean
   active?: boolean
 }
 
-export type CakeSizeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "tenantId" | "name" | "servings" | "weightKg" | "basePrice" | "sortOrder" | "active", ExtArgs["result"]["cakeSize"]>
+export type CakeSizeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "tenantId" | "name" | "servings" | "weightKg" | "basePrice" | "maxFillings" | "sortOrder" | "active", ExtArgs["result"]["cakeSize"]>
 export type CakeSizeInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   tenant?: boolean | Prisma.TenantDefaultArgs<ExtArgs>
   orders?: boolean | Prisma.CakeSize$ordersArgs<ExtArgs>
@@ -788,6 +831,7 @@ export type $CakeSizePayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     servings: string
     weightKg: number
     basePrice: number
+    maxFillings: number
     sortOrder: number
     active: boolean
   }, ExtArgs["result"]["cakeSize"]>
@@ -1221,6 +1265,7 @@ export interface CakeSizeFieldRefs {
   readonly servings: Prisma.FieldRef<"CakeSize", 'String'>
   readonly weightKg: Prisma.FieldRef<"CakeSize", 'Float'>
   readonly basePrice: Prisma.FieldRef<"CakeSize", 'Float'>
+  readonly maxFillings: Prisma.FieldRef<"CakeSize", 'Int'>
   readonly sortOrder: Prisma.FieldRef<"CakeSize", 'Int'>
   readonly active: Prisma.FieldRef<"CakeSize", 'Boolean'>
 }

@@ -14,7 +14,12 @@ export async function GET(request: Request) {
       orderBy: { date: "asc" },
     });
 
-    return NextResponse.json({ blockedDates });
+    const workSchedule = await prisma.workSchedule.findMany({
+      where: { tenantId },
+      orderBy: { dayOfWeek: "asc" },
+    });
+
+    return NextResponse.json({ blockedDates, workSchedule });
   } catch (error) {
     console.error("[ERROR] Failed to fetch calendar:", error);
     return NextResponse.json({ error: "Erro ao buscar calendario" }, { status: 500 });
@@ -44,6 +49,26 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("[ERROR] Failed to block date:", error);
     return NextResponse.json({ error: "Erro ao bloquear data" }, { status: 500 });
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    const { tenantId, dayOfWeek, isOpen } = await request.json();
+    if (!tenantId || dayOfWeek === undefined) {
+      return NextResponse.json({ error: "tenantId e dayOfWeek obrigatorios" }, { status: 400 });
+    }
+
+    const schedule = await prisma.workSchedule.upsert({
+      where: { tenantId_dayOfWeek: { tenantId, dayOfWeek } },
+      update: { isOpen },
+      create: { tenantId, dayOfWeek, isOpen },
+    });
+
+    return NextResponse.json({ schedule });
+  } catch (error) {
+    console.error("[ERROR] Failed to update work schedule:", error);
+    return NextResponse.json({ error: "Erro ao atualizar horario" }, { status: 500 });
   }
 }
 

@@ -22,6 +22,7 @@ model Tenant {
   textColor         String   @default("#FFFFFF")
   adminPasswordHash String   @default("")
   maxOrdersPerDay   Int      @default(5)
+  minLeadDays       Int      @default(3)
   featuresConfig    String   @default("{}")
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -36,14 +37,15 @@ model Tenant {
 }
 
 model CakeSize {
-  id        String  @id @default(uuid())
-  tenantId  String
-  name      String
-  servings  String
-  weightKg  Float
-  basePrice Float
-  sortOrder Int     @default(0)
-  active    Boolean @default(true)
+  id          String  @id @default(uuid())
+  tenantId    String
+  name        String
+  servings    String
+  weightKg    Float
+  basePrice   Float
+  maxFillings Int     @default(2)
+  sortOrder   Int     @default(0)
+  active      Boolean @default(true)
 
   tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   orders Order[]

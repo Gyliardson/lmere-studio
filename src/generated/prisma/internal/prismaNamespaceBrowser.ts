@@ -89,6 +89,7 @@ export const TenantScalarFieldEnum = {
   textColor: 'textColor',
   adminPasswordHash: 'adminPasswordHash',
   maxOrdersPerDay: 'maxOrdersPerDay',
+  minLeadDays: 'minLeadDays',
   featuresConfig: 'featuresConfig',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -104,6 +105,7 @@ export const CakeSizeScalarFieldEnum = {
   servings: 'servings',
   weightKg: 'weightKg',
   basePrice: 'basePrice',
+  maxFillings: 'maxFillings',
   sortOrder: 'sortOrder',
   active: 'active'
 } as const

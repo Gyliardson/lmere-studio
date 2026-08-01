@@ -14,8 +14,7 @@ export async function GET(request: Request) {
       select: {
         id: true, slug: true, name: true, logoUrl: true, bannerUrl: true,
         whatsapp: true, pixKey: true, primaryColor: true, secondaryColor: true,
-        backgroundColor: true, buttonColor: true, textColor: true,
-        maxOrdersPerDay: true, featuresConfig: true,
+        maxOrdersPerDay: true, minLeadDays: true, featuresConfig: true,
       },
     });
 

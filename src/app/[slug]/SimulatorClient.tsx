@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import type { TenantFullData, SimulatorState, CakeFlavorData, AddonData, CakeSizeData } from "@/lib/types";
 import { calculateOrderTotal, calculateDeposit, formatCurrency } from "@/lib/pricing";
 import { buildWhatsAppMessage, openWhatsApp } from "@/lib/whatsapp";
-import { copyToClipboard, cn, getDateString, isDateBlocked, getDaysInMonth, getFirstDayOfMonth } from "@/lib/utils";
+import { copyToClipboard, cn, getDateString, isDateBlocked, getDaysInMonth, getFirstDayOfMonth, hexToHsl } from "@/lib/utils";
 import {
   Calendar, ChevronLeft, ChevronRight, Cake, Layers, Palette, Upload,
   ClipboardCheck, MessageCircle, Copy, Check, Star, Plus, Minus,
@@ -105,6 +105,9 @@ export function SimulatorClient({ slug }: { slug: string }) {
   const stepLabels = ["Data", "Tamanho", "Sabores", "Detalhes", "Resumo"];
 
   const style = {
+    "--brand-primary": hexToHsl(tenant.primaryColor || "#8B5CF6"),
+    "--brand-secondary": hexToHsl(tenant.secondaryColor || "#EC4899"),
+    "--brand-bg": hexToHsl(tenant.backgroundColor || "#0F0A1A"),
     "--tenant-primary": tenant.primaryColor,
     "--tenant-secondary": tenant.secondaryColor,
     "--tenant-bg": tenant.backgroundColor,
@@ -221,6 +224,8 @@ export function SimulatorClient({ slug }: { slug: string }) {
               selectedDough={state.dough}
               selectedFillings={state.fillings}
               selectedAddons={state.addons}
+              maxFillings={state.cakeSize?.maxFillings || 2}
+              showToast={showToast}
               onSelectDough={(d) => setState((s) => ({ ...s, dough: d }))}
               onToggleFilling={(f) =>
                 setState((s) => ({
@@ -535,9 +540,11 @@ function StepFlavors({
   selectedDough,
   selectedFillings,
   selectedAddons,
+  maxFillings = 2,
   onSelectDough,
   onToggleFilling,
   onToggleAddon,
+  showToast,
 }: {
   doughs: CakeFlavorData[];
   fillings: CakeFlavorData[];
@@ -545,10 +552,20 @@ function StepFlavors({
   selectedDough: CakeFlavorData | null;
   selectedFillings: CakeFlavorData[];
   selectedAddons: AddonData[];
-  onSelectDough: (d: CakeFlavorData) => void;
-  onToggleFilling: (f: CakeFlavorData) => void;
-  onToggleAddon: (a: AddonData) => void;
+  maxFillings?: number;
+  onSelectDough: (dough: CakeFlavorData) => void;
+  onToggleFilling: (filling: CakeFlavorData) => void;
+  onToggleAddon: (addon: AddonData) => void;
+  showToast: (msg: string) => void;
 }) {
+  const handleFillingClick = (filling: CakeFlavorData) => {
+    const isSelected = selectedFillings.some((f) => f.id === filling.id);
+    if (!isSelected && selectedFillings.length >= maxFillings) {
+      showToast(`Este tamanho permite no maximo ${maxFillings} recheio${maxFillings > 1 ? "s" : ""}.`);
+      return;
+    }
+    onToggleFilling(filling);
+  };
   return (
     <div className="space-y-8">
       {/* Dough */}
@@ -598,7 +615,7 @@ function StepFlavors({
           Escolha os Recheios
         </h2>
         <p className="text-white/50 text-sm mb-4">
-          Selecione um ou mais recheios ({selectedFillings.length} selecionado{selectedFillings.length !== 1 ? "s" : ""})
+          Selecione ate {maxFillings} recheio{maxFillings > 1 ? "s" : ""} ({selectedFillings.length}/{maxFillings} selecionado{selectedFillings.length !== 1 ? "s" : ""})
         </p>
 
         <div className="space-y-2">
@@ -607,7 +624,7 @@ function StepFlavors({
             return (
               <button
                 key={filling.id}
-                onClick={() => onToggleFilling(filling)}
+                onClick={() => handleFillingClick(filling)}
                 className={cn("selection-card w-full text-left", isSelected && "selected")}
                 id={`filling-${filling.id}`}
               >

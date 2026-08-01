@@ -14,6 +14,8 @@ const db = new Database(dbPath);
 db.pragma("journal_mode = WAL");
 
 function main() {
+  db.prepare(`DELETE FROM Tenant WHERE slug = 'doce-arte'`).run();
+
   const tenantId = uuid();
   const adminHash = bcryptjs.hashSync("admin123", 10);
 
@@ -46,18 +48,18 @@ function main() {
   );
 
   const sizes = [
-    { name: "Mini Bolo", servings: "5-8 pessoas", weightKg: 1.0, basePrice: 89.90, sortOrder: 0 },
-    { name: "Pequeno", servings: "10-15 pessoas", weightKg: 1.5, basePrice: 139.90, sortOrder: 1 },
-    { name: "Medio", servings: "20-25 pessoas", weightKg: 2.5, basePrice: 199.90, sortOrder: 2 },
-    { name: "Grande", servings: "30-40 pessoas", weightKg: 3.5, basePrice: 279.90, sortOrder: 3 },
+    { name: "Mini Bolo", servings: "5-8 pessoas", weightKg: 1.0, basePrice: 89.90, maxFillings: 1, sortOrder: 0 },
+    { name: "Pequeno", servings: "10-15 pessoas", weightKg: 1.5, basePrice: 139.90, maxFillings: 2, sortOrder: 1 },
+    { name: "Medio", servings: "20-25 pessoas", weightKg: 2.5, basePrice: 199.90, maxFillings: 2, sortOrder: 2 },
+    { name: "Grande", servings: "30-40 pessoas", weightKg: 3.5, basePrice: 279.90, maxFillings: 3, sortOrder: 3 },
   ];
 
   const insertSize = db.prepare(`
-    INSERT INTO CakeSize (id, tenantId, name, servings, weightKg, basePrice, sortOrder, active)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+    INSERT INTO CakeSize (id, tenantId, name, servings, weightKg, basePrice, maxFillings, sortOrder, active)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
   `);
   for (const s of sizes) {
-    insertSize.run(uuid(), tenantId, s.name, s.servings, s.weightKg, s.basePrice, s.sortOrder);
+    insertSize.run(uuid(), tenantId, s.name, s.servings, s.weightKg, s.basePrice, s.maxFillings, s.sortOrder);
   }
 
   const flavors = [

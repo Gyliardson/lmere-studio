@@ -12,6 +12,7 @@ export interface TenantData {
   buttonColor: string;
   textColor: string;
   maxOrdersPerDay: number;
+  minLeadDays: number;
   featuresConfig: FeaturesConfig;
 }
 
@@ -35,6 +36,7 @@ export interface CakeSizeData {
   servings: string;
   weightKg: number;
   basePrice: number;
+  maxFillings: number;
   sortOrder: number;
   active: boolean;
 }
@@ -114,3 +116,63 @@ export interface TenantFullData {
   blockedDates: BlockedDateData[];
   workSchedule: WorkScheduleData[];
 }
+
+export interface ColorPreset {
+  id: string;
+  name: string;
+  primaryColor: string;
+  secondaryColor: string;
+  backgroundColor: string;
+  buttonColor: string;
+}
+
+export const COLOR_PRESETS: ColorPreset[] = [
+  {
+    id: "velvet",
+    name: "Velvet Luxury",
+    primaryColor: "#8B5CF6",
+    secondaryColor: "#EC4899",
+    backgroundColor: "#0F0A1A",
+    buttonColor: "#8B5CF6",
+  },
+  {
+    id: "rose",
+    name: "Doce Rosê",
+    primaryColor: "#F43F5E",
+    secondaryColor: "#F59E0B",
+    backgroundColor: "#180A0F",
+    buttonColor: "#F43F5E",
+  },
+  {
+    id: "gourmet",
+    name: "Confeitaria Gourmet",
+    primaryColor: "#D97706",
+    secondaryColor: "#F59E0B",
+    backgroundColor: "#120D0A",
+    buttonColor: "#D97706",
+  },
+  {
+    id: "mint",
+    name: "Ateliê Minimalista",
+    primaryColor: "#10B981",
+    secondaryColor: "#06B6D4",
+    backgroundColor: "#061412",
+    buttonColor: "#10B981",
+  },
+  {
+    id: "serene",
+    name: "Pastel Chic",
+    primaryColor: "#3B82F6",
+    secondaryColor: "#8B5CF6",
+    backgroundColor: "#090D1A",
+    buttonColor: "#3B82F6",
+  },
+  {
+    id: "night",
+    name: "Noite Estrelada",
+    primaryColor: "#6366F1",
+    secondaryColor: "#D946EF",
+    backgroundColor: "#0B0B1E",
+    buttonColor: "#6366F1",
+  },
+];
