@@ -1,6 +1,6 @@
 # L'Mere Studio - マルチテナント ケーキ注文シミュレーター & CMS
 
-[![バージョン](https://img.shields.io/badge/バージョン-1.1.0-purple.svg)](CHANGELOG.md)
+[![バージョン](https://img.shields.io/badge/%E3%83%90%E3%83%BC%E3%82%B8%E3%83%A7%E3%83%B3-1.1.2-purple.svg)](CHANGELOG.md)
 [![Next.js](https://img.shields.io/badge/Next.js-16.2.12-black.svg)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.0.0-blue.svg)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
@@ -17,12 +17,10 @@ L'Mere Studioは、洋菓子店やオーダーメイドケーキデザイナー�
 ## デモンストレーション
 
 ### 顧客向け注文シミュレーター (モバイル版)
-https://github.com/user-attachments/assets/lmere-studio-mobile-demo.mp4
-*(GitHubに`assets/lmere-studio-mobile-demo.mp4`をアップロードすると、ここで動画が再生されます)*
+<video src="./assets/lmere-studio-mobile-demo.mp4" controls="controls" muted="muted" width="100%"></video>
 
 ### 店舗向けCMS管理画面 (デスクトップ版)
-https://github.com/user-attachments/assets/lmere-studio-desktop-demo.mp4
-*(GitHubに`assets/lmere-studio-desktop-demo.mp4`をアップロードすると、ここで動画が再生されます)*
+<video src="./assets/lmere-studio-desktop-demo.mp4" controls="controls" muted="muted" width="100%"></video>
 
 ## スクリーンショット
 
@@ -66,10 +64,13 @@ https://github.com/user-attachments/assets/lmere-studio-desktop-demo.mp4
 
 ```mermaid
 graph TD
-    User(["顧客"]) -->|"アクセス /[slug]"| Simulator["注文シミュレーター"]
-    Admin(["店舗管理者"]) -->|"アクセス /admin"| CMS["CMS管理画面"]
+    User(["顧客"])
+    Admin(["店舗管理者"])
 
     subgraph Frontend ["Next.js 16 App Router"]
+        Simulator["注文シミュレーター"]
+        CMS["CMS管理画面"]
+        
         Simulator --> Step1["1. カレンダー"]
         Simulator --> Step2["2. サイズ選択"]
         Simulator --> Step3["3. 味・トッピング"]
@@ -84,12 +85,21 @@ graph TD
     end
 
     subgraph Backend ["APIルート & データベース"]
-        Simulator --> API_Public["公開APIルート"]
-        CMS --> API_Admin["管理APIルート"]
-        API_Public --> Prisma["Prisma 7 ORM"]
+        API_Public["公開APIルート"]
+        API_Admin["管理APIルート"]
+        Prisma["Prisma 7 ORM"]
+        SQLite[("SQLite DB")]
+        
+        API_Public --> Prisma
         API_Admin --> Prisma
-        Prisma --> SQLite[("SQLite DB")]
+        Prisma --> SQLite
     end
+
+    User -->|"アクセス /[slug]"| Simulator
+    Admin -->|"アクセス /admin"| CMS
+
+    Simulator --> API_Public
+    CMS --> API_Admin
 ```
 
 ---

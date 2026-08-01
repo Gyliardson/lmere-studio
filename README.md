@@ -1,6 +1,6 @@
 # L'Mere Studio - Multi-Tenant Cake Order Simulator & CMS
 
-[![Version](https://img.shields.io/badge/version-1.1.1-purple.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.1.2-purple.svg)](CHANGELOG.md)
 [![Next.js](https://img.shields.io/badge/Next.js-16.2.12-black.svg)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.0.0-blue.svg)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
@@ -17,12 +17,10 @@ L'Mere Studio is a white-label, multi-tenant Web Application designed for artisa
 ## Demonstration
 
 ### Public Order Simulator (Mobile Flow)
-https://github.com/user-attachments/assets/lmere-studio-mobile-demo.mp4
-*(Upload the video `assets/lmere-studio-mobile-demo.mp4` to GitHub to render the video player here)*
+<video src="./assets/lmere-studio-mobile-demo.mp4" controls="controls" muted="muted" width="100%"></video>
 
 ### Admin CMS Dashboard (Desktop Flow)
-https://github.com/user-attachments/assets/lmere-studio-desktop-demo.mp4
-*(Upload the video `assets/lmere-studio-desktop-demo.mp4` to GitHub to render the video player here)*
+<video src="./assets/lmere-studio-desktop-demo.mp4" controls="controls" muted="muted" width="100%"></video>
 
 ## Screenshots
 
@@ -66,10 +64,13 @@ https://github.com/user-attachments/assets/lmere-studio-desktop-demo.mp4
 
 ```mermaid
 graph TD
-    User(["Customer"]) -->|"Visits /[slug]"| Simulator["Public Order Simulator"]
-    Admin(["Bakery Owner"]) -->|"Visits /admin"| CMS["Admin Dashboard CMS"]
+    User(["Customer"])
+    Admin(["Bakery Owner"])
 
     subgraph Frontend ["Next.js 16 App Router"]
+        Simulator["Public Order Simulator"]
+        CMS["Admin Dashboard CMS"]
+        
         Simulator --> Step1["1. Calendar"]
         Simulator --> Step2["2. Cake Size"]
         Simulator --> Step3["3. Flavors & Addons"]
@@ -84,12 +85,21 @@ graph TD
     end
 
     subgraph Backend ["API Routes & Database"]
-        Simulator --> API_Public["Public API Routes"]
-        CMS --> API_Admin["Admin API Routes"]
-        API_Public --> Prisma["Prisma 7 ORM"]
+        API_Public["Public API Routes"]
+        API_Admin["Admin API Routes"]
+        Prisma["Prisma 7 ORM"]
+        SQLite[("SQLite Database")]
+        
+        API_Public --> Prisma
         API_Admin --> Prisma
-        Prisma --> SQLite[("SQLite Database")]
+        Prisma --> SQLite
     end
+
+    User -->|"Visits /[slug]"| Simulator
+    Admin -->|"Visits /admin"| CMS
+
+    Simulator --> API_Public
+    CMS --> API_Admin
 ```
 
 ---

@@ -1,6 +1,6 @@
 # L'Mere Studio - Simulador de Encomendas & CMS Multi-Tenant para Confeiteiras
 
-[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.1.0-purple.svg)](CHANGELOG.md)
+[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.1.2-purple.svg)](CHANGELOG.md)
 [![Next.js](https://img.shields.io/badge/Next.js-16.2.12-black.svg)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.0.0-blue.svg)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
@@ -17,12 +17,10 @@ O L'Mere Studio é uma aplicação Web Multi-Tenant White-Label projetada para a
 ## Demonstração
 
 ### Simulador Público de Encomendas (Fluxo Mobile)
-https://github.com/user-attachments/assets/lmere-studio-mobile-demo.mp4
-*(Faça o upload do vídeo `assets/lmere-studio-mobile-demo.mp4` para o GitHub para renderizar o player de vídeo aqui)*
+<video src="./assets/lmere-studio-mobile-demo.mp4" controls="controls" muted="muted" width="100%"></video>
 
 ### Painel Administrativo CMS (Fluxo Desktop)
-https://github.com/user-attachments/assets/lmere-studio-desktop-demo.mp4
-*(Faça o upload do vídeo `assets/lmere-studio-desktop-demo.mp4` para o GitHub para renderizar o player de vídeo aqui)*
+<video src="./assets/lmere-studio-desktop-demo.mp4" controls="controls" muted="muted" width="100%"></video>
 
 ## Capturas de Tela
 
@@ -66,10 +64,13 @@ https://github.com/user-attachments/assets/lmere-studio-desktop-demo.mp4
 
 ```mermaid
 graph TD
-    User(["Cliente"]) -->|"Acessa /[slug]"| Simulator["Simulador Público"]
-    Admin(["Confeiteira / Admin"]) -->|"Acessa /admin"| CMS["Painel CMS Admin"]
+    User(["Cliente"])
+    Admin(["Confeiteira / Admin"])
 
     subgraph Frontend ["Next.js 16 App Router"]
+        Simulator["Simulador Público"]
+        CMS["Painel CMS Admin"]
+        
         Simulator --> Step1["1. Calendário"]
         Simulator --> Step2["2. Tamanho"]
         Simulator --> Step3["3. Sabores & Adicionais"]
@@ -84,12 +85,21 @@ graph TD
     end
 
     subgraph Backend ["Rotas API & Banco de Dados"]
-        Simulator --> API_Public["Rotas Públicas"]
-        CMS --> API_Admin["Rotas Administrativas"]
-        API_Public --> Prisma["Prisma 7 ORM"]
+        API_Public["Rotas Públicas"]
+        API_Admin["Rotas Administrativas"]
+        Prisma["Prisma 7 ORM"]
+        SQLite[("Banco SQLite")]
+        
+        API_Public --> Prisma
         API_Admin --> Prisma
-        Prisma --> SQLite[("Banco SQLite")]
+        Prisma --> SQLite
     end
+
+    User -->|"Acessa /[slug]"| Simulator
+    Admin -->|"Acessa /admin"| CMS
+
+    Simulator --> API_Public
+    CMS --> API_Admin
 ```
 
 ---

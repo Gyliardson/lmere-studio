@@ -1,6 +1,6 @@
 # L'Mere Studio - Simulador de Pedidos de Pasteles & CMS Multi-Tenant
 
-[![Versión](https://img.shields.io/badge/versión-1.1.0-purple.svg)](CHANGELOG.md)
+[![Versión](https://img.shields.io/badge/versi%C3%B3n-1.1.2-purple.svg)](CHANGELOG.md)
 [![Next.js](https://img.shields.io/badge/Next.js-16.2.12-black.svg)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.0.0-blue.svg)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
@@ -17,12 +17,10 @@ L'Mere Studio es una aplicación Web Multi-Tenant Marca Blanca diseñada para pa
 ## Demostración
 
 ### Simulador Público de Pedidos (Flujo Móvil)
-https://github.com/user-attachments/assets/lmere-studio-mobile-demo.mp4
-*(Sube el video `assets/lmere-studio-mobile-demo.mp4` a GitHub para mostrar el reproductor aquí)*
+<video src="./assets/lmere-studio-mobile-demo.mp4" controls="controls" muted="muted" width="100%"></video>
 
 ### Panel de Administración CMS (Flujo de Escritorio)
-https://github.com/user-attachments/assets/lmere-studio-desktop-demo.mp4
-*(Sube el video `assets/lmere-studio-desktop-demo.mp4` a GitHub para mostrar el reproductor aquí)*
+<video src="./assets/lmere-studio-desktop-demo.mp4" controls="controls" muted="muted" width="100%"></video>
 
 ## Capturas de Pantalla
 
@@ -66,10 +64,13 @@ https://github.com/user-attachments/assets/lmere-studio-desktop-demo.mp4
 
 ```mermaid
 graph TD
-    User(["Cliente"]) -->|"Accede a /[slug]"| Simulator["Simulador Público"]
-    Admin(["Repostero / Admin"]) -->|"Accede a /admin"| CMS["Panel CMS Admin"]
+    User(["Cliente"])
+    Admin(["Repostero / Admin"])
 
     subgraph Frontend ["Next.js 16 App Router"]
+        Simulator["Simulador Público"]
+        CMS["Panel CMS Admin"]
+        
         Simulator --> Step1["1. Calendario"]
         Simulator --> Step2["2. Tamaño"]
         Simulator --> Step3["3. Sabores y Extras"]
@@ -84,12 +85,21 @@ graph TD
     end
 
     subgraph Backend ["Rutas API y Base de Datos"]
-        Simulator --> API_Public["Rutas Públicas"]
-        CMS --> API_Admin["Rutas de Admin"]
-        API_Public --> Prisma["Prisma 7 ORM"]
+        API_Public["Rutas Públicas"]
+        API_Admin["Rutas de Admin"]
+        Prisma["Prisma 7 ORM"]
+        SQLite[("Base de Datos SQLite")]
+        
+        API_Public --> Prisma
         API_Admin --> Prisma
-        Prisma --> SQLite[("Base de Datos SQLite")]
+        Prisma --> SQLite
     end
+
+    User -->|"Accede a /[slug]"| Simulator
+    Admin -->|"Accede a /admin"| CMS
+
+    Simulator --> API_Public
+    CMS --> API_Admin
 ```
 
 ---
