@@ -14,6 +14,36 @@ L'Mere Studioは、洋菓子店やオーダーメイドケーキデザイナー�
 
 ---
 
+## デモンストレーション
+
+### 顧客向け注文シミュレーター (モバイル版)
+https://github.com/user-attachments/assets/lmere-studio-mobile-demo.mp4
+*(GitHubに`assets/lmere-studio-mobile-demo.mp4`をアップロードすると、ここで動画が再生されます)*
+
+### 店舗向けCMS管理画面 (デスクトップ版)
+https://github.com/user-attachments/assets/lmere-studio-desktop-demo.mp4
+*(GitHubに`assets/lmere-studio-desktop-demo.mp4`をアップロードすると、ここで動画が再生されます)*
+
+## スクリーンショット
+
+<details>
+<summary>ギャラリーを見る（クリックで展開）</summary>
+<br>
+
+**顧客フロー (モバイル)**
+| カレンダー & 店舗 | サイズ & 人数 | カスタマイズ詳細 |
+| :---: | :---: | :---: |
+| <img src="assets/01-mobile-storefront.png" width="250"> | <img src="assets/03-mobile-size-selected.png" width="250"> | <img src="assets/04-mobile-flavors-selected.png" width="250"> |
+
+**管理画面 (デスクトップ)**
+| 注文カンバン | メニュー管理 | ブランドカラー設定 |
+| :---: | :---: | :---: |
+| <img src="assets/08-desktop-admin-orders-kanban.png" width="250"> | <img src="assets/09-desktop-admin-menu.png" width="250"> | <img src="assets/11-desktop-admin-branding.png" width="250"> |
+
+</details>
+
+---
+
 ## 主な機能
 
 ### 顧客向け注文シミュレーター (`/[slug]`)

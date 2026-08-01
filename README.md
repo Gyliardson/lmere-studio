@@ -1,6 +1,6 @@
 # L'Mere Studio - Multi-Tenant Cake Order Simulator & CMS
 
-[![Version](https://img.shields.io/badge/version-1.1.0-purple.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.1.1-purple.svg)](CHANGELOG.md)
 [![Next.js](https://img.shields.io/badge/Next.js-16.2.12-black.svg)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.0.0-blue.svg)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
@@ -11,6 +11,36 @@
 [English](README.md) | [Português](README.pt-BR.md) | [日本語](README.ja.md) | [Español](README.es.md)
 
 L'Mere Studio is a white-label, multi-tenant Web Application designed for artisan bakeries, cake designers, and confectioneries. It provides an intuitive 5-step interactive cake order simulator for end customers and a self-service CMS Admin Dashboard for bakery owners.
+
+---
+
+## Demonstration
+
+### Public Order Simulator (Mobile Flow)
+https://github.com/user-attachments/assets/lmere-studio-mobile-demo.mp4
+*(Upload the video `assets/lmere-studio-mobile-demo.mp4` to GitHub to render the video player here)*
+
+### Admin CMS Dashboard (Desktop Flow)
+https://github.com/user-attachments/assets/lmere-studio-desktop-demo.mp4
+*(Upload the video `assets/lmere-studio-desktop-demo.mp4` to GitHub to render the video player here)*
+
+## Screenshots
+
+<details>
+<summary>Click to view Gallery</summary>
+<br>
+
+**Customer Flow (Mobile)**
+| Storefront & Calendar | Size & Portions | Flavors & Details |
+| :---: | :---: | :---: |
+| <img src="assets/01-mobile-storefront.png" width="250"> | <img src="assets/03-mobile-size-selected.png" width="250"> | <img src="assets/04-mobile-flavors-selected.png" width="250"> |
+
+**Admin Dashboard (Desktop)**
+| Order Kanban | Menu Editor | Brand Customizer |
+| :---: | :---: | :---: |
+| <img src="assets/08-desktop-admin-orders-kanban.png" width="250"> | <img src="assets/09-desktop-admin-menu.png" width="250"> | <img src="assets/11-desktop-admin-branding.png" width="250"> |
+
+</details>
 
 ---
 

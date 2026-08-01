@@ -14,6 +14,36 @@ L'Mere Studio es una aplicación Web Multi-Tenant Marca Blanca diseñada para pa
 
 ---
 
+## Demostración
+
+### Simulador Público de Pedidos (Flujo Móvil)
+https://github.com/user-attachments/assets/lmere-studio-mobile-demo.mp4
+*(Sube el video `assets/lmere-studio-mobile-demo.mp4` a GitHub para mostrar el reproductor aquí)*
+
+### Panel de Administración CMS (Flujo de Escritorio)
+https://github.com/user-attachments/assets/lmere-studio-desktop-demo.mp4
+*(Sube el video `assets/lmere-studio-desktop-demo.mp4` a GitHub para mostrar el reproductor aquí)*
+
+## Capturas de Pantalla
+
+<details>
+<summary>Haz clic para ver la Galería</summary>
+<br>
+
+**Flujo del Cliente (Móvil)**
+| Calendario y Tienda | Tamaño y Porciones | Sabores y Detalles |
+| :---: | :---: | :---: |
+| <img src="assets/01-mobile-storefront.png" width="250"> | <img src="assets/03-mobile-size-selected.png" width="250"> | <img src="assets/04-mobile-flavors-selected.png" width="250"> |
+
+**Panel de Administración (Escritorio)**
+| Kanban de Pedidos | Editor de Menú | Personalización de Marca |
+| :---: | :---: | :---: |
+| <img src="assets/08-desktop-admin-orders-kanban.png" width="250"> | <img src="assets/09-desktop-admin-menu.png" width="250"> | <img src="assets/11-desktop-admin-branding.png" width="250"> |
+
+</details>
+
+---
+
 ## Funcionalidades Principales
 
 ### Simulador Público de Pedidos (`/[slug]`)

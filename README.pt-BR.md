@@ -14,6 +14,36 @@ O L'Mere Studio é uma aplicação Web Multi-Tenant White-Label projetada para a
 
 ---
 
+## Demonstração
+
+### Simulador Público de Encomendas (Fluxo Mobile)
+https://github.com/user-attachments/assets/lmere-studio-mobile-demo.mp4
+*(Faça o upload do vídeo `assets/lmere-studio-mobile-demo.mp4` para o GitHub para renderizar o player de vídeo aqui)*
+
+### Painel Administrativo CMS (Fluxo Desktop)
+https://github.com/user-attachments/assets/lmere-studio-desktop-demo.mp4
+*(Faça o upload do vídeo `assets/lmere-studio-desktop-demo.mp4` para o GitHub para renderizar o player de vídeo aqui)*
+
+## Capturas de Tela
+
+<details>
+<summary>Clique para ver a Galeria</summary>
+<br>
+
+**Fluxo do Cliente (Mobile)**
+| Loja e Calendário | Tamanho e Porções | Sabores e Detalhes |
+| :---: | :---: | :---: |
+| <img src="assets/01-mobile-storefront.png" width="250"> | <img src="assets/03-mobile-size-selected.png" width="250"> | <img src="assets/04-mobile-flavors-selected.png" width="250"> |
+
+**Painel Admin (Desktop)**
+| Kanban de Pedidos | Editor de Cardápio | Personalizador de Marca |
+| :---: | :---: | :---: |
+| <img src="assets/08-desktop-admin-orders-kanban.png" width="250"> | <img src="assets/09-desktop-admin-menu.png" width="250"> | <img src="assets/11-desktop-admin-branding.png" width="250"> |
+
+</details>
+
+---
+
 ## Funcionalidades Principais
 
 ### Simulador Público de Encomendas (`/[slug]`)

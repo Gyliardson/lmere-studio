@@ -57,6 +57,8 @@ next-env.d.ts
 /coverage
 /test-results
 /playwright-report
+.tmp/
+.tmp/*
 task.md
 implementation_plan.md
 walkthrough.md

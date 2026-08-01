@@ -5,9 +5,13 @@ All notable changes to the L'Mere Studio project will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.0] - 2026-08-01
+## [1.1.1] - 2026-08-01
 
 ### Added
+- **Automated Media Generation**: Added a Playwright and FFmpeg pipeline (`scripts/record-demo.js` and `scripts/build-media.py`) for automated E2E testing recording, generating precise Mobile and Desktop demonstration videos with subtitles and background music.
+- **Documentation Media Gallery**: Updated multi-language READMEs with the new separated video demos and a comprehensive screenshot gallery for the Mobile Customer Flow and the Desktop Admin Flow.
+
+## [1.1.0] - 2026-08-01
 - **Dynamic Theme & Brand Color Engine**: Replaced build-time Tailwind color tokens with runtime `:root` CSS custom properties and `@theme inline` utilities, allowing instant preset switching and real-time color customizers.
 - **Custom Select Component (`CustomSelect`)**: Replaced native browser dropdowns in the Admin CMS with dark glassmorphism popovers with active state checkmarks and smooth transitions.
 - **Custom Confirm Modal (`ConfirmModal`)**: Replaced native browser `confirm()` popups with styled dark glassmorphism confirmation dialogs.
