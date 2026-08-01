@@ -706,6 +706,41 @@ function StepDetails({
   onChange: (updates: Partial<SimulatorState>) => void;
   allowUpload: boolean;
 }) {
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleFileProcess = (file: File) => {
+    if (!file.type.startsWith("image/")) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        onChange({ referenceImage: e.target.result as string });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFileProcess(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFileProcess(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-lg font-bold mb-1 flex items-center gap-2">
@@ -747,19 +782,75 @@ function StepDetails({
           <label className="block text-sm font-medium mb-2 text-white/80">
             Foto de Referencia (opcional)
           </label>
-          <div className="glass-card p-6 text-center border-2 border-dashed border-white/10 hover:border-brand-primary/30 transition-colors cursor-pointer">
-            <Upload className="w-8 h-8 text-white/30 mx-auto mb-2" />
-            <p className="text-sm text-white/50">Arraste uma imagem ou clique para enviar</p>
-            <p className="text-xs text-white/30 mt-1">PNG, JPG ate 5MB</p>
-            <input
-              type="url"
-              value={state.referenceImage || ""}
-              onChange={(e) => onChange({ referenceImage: e.target.value })}
-              placeholder="Ou cole a URL da imagem de referencia"
-              className="input-field mt-4 text-center text-xs"
-              id="input-reference-url"
-            />
-          </div>
+
+          {state.referenceImage ? (
+            <div className="glass-card p-4 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <img
+                  src={state.referenceImage}
+                  alt="Foto de referencia"
+                  className="w-16 h-16 rounded-lg object-cover border border-white/10 flex-shrink-0"
+                />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-white/90">Foto de referencia enviada</p>
+                  <p className="text-xs text-success flex items-center gap-1 mt-0.5">
+                    <Check className="w-3.5 h-3.5" /> Pronta para o pedido
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => onChange({ referenceImage: null })}
+                className="p-2 rounded-lg bg-error/15 text-error hover:bg-error/25 transition-colors text-xs flex items-center gap-1 flex-shrink-0"
+                id="btn-remove-photo"
+              >
+                <X className="w-4 h-4" />
+                Remover
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <label
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                className={cn(
+                  "glass-card p-6 text-center border-2 border-dashed transition-all cursor-pointer block",
+                  isDragging
+                    ? "border-brand-primary bg-brand-primary/10 scale-[1.01]"
+                    : "border-white/10 hover:border-brand-primary/40 hover:bg-white/5"
+                )}
+                id="dropzone-photo"
+              >
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  id="input-file-photo"
+                />
+                <Upload className="w-8 h-8 text-white/40 mx-auto mb-2" />
+                <p className="text-sm font-medium text-white/80">
+                  Clique aqui ou arraste uma foto para enviar
+                </p>
+                <p className="text-xs text-white/40 mt-1">Formatos suportados: PNG, JPG ou WEBP (ate 5MB)</p>
+              </label>
+
+              <div className="relative flex items-center justify-center my-2">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5" /></div>
+                <span className="relative px-3 text-[11px] text-white/30 bg-surface-900">ou insira o link</span>
+              </div>
+
+              <input
+                type="url"
+                value={state.referenceImage || ""}
+                onChange={(e) => onChange({ referenceImage: e.target.value || null })}
+                placeholder="Cole a URL da imagem de referencia (ex: https://...)"
+                className="input-field text-xs"
+                id="input-reference-url"
+              />
+            </div>
+          )}
         </div>
       )}
     </div>
