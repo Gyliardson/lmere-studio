@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Tenant {
+  id                String   @id @default(uuid())
+  slug              String   @unique
+  name              String
+  logoUrl           String   @default("")
+  bannerUrl         String   @default("")
+  whatsapp          String   @default("")
+  pixKey            String   @default("")
+  primaryColor      String   @default("#8B5CF6")
+  secondaryColor    String   @default("#EC4899")
+  backgroundColor   String   @default("#0F0A1A")
+  buttonColor       String   @default("#8B5CF6")
+  textColor         String   @default("#FFFFFF")
+  adminPasswordHash String   @default("")
+  maxOrdersPerDay   Int      @default(5)
+  featuresConfig    String   @default("{}")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  cakeSizes    CakeSize[]
+  cakeFlavors  CakeFlavor[]
+  addons       Addon[]
+  blockedDates BlockedDate[]
+  workSchedule WorkSchedule[]
+  orders       Order[]
+  customFields CustomField[]
+}
+
+model CakeSize {
+  id        String  @id @default(uuid())
+  tenantId  String
+  name      String
+  servings  String
+  weightKg  Float
+  basePrice Float
+  sortOrder Int     @default(0)
+  active    Boolean @default(true)
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@index([tenantId])
+}
+
+model CakeFlavor {
+  id              String  @id @default(uuid())
+  tenantId        String
+  name            String
+  type            String
+  additionalPrice Float   @default(0)
+  isSpecial       Boolean @default(false)
+  imageUrl        String  @default("")
+  active          Boolean @default(true)
+  sortOrder       Int     @default(0)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model Addon {
+  id          String  @id @default(uuid())
+  tenantId    String
+  name        String
+  description String  @default("")
+  price       Float
+  imageUrl    String  @default("")
+  active      Boolean @default(true)
+  sortOrder   Int     @default(0)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model BlockedDate {
+  id       String @id @default(uuid())
+  tenantId String
+  date     String
+  reason   String @default("Esgotado")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, date])
+  @@index([tenantId])
+}
+
+model WorkSchedule {
+  id        String  @id @default(uuid())
+  tenantId  String
+  dayOfWeek Int
+  isOpen    Boolean @default(true)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, dayOfWeek])
+  @@index([tenantId])
+}
+
+model Order {
+  id                String   @id @default(uuid())
+  tenantId          String
+  customerName      String
+  customerPhone     String
+  eventDate         String
+  cakeSizeId        String
+  flavorId          String
+  fillingIds        String   @default("[]")
+  addonIds          String   @default("[]")
+  referenceImageUrl String   @default("")
+  cakeMessage       String   @default("")
+  details           String   @default("")
+  subtotal          Float
+  depositAmount     Float
+  depositMode       String   @default("50_percent")
+  status            String   @default("pending")
+  createdAt         DateTime @default(now())
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  cakeSize CakeSize @relation(fields: [cakeSizeId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+}
+
+model CustomField {
+  id       String  @id @default(uuid())
+  tenantId String
+  label    String
+  type     String  @default("text")
+  required Boolean @default(false)
+  options  String  @default("[]")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}

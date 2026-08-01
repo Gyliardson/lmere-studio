@@ -1,0 +1,123 @@
+# L'Mere Studio - Simulador de Pedidos de Pasteles & CMS Multi-Tenant
+
+[![Versión](https://img.shields.io/badge/versi%C3%B3n-1.0.0-purple.svg)](CHANGELOG.md)
+[![Next.js](https://img.shields.io/badge/Next.js-16.2.12-black.svg)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.0.0-blue.svg)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-7.3.0-darkblue.svg)](https://www.prisma.io/)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.0-38bdf8.svg)](https://tailwindcss.com/)
+[![Licencia](https://img.shields.io/badge/Licencia-Propietaria-red.svg)](LICENSE)
+
+[English](README.md) | [Português](README.pt-BR.md) | [日本語](README.ja.md) | [Español](README.es.md)
+
+L'Mere Studio es una aplicación Web Multi-Tenant Marca Blanca diseñada para pastelerías artesanales, reposterías y diseñadores de pasteles. Proporciona un Simulador de Pedidos interactivo en 5 pasos para clientes y un Panel de Administración CMS autoservicio para los propietarios.
+
+---
+
+## Funcionalidades Principales
+
+### Simulador Público de Pedidos (`/[slug]`)
+- **Paso 1: Calendario del Evento**: Selección interactiva de fecha con validación automática de días bloqueados y tiempo mínimo de anticipación.
+- **Paso 2: Tamaño y Porciones**: Recomendación de peso y porciones (Mini, Pequeño, Mediano, Grande) con precio base.
+- **Paso 3: Masas, Rellenos y Adicionales**: Selección modular de masa, rellenos (únicos o múltiples), recargos por sabores especiales y complementos opcionales (toppers, empaques).
+- **Paso 4: Detalles de Personalización**: Mensaje para la placa del pastel, instrucciones especiales y enlace de foto de referencia.
+- **Paso 5: Resumen y Finalización**: Desglose de precios en tiempo real, cálculo automático de depósito (50%, 100% o solo cotización), copia de clave PIX en 1 clic y envío directo a WhatsApp.
+
+### Panel de Administración CMS (`/admin`)
+- **Gestión de Pedidos**: Control de estado tipo Kanban (Pendiente, Confirmado, Completado, Cancelado).
+- **Gestión del Menú**: CRUD completo para tamaños de pasteles, masas, rellenos, adicionales y precios.
+- **Control de Agenda**: Bloqueo y desbloqueo de fechas específicas en el calendario.
+- **Personalización de Marca**: Configuración visual en tiempo real de logos, banners, colores principales y temas de fondo.
+- **Configuraciones (Feature Flags)**: Interruptores para subir fotos, opciones de entrega y modos de pago de depósito.
+
+---
+
+## Arquitectura del Sistema
+
+```mermaid
+graph TD
+    User(["Cliente"]) -->|"Accede a /[slug]"| Simulator["Simulador Público"]
+    Admin(["Repostero / Admin"]) -->|"Accede a /admin"| CMS["Panel CMS Admin"]
+
+    subgraph Frontend ["Next.js 16 App Router"]
+        Simulator --> Step1["1. Calendario"]
+        Simulator --> Step2["2. Tamaño"]
+        Simulator --> Step3["3. Sabores y Extras"]
+        Simulator --> Step4["4. Detalles"]
+        Simulator --> Step5["5. Resumen y WhatsApp"]
+
+        CMS --> Orders["Kanban de Pedidos"]
+        CMS --> Menu["Gestión de Menú"]
+        CMS --> Schedule["Control de Agenda"]
+        CMS --> Brand["Marca y Colores"]
+        CMS --> Flags["Configuraciones"]
+    end
+
+    subgraph Backend ["Rutas API y Base de Datos"]
+        Simulator --> API_Public["Rutas Públicas"]
+        CMS --> API_Admin["Rutas de Admin"]
+        API_Public --> Prisma["Prisma 7 ORM"]
+        API_Admin --> Prisma
+        Prisma --> SQLite[("Base de Datos SQLite")]
+    end
+```
+
+---
+
+## Tecnologías Utilizadas
+
+| Dominio | Tecnología |
+| --- | --- |
+| Framework | Next.js 16 (App Router, Turbopack) |
+| Interfaz y Estilos | React 19, Tailwind CSS v4, Diseño Glassmorphism |
+| Iconos | Lucide React (Sin emojis en toda la app) |
+| Base de Datos | Prisma 7 ORM con `@prisma/adapter-better-sqlite3` |
+| Seguridad | Encriptación Bcrypt |
+| Lenguaje | TypeScript 5 (Modo Estricto) |
+
+---
+
+## Instalación y Configuración
+
+### Requisitos previos
+- Node.js 20.x o superior
+- npm 10.x o superior
+
+### Pasos de Instalación
+
+1. Clonar el repositorio:
+   ```bash
+   git clone https://github.com/usuario/lmere-studio.git
+   cd lmere-studio
+   ```
+
+2. Instalar dependencias:
+   ```bash
+   npm install
+   ```
+
+3. Configurar variables de entorno:
+   ```bash
+   cp .env.example .env
+   ```
+
+4. Ejecutar la base de datos y el script de carga inicial:
+   ```bash
+   npx prisma db push --config=prisma.config.ts
+   npm run db:seed
+   ```
+
+5. Iniciar el servidor de desarrollo:
+   ```bash
+   npm run dev
+   ```
+
+6. Abrir en el navegador:
+   - **Simulador Público**: `http://localhost:3000/doce-arte`
+   - **Panel de Admin**: `http://localhost:3000/admin` (Credenciales: Identificador: `doce-arte`, Contraseña: `admin123`)
+
+---
+
+## Licencia
+
+Este software está protegido por una **Licencia Propietaria (Todos los Derechos Reservados)**. El uso comercial, redistribución o copia de código sin autorización previa está estrictamente prohibido. Consulte el archivo [LICENSE](LICENSE) para más información.

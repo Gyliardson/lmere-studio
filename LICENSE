@@ -1,0 +1,18 @@
+Copyright (c) 2026 L'Mere Studio. All rights reserved.
+
+Proprietary Software License
+
+1. DEFINITIONS
+"Software" refers to the source code, architecture, design assets, database schemas, and documentation associated with the L'Mere Studio Multi-Tenant Order Simulator and CMS Platform.
+
+2. OWNERSHIP
+This Software is confidential and proprietary property of L'Mere Studio and its licensors. All right, title, and interest in and to the Software, including all intellectual property rights therein, remain exclusively with L'Mere Studio.
+
+3. RESTRICTIONS
+You may not:
+- Modify, adapt, translate, reverse engineer, decompile, or disassemble the Software.
+- Copy, redistribute, publish, host, sub-license, sell, rent, or lease the Software without explicit written permission from the copyright owner.
+- Remove or alter any proprietary notices or labels on the Software.
+
+4. DISCLAIMER OF WARRANTY
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
