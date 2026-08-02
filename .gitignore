@@ -62,3 +62,6 @@ next-env.d.ts
 task.md
 implementation_plan.md
 walkthrough.md
+
+.vercel
+.env*
