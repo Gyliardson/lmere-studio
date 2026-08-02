@@ -9,7 +9,7 @@ import {
   Menu as MenuIcon, AlertCircle, ExternalLink, Sliders, Calendar as CalendarIcon,
   CheckCircle2, XCircle, Upload, AlertTriangle
 } from "lucide-react";
-import { cn, hexToHsl } from "@/lib/utils";
+import { cn, hexToHsl, formatPhoneBR } from "@/lib/utils";
 import { formatCurrency } from "@/lib/pricing";
 import { COLOR_PRESETS, ColorPreset, FeaturesConfig } from "@/lib/types";
 
@@ -324,7 +324,7 @@ function ImageUploaderDropzone({
   };
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5 flex flex-col justify-between h-full">
       <label className="block text-xs font-medium text-white/70">{label}</label>
       <input
         ref={fileInputRef}
@@ -335,13 +335,15 @@ function ImageUploaderDropzone({
       />
 
       {value ? (
-        <div className="relative rounded-xl overflow-hidden border border-white/20 group bg-black/40">
+        <div className="relative rounded-xl overflow-hidden border border-white/20 group bg-black/40 h-28 sm:h-32 flex items-center justify-center">
           <img
             src={value}
             alt={label}
             className={cn(
-              "w-full object-cover",
-              aspect === "banner" ? "h-24 sm:h-32" : "h-24 sm:h-28"
+              "object-cover",
+              aspect === "banner"
+                ? "w-full h-full"
+                : "w-24 h-24 sm:w-28 sm:h-28 rounded-lg shadow-md border border-white/10"
             )}
           />
           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
@@ -368,7 +370,7 @@ function ImageUploaderDropzone({
           onDragLeave={() => setIsDragging(false)}
           onDrop={handleDrop}
           className={cn(
-            "border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-1.5",
+            "border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-1.5 h-28 sm:h-32",
             isDragging ? "border-brand-primary bg-brand-primary/10" : "border-white/15 bg-white/5 hover:border-white/30 hover:bg-white/10"
           )}
         >
@@ -1607,6 +1609,7 @@ function AdminBrandSection({ tenantId, showToast }: { tenantId: string; showToas
     secondaryColor: "#EC4899",
     backgroundColor: "#0F0A1A",
     buttonColor: "#8B5CF6",
+    shadowColor: "#8B5CF6",
     textColor: "#FFFFFF",
   });
   const [loading, setLoading] = useState(true);
@@ -1628,6 +1631,7 @@ function AdminBrandSection({ tenantId, showToast }: { tenantId: string; showToas
             secondaryColor: s.secondaryColor || "#EC4899",
             backgroundColor: s.backgroundColor || "#0F0A1A",
             buttonColor: s.buttonColor || "#8B5CF6",
+            shadowColor: s.shadowColor || s.primaryColor || "#8B5CF6",
             textColor: s.textColor || "#FFFFFF",
           });
         }
@@ -1647,6 +1651,7 @@ function AdminBrandSection({ tenantId, showToast }: { tenantId: string; showToas
       secondaryColor: preset.secondaryColor,
       backgroundColor: preset.backgroundColor,
       buttonColor: preset.buttonColor,
+      shadowColor: preset.shadowColor || preset.primaryColor,
     }));
     showToast(`Paleta "${preset.name}" aplicada!`);
   };
@@ -1708,7 +1713,7 @@ function AdminBrandSection({ tenantId, showToast }: { tenantId: string; showToas
           {/* Color Pickers */}
           <div className="glass-card p-5 space-y-4">
             <h2 className="font-bold text-base">Cores Personalizadas</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
               <div>
                 <label className="block text-xs font-medium text-white/70 mb-1">Cor Primaria</label>
                 <div className="flex items-center gap-2">
@@ -1742,6 +1747,14 @@ function AdminBrandSection({ tenantId, showToast }: { tenantId: string; showToas
               </div>
 
               <div>
+                <label className="block text-xs font-medium text-white/70 mb-1">Cor da Sombra / Brilho</label>
+                <div className="flex items-center gap-2">
+                  <input type="color" value={form.shadowColor} onChange={(e) => setForm({ ...form, shadowColor: e.target.value })} className="w-9 h-9 rounded cursor-pointer border-0 bg-transparent" />
+                  <input type="text" value={form.shadowColor} onChange={(e) => setForm({ ...form, shadowColor: e.target.value })} className="input-field text-xs font-mono" />
+                </div>
+              </div>
+
+              <div>
                 <label className="block text-xs font-medium text-white/70 mb-1">Cor do Texto</label>
                 <div className="flex items-center gap-2">
                   <input type="color" value={form.textColor} onChange={(e) => setForm({ ...form, textColor: e.target.value })} className="w-9 h-9 rounded cursor-pointer border-0 bg-transparent" />
@@ -1759,8 +1772,11 @@ function AdminBrandSection({ tenantId, showToast }: { tenantId: string; showToas
                 </span>
                 <button
                   type="button"
-                  className="px-4 py-2 rounded-lg text-xs font-bold text-white shadow-md transition-all"
-                  style={{ background: `linear-gradient(135deg, ${form.buttonColor}, ${form.secondaryColor})` }}
+                  className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all"
+                  style={{
+                    background: `linear-gradient(135deg, ${form.buttonColor}, ${form.secondaryColor})`,
+                    boxShadow: `0 4px 16px ${form.shadowColor}88`,
+                  }}
                 >
                   Botão de Exemplo
                 </button>
@@ -1771,7 +1787,7 @@ function AdminBrandSection({ tenantId, showToast }: { tenantId: string; showToas
           {/* Logo & Banner Dropzones */}
           <div className="glass-card p-5 space-y-4">
             <h2 className="font-bold text-base">Imagens do Ateliê (Logo & Banner)</h2>
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid sm:grid-cols-2 gap-4 items-stretch">
               <ImageUploaderDropzone
                 label="Logo do Atelie"
                 value={form.logoUrl}
@@ -1797,7 +1813,7 @@ function AdminBrandSection({ tenantId, showToast }: { tenantId: string; showToas
               </div>
               <div>
                 <label className="block text-xs font-medium text-white/70 mb-1">WhatsApp (com DDD)</label>
-                <input type="text" value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} className="input-field" placeholder="Ex: 5511999999999" />
+                <input type="text" value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: formatPhoneBR(e.target.value) })} className="input-field" placeholder="Ex: (11) 99999-9999" />
               </div>
               <div className="sm:col-span-2">
                 <label className="block text-xs font-medium text-white/70 mb-1">Chave PIX (E-mail, CPF, Telefone ou Aleatória)</label>

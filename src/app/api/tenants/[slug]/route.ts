@@ -34,6 +34,7 @@ export async function GET(
     return NextResponse.json({
       tenant: {
         ...publicTenant,
+        shadowColor: (publicTenant as Record<string, unknown>).shadowColor || publicTenant.primaryColor || "#8B5CF6",
         featuresConfig: JSON.parse(publicTenant.featuresConfig),
       },
       sizes: tenant.cakeSizes,

@@ -11,22 +11,18 @@ export async function GET(request: Request) {
 
     const tenant = await prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: {
-        id: true, slug: true, name: true, logoUrl: true, bannerUrl: true,
-        whatsapp: true, pixKey: true,
-        primaryColor: true, secondaryColor: true, backgroundColor: true,
-        buttonColor: true, textColor: true,
-        maxOrdersPerDay: true, minLeadDays: true, featuresConfig: true,
-      },
     });
 
     if (!tenant) {
       return NextResponse.json({ error: "Ateliê não encontrado" }, { status: 404 });
     }
 
+    const { adminPasswordHash, ...settings } = tenant;
+
     return NextResponse.json({
       settings: {
-        ...tenant,
+        ...settings,
+        shadowColor: (tenant as Record<string, unknown>).shadowColor || tenant.primaryColor || "#8B5CF6",
         featuresConfig: JSON.parse(tenant.featuresConfig),
       },
     });
@@ -49,13 +45,13 @@ export async function PUT(request: Request) {
     const allowedFields = [
       "name", "logoUrl", "bannerUrl", "whatsapp", "pixKey",
       "primaryColor", "secondaryColor", "backgroundColor",
-      "buttonColor", "textColor",
+      "buttonColor", "shadowColor", "textColor",
       "maxOrdersPerDay", "minLeadDays", "featuresConfig",
     ];
 
     const sanitized: Record<string, unknown> = {};
     for (const key of allowedFields) {
-      if (rawUpdates[key] !== undefined) {
+      if (rawUpdates[key] !== undefined && key !== "shadowColor") {
         if (key === "featuresConfig" && typeof rawUpdates[key] === "object") {
           sanitized[key] = JSON.stringify(rawUpdates[key]);
         } else {
@@ -64,19 +60,30 @@ export async function PUT(request: Request) {
       }
     }
 
+    if (rawUpdates.shadowColor) {
+      await prisma.$executeRawUnsafe(
+        `UPDATE Tenant SET shadowColor = ? WHERE id = ?`,
+        String(rawUpdates.shadowColor),
+        tenantId
+      );
+    }
+
     const tenant = await prisma.tenant.update({
       where: { id: tenantId },
       data: sanitized,
     });
 
+    const { adminPasswordHash, ...settings } = tenant;
+
     return NextResponse.json({
       settings: {
-        ...tenant,
+        ...settings,
+        shadowColor: String(rawUpdates.shadowColor || (tenant as Record<string, unknown>).shadowColor || tenant.primaryColor || "#8B5CF6"),
         featuresConfig: JSON.parse(tenant.featuresConfig),
       },
     });
   } catch (error) {
     console.error("[ERROR] Failed to update settings:", error);
-    return NextResponse.json({ error: "Erro ao atualizar configurações" }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
   }
 }

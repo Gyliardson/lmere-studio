@@ -1,6 +1,6 @@
 # L'Mere Studio - マルチテナント ケーキ注文シミュレーター & CMS
 
-[![バージョン](https://img.shields.io/badge/%E3%83%90%E3%83%BC%E3%82%B8%E3%83%A7%E3%83%B3-1.1.2-purple.svg)](CHANGELOG.md)
+[![バージョン](https://img.shields.io/badge/%E3%83%90%E3%83%BC%E3%82%B8%E3%83%A7%E3%83%B3-1.2.0-purple.svg)](CHANGELOG.md)
 [![Next.js](https://img.shields.io/badge/Next.js-16.2.12-black.svg)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.0.0-blue.svg)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)

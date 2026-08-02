@@ -10,6 +10,7 @@ export interface TenantData {
   secondaryColor: string;
   backgroundColor: string;
   buttonColor: string;
+  shadowColor: string;
   textColor: string;
   maxOrdersPerDay: number;
   minLeadDays: number;
@@ -124,6 +125,7 @@ export interface ColorPreset {
   secondaryColor: string;
   backgroundColor: string;
   buttonColor: string;
+  shadowColor: string;
 }
 
 export const COLOR_PRESETS: ColorPreset[] = [
@@ -134,6 +136,7 @@ export const COLOR_PRESETS: ColorPreset[] = [
     secondaryColor: "#EC4899",
     backgroundColor: "#0F0A1A",
     buttonColor: "#8B5CF6",
+    shadowColor: "#8B5CF6",
   },
   {
     id: "rose",
@@ -142,6 +145,7 @@ export const COLOR_PRESETS: ColorPreset[] = [
     secondaryColor: "#F59E0B",
     backgroundColor: "#180A0F",
     buttonColor: "#F43F5E",
+    shadowColor: "#F43F5E",
   },
   {
     id: "gourmet",
@@ -150,6 +154,7 @@ export const COLOR_PRESETS: ColorPreset[] = [
     secondaryColor: "#F59E0B",
     backgroundColor: "#120D0A",
     buttonColor: "#D97706",
+    shadowColor: "#D97706",
   },
   {
     id: "mint",
@@ -158,6 +163,7 @@ export const COLOR_PRESETS: ColorPreset[] = [
     secondaryColor: "#06B6D4",
     backgroundColor: "#061412",
     buttonColor: "#10B981",
+    shadowColor: "#10B981",
   },
   {
     id: "serene",
@@ -166,6 +172,7 @@ export const COLOR_PRESETS: ColorPreset[] = [
     secondaryColor: "#8B5CF6",
     backgroundColor: "#090D1A",
     buttonColor: "#3B82F6",
+    shadowColor: "#3B82F6",
   },
   {
     id: "night",
@@ -174,5 +181,6 @@ export const COLOR_PRESETS: ColorPreset[] = [
     secondaryColor: "#D946EF",
     backgroundColor: "#0B0B1E",
     buttonColor: "#6366F1",
+    shadowColor: "#6366F1",
   },
 ];

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import type { TenantFullData, SimulatorState, CakeFlavorData, AddonData, CakeSizeData } from "@/lib/types";
 import { calculateOrderTotal, calculateDeposit, formatCurrency } from "@/lib/pricing";
 import { buildWhatsAppMessage, openWhatsApp } from "@/lib/whatsapp";
-import { copyToClipboard, cn, getDateString, isDateBlocked, getDaysInMonth, getFirstDayOfMonth, hexToHsl } from "@/lib/utils";
+import { copyToClipboard, cn, getDateString, isDateBlocked, getDaysInMonth, getFirstDayOfMonth, hexToHsl, hexToRgb, formatPhoneBR, isValidPhoneBR } from "@/lib/utils";
 import {
   Calendar, ChevronLeft, ChevronRight, Cake, Layers, Palette, Upload,
   ClipboardCheck, MessageCircle, Copy, Check, Star, Plus, Minus,
@@ -65,7 +65,7 @@ export function SimulatorClient({ slug }: { slug: string }) {
       case 2: return !!state.cakeSize;
       case 3: return !!state.dough && state.fillings.length > 0;
       case 4: return true;
-      case 5: return !!state.customerName && !!state.customerPhone;
+      case 5: return !!state.customerName?.trim() && isValidPhoneBR(state.customerPhone);
       default: return false;
     }
   };
@@ -104,20 +104,35 @@ export function SimulatorClient({ slug }: { slug: string }) {
   const stepIcons = [Calendar, Cake, Palette, Upload, ClipboardCheck];
   const stepLabels = ["Data", "Tamanho", "Sabores", "Detalhes", "Resumo"];
 
+  const shadowVal = (tenant as unknown as { shadowColor?: string }).shadowColor || tenant.primaryColor || "#8B5CF6";
+  const primaryVal = tenant.primaryColor || "#8B5CF6";
+  const secondaryVal = tenant.secondaryColor || "#EC4899";
+  const buttonVal = tenant.buttonColor || primaryVal;
+
   const style = {
-    "--brand-primary": hexToHsl(tenant.primaryColor || "#8B5CF6"),
-    "--brand-secondary": hexToHsl(tenant.secondaryColor || "#EC4899"),
+    "--brand-primary": hexToHsl(primaryVal),
+    "--brand-secondary": hexToHsl(secondaryVal),
     "--brand-bg": hexToHsl(tenant.backgroundColor || "#0F0A1A"),
-    "--tenant-primary": tenant.primaryColor || "#8B5CF6",
-    "--tenant-secondary": tenant.secondaryColor || "#EC4899",
+    "--tenant-primary": primaryVal,
+    "--tenant-secondary": secondaryVal,
     "--tenant-bg": tenant.backgroundColor || "#0F0A1A",
-    "--tenant-button": tenant.buttonColor || tenant.primaryColor || "#8B5CF6",
+    "--tenant-button": buttonVal,
+    "--tenant-shadow": shadowVal,
     "--tenant-text": tenant.textColor || "#FFFFFF",
-    "--color-brand-primary": tenant.primaryColor || "#8B5CF6",
-    "--color-brand-secondary": tenant.secondaryColor || "#EC4899",
+    "--color-brand-primary": primaryVal,
+    "--color-brand-secondary": secondaryVal,
     "--color-brand-bg": tenant.backgroundColor || "#0F0A1A",
-    "--color-brand-button": tenant.buttonColor || tenant.primaryColor || "#8B5CF6",
+    "--color-brand-button": buttonVal,
+    "--color-brand-shadow": shadowVal,
     "--color-brand-text": tenant.textColor || "#FFFFFF",
+    "--tenant-primary-rgb": hexToRgb(primaryVal),
+    "--tenant-secondary-rgb": hexToRgb(secondaryVal),
+    "--tenant-button-rgb": hexToRgb(buttonVal),
+    "--tenant-shadow-rgb": hexToRgb(shadowVal),
+    "--color-brand-primary-rgb": hexToRgb(primaryVal),
+    "--color-brand-secondary-rgb": hexToRgb(secondaryVal),
+    "--color-brand-button-rgb": hexToRgb(buttonVal),
+    "--color-brand-shadow-rgb": hexToRgb(shadowVal),
   } as React.CSSProperties;
 
   return (
@@ -168,9 +183,10 @@ export function SimulatorClient({ slug }: { slug: string }) {
             return (
               <div key={i} className="flex flex-col items-center gap-1.5 flex-1">
                 <div
+                  style={isActive ? { boxShadow: `0 0 16px rgba(var(--color-brand-shadow-rgb), 0.5)` } : undefined}
                   className={cn(
                     "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300",
-                    isActive && "bg-brand-primary text-white shadow-lg shadow-brand-primary/30 scale-110",
+                    isActive && "bg-brand-primary text-white scale-110",
                     isCompleted && "bg-brand-primary/20 text-brand-primary",
                     !isActive && !isCompleted && "bg-white/5 text-white/30"
                   )}
@@ -589,32 +605,43 @@ function StepFlavors({
         </h2>
         <p className="text-white/50 text-sm mb-4">Selecione uma opção de massa</p>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 items-stretch">
           {doughs.map((dough) => {
             const isSelected = selectedDough?.id === dough.id;
             return (
               <button
                 key={dough.id}
                 onClick={() => onSelectDough(dough)}
-                className={cn("selection-card text-center", isSelected && "selected")}
+                className={cn(
+                  "selection-card text-center flex flex-col justify-between items-center h-full p-3.5",
+                  isSelected && "selected"
+                )}
                 id={`dough-${dough.id}`}
               >
-                {dough.imageUrl && (
-                  <img
-                    src={dough.imageUrl}
-                    alt={dough.name}
-                    className="w-full h-20 object-cover rounded-lg mb-2"
-                  />
+                {dough.imageUrl ? (
+                  <div className="w-full h-24 overflow-hidden rounded-lg mb-2 flex-shrink-0">
+                    <img
+                      src={dough.imageUrl}
+                      alt={dough.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-full h-24 bg-white/5 rounded-lg mb-2 flex items-center justify-center flex-shrink-0">
+                    <Cake className="w-8 h-8 text-white/20" />
+                  </div>
                 )}
-                <p className="font-medium text-sm">{dough.name}</p>
-                {dough.isSpecial && (
-                  <span className="badge badge-special text-[10px] mt-1">
-                    <Star className="w-2.5 h-2.5" /> Especial
-                  </span>
-                )}
-                {dough.additionalPrice > 0 && (
-                  <p className="text-xs text-brand-secondary mt-1">+{formatCurrency(dough.additionalPrice)}</p>
-                )}
+                <div className="flex-1 flex flex-col items-center justify-center space-y-1 w-full min-h-[3rem]">
+                  <p className="font-medium text-sm text-center leading-tight">{dough.name}</p>
+                  {dough.isSpecial && (
+                    <span className="badge badge-special text-[10px]">
+                      <Star className="w-2.5 h-2.5" /> Especial
+                    </span>
+                  )}
+                  {dough.additionalPrice > 0 && (
+                    <p className="text-xs text-brand-secondary">+{formatCurrency(dough.additionalPrice)}</p>
+                  )}
+                </div>
               </button>
             );
           })}
@@ -950,11 +977,22 @@ function StepSummary({
           <input
             type="tel"
             value={state.customerPhone}
-            onChange={(e) => onChange({ customerPhone: e.target.value })}
+            onChange={(e) => {
+              const formatted = formatPhoneBR(e.target.value);
+              onChange({ customerPhone: formatted });
+            }}
             placeholder="(11) 99999-9999"
-            className="input-field"
+            className={cn(
+              "input-field",
+              state.customerPhone && !isValidPhoneBR(state.customerPhone) && "border-error/60 focus:border-error"
+            )}
             id="input-phone"
           />
+          {state.customerPhone && !isValidPhoneBR(state.customerPhone) && (
+            <p className="text-xs text-error mt-1.5 flex items-center gap-1">
+              Informe um telefone/WhatsApp válido com DDD (ex: (11) 99999-9999)
+            </p>
+          )}
         </div>
       </div>
 

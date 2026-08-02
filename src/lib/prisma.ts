@@ -14,10 +14,13 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-const prisma = globalForPrisma.prisma ?? createPrismaClient();
-
+// Force fresh instance if schema updated
+let prismaInstance: PrismaClient;
 if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+  prismaInstance = createPrismaClient();
+  globalForPrisma.prisma = prismaInstance;
+} else {
+  prismaInstance = globalForPrisma.prisma ?? createPrismaClient();
 }
 
-export { prisma };
+export const prisma = prismaInstance;

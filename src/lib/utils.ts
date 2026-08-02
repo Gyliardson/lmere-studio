@@ -67,3 +67,37 @@ export function hexToHsl(hex: string): string {
 
   return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
 }
+
+export function hexToRgb(hex: string): string {
+  if (!hex || typeof hex !== "string") return "139, 92, 246";
+  let cleanHex = hex.replace("#", "");
+  if (cleanHex.length === 3) cleanHex = cleanHex.split("").map((c) => c + c).join("");
+  if (cleanHex.length !== 6) return "139, 92, 246";
+
+  const r = parseInt(cleanHex.substring(0, 2), 16);
+  const g = parseInt(cleanHex.substring(2, 4), 16);
+  const b = parseInt(cleanHex.substring(4, 6), 16);
+  return `${r}, ${g}, ${b}`;
+}
+
+export function formatPhoneBR(value: string): string {
+  if (!value) return "";
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (!digits) return "";
+  if (digits.length <= 2) {
+    return `(${digits}`;
+  }
+  if (digits.length <= 6) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  }
+  if (digits.length <= 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  }
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
+
+export function isValidPhoneBR(phone: string): boolean {
+  if (!phone) return false;
+  const digits = phone.replace(/\D/g, "");
+  return digits.length === 10 || digits.length === 11;
+}

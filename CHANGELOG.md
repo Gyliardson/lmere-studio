@@ -5,6 +5,19 @@ All notable changes to the L'Mere Studio project will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-08-02
+
+### Added
+- **Shadow Color Support**: Added `shadowColor` to tenants and theme presets, allowing customized glow and shadow effects distinct from primary and secondary colors.
+- **Phone Formatting**: Added robust Brazilian phone number formatting (`formatPhoneBR`) and validation (`isValidPhoneBR`) utilities.
+- **RGB Color Utilities**: Added `hexToRgb` utility to support dynamic CSS `rgba()` variable generation for brand shadow opacity and borders.
+
+### Changed
+- **Prisma Client Instantiation**: Improved Prisma client initialization in development environments to prevent connection exhaustion during hot-reloads.
+- **Dynamic CSS Variables**: Upgraded `globals.css` to consume RGB values of tenant colors, enabling fine-grained opacity control for shadows, scrollbars, and hover states.
+- **API Error Handling**: Refactored `PUT /api/admin/settings` error handling for better logging and type safety (`error instanceof Error`).
+- **Simulator Client**: Refactored component structure in Simulator Client to integrate new phone formatting utilities.
+
 ## [1.1.2] - 2026-08-01
 
 ### Fixed

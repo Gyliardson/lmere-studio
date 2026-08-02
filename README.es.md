@@ -1,6 +1,6 @@
 # L'Mere Studio - Simulador de Pedidos de Pasteles & CMS Multi-Tenant
 
-[![Versión](https://img.shields.io/badge/versi%C3%B3n-1.1.2-purple.svg)](CHANGELOG.md)
+[![Versión](https://img.shields.io/badge/versi%C3%B3n-1.2.0-purple.svg)](CHANGELOG.md)
 [![Next.js](https://img.shields.io/badge/Next.js-16.2.12-black.svg)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.0.0-blue.svg)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
