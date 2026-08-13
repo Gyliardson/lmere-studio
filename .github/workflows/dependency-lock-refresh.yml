@@ -28,11 +28,13 @@ jobs:
           npm uninstall @neondatabase/serverless @prisma/adapter-neon ws @types/ws --ignore-scripts
           npm install next@16.3.0 eslint-config-next@16.3.0 @prisma/adapter-pg@^7.9.1 pg --ignore-scripts
           npm install --save-dev @types/pg --ignore-scripts
+          npm audit fix --package-lock-only --ignore-scripts
 
       - name: Verify production dependency audit
         run: npm audit --omit=dev --audit-level=high
 
       - name: Upload refreshed dependency manifests
+        if: always()
         uses: actions/upload-artifact@v6
         with:
           name: refreshed-dependency-manifests
