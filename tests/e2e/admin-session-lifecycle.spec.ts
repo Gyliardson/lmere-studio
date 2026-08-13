@@ -22,7 +22,14 @@ test("admin logout revokes the cookie-backed session across reloads", async ({ c
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Gestão de Pedidos" })).toBeVisible();
 
-  await page.getByRole("button", { name: /^Sair/ }).click();
+  const viewport = page.viewportSize();
+  if (viewport && viewport.width < 768) {
+    await page.locator("header button").first().click();
+    await page.getByRole("button", { name: "Sair do Painel" }).click();
+  } else {
+    await page.getByRole("button", { name: "Sair", exact: true }).click();
+  }
+
   await expect(page.getByRole("heading", { name: "Painel Admin" })).toBeVisible();
 
   const cookies = await context.cookies("http://127.0.0.1:3000/api/admin/auth");
