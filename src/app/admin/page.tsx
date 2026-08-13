@@ -112,11 +112,8 @@ function CurrencyInput({
   label: string;
   required?: boolean;
 }) {
-  const [displayValue, setDisplayValue] = useState(String(value));
-
-  useEffect(() => {
-    setDisplayValue(String(value));
-  }, [value]);
+  const [draftValue, setDraftValue] = useState<string | null>(null);
+  const displayValue = draftValue ?? String(value);
 
   return (
     <div>
@@ -129,11 +126,11 @@ function CurrencyInput({
         onChange={(e) => {
           const raw = e.target.value;
           if (raw === "" || raw === "-") {
-            setDisplayValue(raw);
+            setDraftValue(raw);
             return;
           }
           if (/^\d*\.?\d*$/.test(raw)) {
-            setDisplayValue(raw);
+            setDraftValue(raw);
             const parsed = parseFloat(raw);
             if (!isNaN(parsed)) {
               onChange(parsed);
@@ -143,11 +140,11 @@ function CurrencyInput({
         onBlur={() => {
           const parsed = parseFloat(displayValue);
           if (isNaN(parsed) || displayValue === "") {
-            setDisplayValue("0");
             onChange(0);
           } else {
-            setDisplayValue(String(parsed));
+            onChange(parsed);
           }
+          setDraftValue(null);
         }}
         className="input-field"
         placeholder="0.00"
@@ -454,42 +451,14 @@ export default function AdminPage() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-1.5 text-white/80">Slug do Ateliê</label>
-              <input
-                type="text"
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                className="input-field"
-                placeholder="ex: doce-arte"
-                id="admin-slug"
-              />
+              <input type="text" value={slug} onChange={(e) => setSlug(e.target.value)} className="input-field" placeholder="ex: doce-arte" id="admin-slug" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1.5 text-white/80">Senha de Acesso</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-                className="input-field"
-                placeholder="Sua senha"
-                id="admin-password"
-              />
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleLogin()} className="input-field" placeholder="Sua senha" id="admin-password" />
             </div>
-
-            {authError && (
-              <div className="p-3 rounded-lg bg-error/15 text-error text-xs border border-error/20 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                {authError}
-              </div>
-            )}
-
-            <button
-              onClick={handleLogin}
-              className="btn-primary w-full py-3 mt-2 text-sm font-semibold flex items-center justify-center gap-2"
-              id="admin-login-btn"
-            >
-              Entrar no Painel
-            </button>
+            {authError && <div className="p-3 rounded-lg bg-error/15 text-error text-xs border border-error/20 flex items-center gap-2"><AlertCircle className="w-4 h-4 flex-shrink-0" />{authError}</div>}
+            <button onClick={handleLogin} className="btn-primary w-full py-3 mt-2 text-sm font-semibold flex items-center justify-center gap-2" id="admin-login-btn">Entrar no Painel</button>
           </div>
         </div>
       </div>
@@ -506,34 +475,13 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-dvh flex flex-col md:flex-row bg-surface-950 text-white overflow-x-hidden">
-      {toast && (
-        <div className="fixed top-4 right-4 z-50 glass-card px-4 py-3 border-l-4 border-brand-primary shadow-xl flex items-center gap-3 animate-fade-in">
-          <CheckCircle2 className="w-5 h-5 text-brand-primary" />
-          <span className="text-sm font-medium text-white">{toast}</span>
-        </div>
-      )}
-
+      {toast && <div className="fixed top-4 right-4 z-50 glass-card px-4 py-3 border-l-4 border-brand-primary shadow-xl flex items-center gap-3 animate-fade-in"><CheckCircle2 className="w-5 h-5 text-brand-primary" /><span className="text-sm font-medium text-white">{toast}</span></div>}
       <header className="md:hidden glass-card rounded-none border-b border-white/10 p-4 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setMobileDrawerOpen(!mobileDrawerOpen)}
-            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white"
-          >
-            <MenuIcon className="w-6 h-6" />
-          </button>
-          <div>
-            <h1 className="font-bold text-sm truncate max-w-[180px]">{tenantName}</h1>
-            <p className="text-[11px] text-white/50 capitalize">{sectionsList.find((s) => s.id === section)?.label}</p>
-          </div>
+          <button onClick={() => setMobileDrawerOpen(!mobileDrawerOpen)} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white"><MenuIcon className="w-6 h-6" /></button>
+          <div><h1 className="font-bold text-sm truncate max-w-[180px]">{tenantName}</h1><p className="text-[11px] text-white/50 capitalize">{sectionsList.find((s) => s.id === section)?.label}</p></div>
         </div>
-        <a
-          href={`/${tenantSlug}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs text-brand-primary hover:underline flex items-center gap-1 font-medium"
-        >
-          Simulador <ExternalLink className="w-3 h-3" />
-        </a>
+        <a href={`/${tenantSlug}`} target="_blank" rel="noopener noreferrer" className="text-xs text-brand-primary hover:underline flex items-center gap-1 font-medium">Simulador <ExternalLink className="w-3 h-3" /></a>
       </header>
 
       {mobileDrawerOpen && (
@@ -541,115 +489,20 @@ export default function AdminPage() {
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setMobileDrawerOpen(false)} />
           <aside className="relative w-72 bg-surface-900 border-r border-white/10 p-5 flex flex-col justify-between z-10 animate-fade-in">
             <div>
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="font-bold text-base">{tenantName}</h2>
-                  <p className="text-xs text-white/50">CMS Painel Admin</p>
-                </div>
-                <button onClick={() => setMobileDrawerOpen(false)} className="p-1 rounded-lg hover:bg-white/10">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <nav className="space-y-1">
-                {sectionsList.map((item) => {
-                  const Icon = item.icon;
-                  const active = section === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => {
-                        setSection(item.id);
-                        setMobileDrawerOpen(false);
-                      }}
-                      className={cn(
-                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left",
-                        active ? "bg-brand-primary text-white shadow-lg" : "text-white/70 hover:bg-white/5"
-                      )}
-                    >
-                      <Icon className="w-5 h-5" />
-                      {item.label}
-                    </button>
-                  );
-                })}
-              </nav>
+              <div className="flex items-center justify-between mb-6"><div><h2 className="font-bold text-base">{tenantName}</h2><p className="text-xs text-white/50">CMS Painel Admin</p></div><button onClick={() => setMobileDrawerOpen(false)} className="p-1 rounded-lg hover:bg-white/10"><X className="w-5 h-5" /></button></div>
+              <nav className="space-y-1">{sectionsList.map((item) => { const Icon = item.icon; const active = section === item.id; return <button key={item.id} onClick={() => { setSection(item.id); setMobileDrawerOpen(false); }} className={cn("w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left", active ? "bg-brand-primary text-white shadow-lg" : "text-white/70 hover:bg-white/5")}><Icon className="w-5 h-5" />{item.label}</button>; })}</nav>
             </div>
-
-            <div className="pt-4 border-t border-white/10 space-y-2">
-              <a
-                href={`/${tenantSlug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition-colors"
-              >
-                <ExternalLink className="w-4 h-4 text-brand-primary" />
-                Ver Simulador
-              </a>
-              <button
-                onClick={() => setAuthenticated(false)}
-                className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-error/80 hover:text-error rounded-lg hover:bg-error/10 transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-                Sair do Painel
-              </button>
-            </div>
+            <div className="pt-4 border-t border-white/10 space-y-2"><a href={`/${tenantSlug}`} target="_blank" rel="noopener noreferrer" className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition-colors"><ExternalLink className="w-4 h-4 text-brand-primary" />Ver Simulador</a><button onClick={() => setAuthenticated(false)} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-error/80 hover:text-error rounded-lg hover:bg-error/10 transition-colors"><LogOut className="w-4 h-4" />Sair do Painel</button></div>
           </aside>
         </div>
       )}
 
       <aside className="hidden md:flex w-64 bg-surface-900 border-r border-white/10 p-5 flex-col justify-between flex-shrink-0 min-h-dvh">
         <div>
-          <div className="flex items-center gap-3 mb-8 px-2">
-            <div className="w-10 h-10 rounded-xl bg-brand-primary/20 flex items-center justify-center border border-brand-primary/30">
-              <Sparkles className="w-5 h-5 text-brand-primary" />
-            </div>
-            <div>
-              <h2 className="font-bold text-base text-white truncate max-w-[140px]">{tenantName}</h2>
-              <p className="text-[11px] text-white/40">Painel Admin</p>
-            </div>
-          </div>
-
-          <nav className="space-y-1">
-            {sectionsList.map((item) => {
-              const Icon = item.icon;
-              const active = section === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setSection(item.id)}
-                  className={cn(
-                    "w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs sm:text-sm font-medium transition-all text-left",
-                    active
-                      ? "bg-brand-primary text-white shadow-lg shadow-brand-primary/30 font-semibold"
-                      : "text-white/60 hover:text-white hover:bg-white/5"
-                  )}
-                >
-                  <Icon className="w-4 h-4" />
-                  {item.label}
-                </button>
-              );
-            })}
-          </nav>
+          <div className="flex items-center gap-3 mb-8 px-2"><div className="w-10 h-10 rounded-xl bg-brand-primary/20 flex items-center justify-center border border-brand-primary/30"><Sparkles className="w-5 h-5 text-brand-primary" /></div><div><h2 className="font-bold text-base text-white truncate max-w-[140px]">{tenantName}</h2><p className="text-[11px] text-white/40">Painel Admin</p></div></div>
+          <nav className="space-y-1">{sectionsList.map((item) => { const Icon = item.icon; const active = section === item.id; return <button key={item.id} onClick={() => setSection(item.id)} className={cn("w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs sm:text-sm font-medium transition-all text-left", active ? "bg-brand-primary text-white shadow-lg shadow-brand-primary/30 font-semibold" : "text-white/60 hover:text-white hover:bg-white/5")}><Icon className="w-4 h-4" />{item.label}</button>; })}</nav>
         </div>
-
-        <div className="pt-4 border-t border-white/10 space-y-1">
-          <a
-            href={`/${tenantSlug}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition-colors font-medium"
-          >
-            <ExternalLink className="w-4 h-4 text-brand-primary" />
-            Ver Simulador
-          </a>
-          <button
-            onClick={() => setAuthenticated(false)}
-            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-error/80 hover:text-error rounded-lg hover:bg-error/10 transition-colors font-medium"
-          >
-            <LogOut className="w-4 h-4" />
-            Sair
-          </button>
-        </div>
+        <div className="pt-4 border-t border-white/10 space-y-1"><a href={`/${tenantSlug}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition-colors font-medium"><ExternalLink className="w-4 h-4 text-brand-primary" />Ver Simulador</a><button onClick={() => setAuthenticated(false)} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-error/80 hover:text-error rounded-lg hover:bg-error/10 transition-colors font-medium"><LogOut className="w-4 h-4" />Sair</button></div>
       </aside>
 
       <main className="flex-1 p-4 sm:p-8 max-w-6xl overflow-x-hidden min-w-0">
@@ -670,7 +523,6 @@ function AdminOrdersSection({ tenantId, showToast }: { tenantId: string; showToa
   const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
 
   const fetchOrders = useCallback(async () => {
-    setLoading(true);
     try {
       const res = await fetch(`/api/admin/orders?tenantId=${tenantId}`);
       if (res.ok) {
@@ -684,98 +536,23 @@ function AdminOrdersSection({ tenantId, showToast }: { tenantId: string; showToa
     }
   }, [tenantId, showToast]);
 
-  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+  useEffect(() => { void fetchOrders(); }, [fetchOrders]);
 
   const updateOrderStatus = async (orderId: string, status: string) => {
     try {
-      const res = await fetch("/api/admin/orders", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, status }),
-      });
-      if (res.ok) {
-        showToast("Status atualizado com sucesso!");
-        if (selectedOrder) setSelectedOrder({ ...selectedOrder, status });
-        fetchOrders();
-      }
-    } catch {
-      showToast("Erro ao atualizar status");
-    }
+      const res = await fetch("/api/admin/orders", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderId, status }) });
+      if (res.ok) { showToast("Status atualizado com sucesso!"); if (selectedOrder) setSelectedOrder({ ...selectedOrder, status }); void fetchOrders(); }
+    } catch { showToast("Erro ao atualizar status"); }
   };
 
   const filteredOrders = orders.filter((o) => (filter === "all" ? true : o.status === filter));
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Gestão de Pedidos</h1>
-          <p className="text-white/50 text-xs sm:text-sm">Acompanhe as encomendas recebidas</p>
-        </div>
-        <button onClick={fetchOrders} className="btn-secondary text-xs px-3 py-2 flex items-center gap-1.5">
-          <Clock className="w-3.5 h-3.5" /> Atualizar
-        </button>
-      </div>
-
-      <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap scrollbar-none pb-2 pt-1 -mx-4 px-4 sm:mx-0 sm:px-0">
-        {[
-          { id: "all", label: "Todos" },
-          { id: "pending", label: "Pendentes" },
-          { id: "confirmed", label: "Confirmados" },
-          { id: "completed", label: "Concluídos" },
-          { id: "cancelled", label: "Cancelados" },
-        ].map((tab) => (
-          <button key={tab.id} onClick={() => setFilter(tab.id)} className={cn("px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex-shrink-0", filter === tab.id ? "bg-brand-primary text-white shadow-md" : "glass-card text-white/60 hover:text-white") }>
-            {tab.label} ({orders.filter((o) => (tab.id === "all" ? true : o.status === tab.id)).length})
-          </button>
-        ))}
-      </div>
-
-      {loading ? (
-        <div className="glass-card p-12 text-center text-white/50">Carregando pedidos...</div>
-      ) : filteredOrders.length === 0 ? (
-        <div className="glass-card p-12 text-center text-white/40">
-          <ShoppingBag className="w-10 h-10 mx-auto mb-3 text-white/20" />
-          <p className="text-sm font-medium">Nenhum pedido encontrado nesta categoria</p>
-        </div>
-      ) : (
-        <div className="grid gap-3">
-          {filteredOrders.map((o) => (
-            <div key={o.id} onClick={() => setSelectedOrder(o)} className="glass-card p-4 hover:border-brand-primary/40 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="space-y-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-bold text-white text-base truncate">{o.customerName}</span>
-                  <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider", o.status === "pending" && "bg-amber-500/20 text-amber-300 border border-amber-500/30", o.status === "confirmed" && "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30", o.status === "completed" && "bg-purple-500/20 text-purple-300 border border-purple-500/30", o.status === "cancelled" && "bg-rose-500/20 text-rose-300 border border-rose-500/30")}>{o.status}</span>
-                </div>
-                <p className="text-xs text-white/60 flex items-center gap-2 flex-wrap"><span>Data: <strong>{o.eventDate}</strong></span><span>•</span><span>Whats: {o.customerPhone}</span></p>
-                {o.cakeSize && <p className="text-xs text-brand-primary/90 font-medium truncate">{o.cakeSize.name} ({o.cakeSize.servings})</p>}
-              </div>
-              <div className="flex items-center justify-between sm:flex-col sm:items-end gap-1 border-t sm:border-t-0 pt-2 sm:pt-0 border-white/5">
-                <span className="text-base font-bold text-white">{formatCurrency(o.subtotal)}</span>
-                <span className="text-[11px] text-white/50">Sinal: {formatCurrency(o.depositAmount)}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {selectedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="glass-card p-6 w-full max-w-lg max-h-[90dvh] overflow-y-auto space-y-5 border border-white/20">
-            <div className="flex items-start justify-between">
-              <div><h3 className="text-lg font-bold text-white">{selectedOrder.customerName}</h3><p className="text-xs text-white/50">{selectedOrder.customerPhone} • Evento: {selectedOrder.eventDate}</p></div>
-              <button onClick={() => setSelectedOrder(null)} className="p-1 rounded-lg hover:bg-white/10"><X className="w-5 h-5" /></button>
-            </div>
-            <div className="space-y-3 text-xs bg-white/5 p-4 rounded-xl border border-white/5">
-              {selectedOrder.cakeMessage && <div><span className="text-white/40 block mb-0.5">Mensagem da Placa:</span><span className="font-semibold text-brand-primary text-sm">&quot;{selectedOrder.cakeMessage}&quot;</span></div>}
-              {selectedOrder.details && <div><span className="text-white/40 block mb-0.5">Observacoes:</span><p className="text-white/80 whitespace-pre-wrap">{selectedOrder.details}</p></div>}
-              {selectedOrder.referenceImageUrl && <div><span className="text-white/40 block mb-1">Foto de Referencia:</span><img src={selectedOrder.referenceImageUrl} alt="Referencia" className="w-full max-h-48 object-cover rounded-lg border border-white/10" /></div>}
-            </div>
-            <div className="flex items-center justify-between border-t border-white/10 pt-4"><div><span className="text-xs text-white/50 block">Valor Total</span><span className="text-lg font-bold text-white">{formatCurrency(selectedOrder.subtotal)}</span></div><div className="text-right"><span className="text-xs text-white/50 block">Sinal (50%)</span><span className="text-sm font-bold text-brand-secondary">{formatCurrency(selectedOrder.depositAmount)}</span></div></div>
-            <div><label className="block text-xs font-medium text-white/70 mb-2">Alterar Status do Pedido</label><div className="grid grid-cols-2 gap-2">{[{ id: "pending", label: "Pendente" }, { id: "confirmed", label: "Confirmado" }, { id: "completed", label: "Concluído" }, { id: "cancelled", label: "Cancelado" }].map((st) => <button key={st.id} onClick={() => updateOrderStatus(selectedOrder.id, st.id)} className={cn("px-3 py-2 rounded-lg text-xs font-medium transition-all text-center", selectedOrder.status === st.id ? "bg-brand-primary text-white font-bold" : "bg-white/5 hover:bg-white/10 text-white/60")}>{st.label}</button>)}</div></div>
-          </div>
-        </div>
-      )}
+      <div className="flex items-center justify-between gap-3"><div><h1 className="text-xl sm:text-2xl font-bold">Gestão de Pedidos</h1><p className="text-white/50 text-xs sm:text-sm">Acompanhe as encomendas recebidas</p></div><button onClick={() => { setLoading(true); void fetchOrders(); }} className="btn-secondary text-xs px-3 py-2 flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> Atualizar</button></div>
+      <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap scrollbar-none pb-2 pt-1 -mx-4 px-4 sm:mx-0 sm:px-0">{[{ id: "all", label: "Todos" }, { id: "pending", label: "Pendentes" }, { id: "confirmed", label: "Confirmados" }, { id: "completed", label: "Concluídos" }, { id: "cancelled", label: "Cancelados" }].map((tab) => <button key={tab.id} onClick={() => setFilter(tab.id)} className={cn("px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex-shrink-0", filter === tab.id ? "bg-brand-primary text-white shadow-md" : "glass-card text-white/60 hover:text-white")}>{tab.label} ({orders.filter((o) => (tab.id === "all" ? true : o.status === tab.id)).length})</button>)}</div>
+      {loading ? <div className="glass-card p-12 text-center text-white/50">Carregando pedidos...</div> : filteredOrders.length === 0 ? <div className="glass-card p-12 text-center text-white/40"><ShoppingBag className="w-10 h-10 mx-auto mb-3 text-white/20" /><p className="text-sm font-medium">Nenhum pedido encontrado nesta categoria</p></div> : <div className="grid gap-3">{filteredOrders.map((o) => <div key={o.id} onClick={() => setSelectedOrder(o)} className="glass-card p-4 hover:border-brand-primary/40 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div className="space-y-1 min-w-0"><div className="flex items-center gap-2 flex-wrap"><span className="font-bold text-white text-base truncate">{o.customerName}</span><span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider", o.status === "pending" && "bg-amber-500/20 text-amber-300 border border-amber-500/30", o.status === "confirmed" && "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30", o.status === "completed" && "bg-purple-500/20 text-purple-300 border border-purple-500/30", o.status === "cancelled" && "bg-rose-500/20 text-rose-300 border border-rose-500/30")}>{o.status}</span></div><p className="text-xs text-white/60 flex items-center gap-2 flex-wrap"><span>Data: <strong>{o.eventDate}</strong></span><span>•</span><span>Whats: {o.customerPhone}</span></p>{o.cakeSize && <p className="text-xs text-brand-primary/90 font-medium truncate">{o.cakeSize.name} ({o.cakeSize.servings})</p>}</div><div className="flex items-center justify-between sm:flex-col sm:items-end gap-1 border-t sm:border-t-0 pt-2 sm:pt-0 border-white/5"><span className="text-base font-bold text-white">{formatCurrency(o.subtotal)}</span><span className="text-[11px] text-white/50">Sinal: {formatCurrency(o.depositAmount)}</span></div></div>)}</div>}
+      {selectedOrder && <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"><div className="glass-card p-6 w-full max-w-lg max-h-[90dvh] overflow-y-auto space-y-5 border border-white/20"><div className="flex items-start justify-between"><div><h3 className="text-lg font-bold text-white">{selectedOrder.customerName}</h3><p className="text-xs text-white/50">{selectedOrder.customerPhone} • Evento: {selectedOrder.eventDate}</p></div><button onClick={() => setSelectedOrder(null)} className="p-1 rounded-lg hover:bg-white/10"><X className="w-5 h-5" /></button></div><div className="space-y-3 text-xs bg-white/5 p-4 rounded-xl border border-white/5">{selectedOrder.cakeMessage && <div><span className="text-white/40 block mb-0.5">Mensagem da Placa:</span><span className="font-semibold text-brand-primary text-sm">&quot;{selectedOrder.cakeMessage}&quot;</span></div>}{selectedOrder.details && <div><span className="text-white/40 block mb-0.5">Observacoes:</span><p className="text-white/80 whitespace-pre-wrap">{selectedOrder.details}</p></div>}{selectedOrder.referenceImageUrl && <div><span className="text-white/40 block mb-1">Foto de Referencia:</span><img src={selectedOrder.referenceImageUrl} alt="Referencia" className="w-full max-h-48 object-cover rounded-lg border border-white/10" /></div>}</div><div className="flex items-center justify-between border-t border-white/10 pt-4"><div><span className="text-xs text-white/50 block">Valor Total</span><span className="text-lg font-bold text-white">{formatCurrency(selectedOrder.subtotal)}</span></div><div className="text-right"><span className="text-xs text-white/50 block">Sinal (50%)</span><span className="text-sm font-bold text-brand-secondary">{formatCurrency(selectedOrder.depositAmount)}</span></div></div><div><label className="block text-xs font-medium text-white/70 mb-2">Alterar Status do Pedido</label><div className="grid grid-cols-2 gap-2">{[{ id: "pending", label: "Pendente" }, { id: "confirmed", label: "Confirmado" }, { id: "completed", label: "Concluído" }, { id: "cancelled", label: "Cancelado" }].map((st) => <button key={st.id} onClick={() => updateOrderStatus(selectedOrder.id, st.id)} className={cn("px-3 py-2 rounded-lg text-xs font-medium transition-all text-center", selectedOrder.status === st.id ? "bg-brand-primary text-white font-bold" : "bg-white/5 hover:bg-white/10 text-white/60")}>{st.label}</button>)}</div></div></div></div>}
     </div>
   );
 }
@@ -788,35 +565,19 @@ function AdminMenuSection({ tenantId, showToast }: { tenantId: string; showToast
   const [confirmDialog, setConfirmDialog] = useState<{ isOpen: boolean; type: string; id: string; name: string }>({ isOpen: false, type: "", id: "", name: "" });
 
   const fetchMenu = useCallback(async () => {
-    setLoading(true);
     try {
       const res = await fetch(`/api/admin/menu?tenantId=${tenantId}`);
       if (res.ok) setMenu(await res.json());
     } catch { showToast("Erro ao carregar cardapio"); } finally { setLoading(false); }
   }, [tenantId, showToast]);
 
-  useEffect(() => { fetchMenu(); }, [fetchMenu]);
+  useEffect(() => { void fetchMenu(); }, [fetchMenu]);
 
   const sanitizeItemForApi = (modal: MenuEditModal, isNew: boolean) => {
     switch (modal.type) {
-      case "size": {
-        const item = modal.item;
-        const payload: Record<string, unknown> = { name: item.name, servings: item.servings, weightKg: Number(item.weightKg) || 0, basePrice: Number(item.basePrice) || 0, maxFillings: Number(item.maxFillings) || 1, sortOrder: Number(item.sortOrder) || 0, active: item.active !== false };
-        if (!isNew) payload.id = item.id;
-        return payload;
-      }
-      case "flavor": {
-        const item = modal.item;
-        const payload: Record<string, unknown> = { name: item.name, type: item.type || "RECHEIO", additionalPrice: Number(item.additionalPrice) || 0, isSpecial: Boolean(item.isSpecial), imageUrl: item.imageUrl || "", active: item.active !== false, sortOrder: Number(item.sortOrder) || 0 };
-        if (!isNew) payload.id = item.id;
-        return payload;
-      }
-      case "addon": {
-        const item = modal.item;
-        const payload: Record<string, unknown> = { name: item.name, description: item.description || "", price: Number(item.price) || 0, imageUrl: item.imageUrl || "", active: item.active !== false, sortOrder: Number(item.sortOrder) || 0 };
-        if (!isNew) payload.id = item.id;
-        return payload;
-      }
+      case "size": { const item = modal.item; const payload: Record<string, unknown> = { name: item.name, servings: item.servings, weightKg: Number(item.weightKg) || 0, basePrice: Number(item.basePrice) || 0, maxFillings: Number(item.maxFillings) || 1, sortOrder: Number(item.sortOrder) || 0, active: item.active !== false }; if (!isNew) payload.id = item.id; return payload; }
+      case "flavor": { const item = modal.item; const payload: Record<string, unknown> = { name: item.name, type: item.type || "RECHEIO", additionalPrice: Number(item.additionalPrice) || 0, isSpecial: Boolean(item.isSpecial), imageUrl: item.imageUrl || "", active: item.active !== false, sortOrder: Number(item.sortOrder) || 0 }; if (!isNew) payload.id = item.id; return payload; }
+      case "addon": { const item = modal.item; const payload: Record<string, unknown> = { name: item.name, description: item.description || "", price: Number(item.price) || 0, imageUrl: item.imageUrl || "", active: item.active !== false, sortOrder: Number(item.sortOrder) || 0 }; if (!isNew) payload.id = item.id; return payload; }
     }
   };
 
@@ -827,35 +588,17 @@ function AdminMenuSection({ tenantId, showToast }: { tenantId: string; showToast
     const sanitized = sanitizeItemForApi(editModal, isNew);
     const method = isNew ? "POST" : "PUT";
     const body = isNew ? { tenantId, itemType: editModal.type, ...sanitized } : { itemType: editModal.type, ...sanitized };
-    try {
-      const res = await fetch("/api/admin/menu", { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      if (res.ok) { showToast(isNew ? "Item criado com sucesso!" : "Item atualizado com sucesso!"); setEditModal(null); fetchMenu(); }
-      else { const errData = await res.json().catch(() => ({})); showToast(errData.error || `Erro ao salvar (${res.status})`); }
-    } catch { showToast("Erro ao salvar item"); }
+    try { const res = await fetch("/api/admin/menu", { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); if (res.ok) { showToast(isNew ? "Item criado com sucesso!" : "Item atualizado com sucesso!"); setEditModal(null); void fetchMenu(); } else { const errData = await res.json().catch(() => ({})); showToast(errData.error || `Erro ao salvar (${res.status})`); } } catch { showToast("Erro ao salvar item"); }
   };
 
   const requestDeleteItem = (type: string, id: string, name: string) => setConfirmDialog({ isOpen: true, type, id, name });
-  const executeDeleteItem = async () => {
-    const { type, id } = confirmDialog;
-    setConfirmDialog({ isOpen: false, type: "", id: "", name: "" });
-    try {
-      const res = await fetch(`/api/admin/menu?id=${id}&type=${type}`, { method: "DELETE" });
-      if (res.ok) { showToast("Item excluido com sucesso!"); fetchMenu(); } else showToast("Erro ao excluir item");
-    } catch { showToast("Erro ao excluir item"); }
-  };
-
-  const menuTabs: Array<{ id: MenuTab; label: string }> = [
-    { id: "sizes", label: `Tamanhos (${menu.sizes.length})` },
-    { id: "flavors", label: `Massas & Recheios (${menu.flavors.length})` },
-    { id: "addons", label: `Adicionais (${menu.addons.length})` },
-  ];
+  const executeDeleteItem = async () => { const { type, id } = confirmDialog; setConfirmDialog({ isOpen: false, type: "", id: "", name: "" }); try { const res = await fetch(`/api/admin/menu?id=${id}&type=${type}`, { method: "DELETE" }); if (res.ok) { showToast("Item excluido com sucesso!"); void fetchMenu(); } else showToast("Erro ao excluir item"); } catch { showToast("Erro ao excluir item"); } };
+  const menuTabs: Array<{ id: MenuTab; label: string }> = [{ id: "sizes", label: `Tamanhos (${menu.sizes.length})` }, { id: "flavors", label: `Massas & Recheios (${menu.flavors.length})` }, { id: "addons", label: `Adicionais (${menu.addons.length})` }];
 
   return (
     <div className="space-y-6">
       <div><h1 className="text-xl sm:text-2xl font-bold">Gestao do Cardapio</h1><p className="text-white/50 text-xs sm:text-sm">Configure os tamanhos, massas, recheios e adicionais oferecidos</p></div>
-      <div className="flex border-b border-white/10 gap-2 sm:gap-4 overflow-x-auto whitespace-nowrap scrollbar-none pb-1 -mx-4 px-4 sm:mx-0 sm:px-0">
-        {menuTabs.map((tab) => <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={cn("pb-3 text-xs sm:text-sm font-semibold transition-all relative flex-shrink-0", activeTab === tab.id ? "text-brand-primary" : "text-white/50 hover:text-white")}>{tab.label}{activeTab === tab.id && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-primary rounded-full" />}</button>)}
-      </div>
+      <div className="flex border-b border-white/10 gap-2 sm:gap-4 overflow-x-auto whitespace-nowrap scrollbar-none pb-1 -mx-4 px-4 sm:mx-0 sm:px-0">{menuTabs.map((tab) => <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={cn("pb-3 text-xs sm:text-sm font-semibold transition-all relative flex-shrink-0", activeTab === tab.id ? "text-brand-primary" : "text-white/50 hover:text-white")}>{tab.label}{activeTab === tab.id && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-primary rounded-full" />}</button>)}</div>
       {loading ? <div className="glass-card p-12 text-center text-white/50">Carregando cardapio...</div> : <div>
         {activeTab === "sizes" && <div className="space-y-4"><div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3"><p className="text-xs text-white/50">Defina fatias, peso, preco base e limite de recheios</p><button onClick={() => setEditModal({ type: "size", item: { name: "", servings: "10-15 pessoas", weightKg: 1.5, basePrice: 120, maxFillings: 2, sortOrder: menu.sizes.length, active: true } })} className="btn-primary text-xs flex items-center justify-center gap-1.5 py-2 px-3 self-start sm:self-auto"><Plus className="w-4 h-4" /> Novo Tamanho</button></div><div className="grid gap-3">{menu.sizes.map((s) => <div key={s.id} className="glass-card p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 overflow-hidden"><div className="space-y-1"><div className="flex items-center gap-2 flex-wrap"><span className="font-bold text-white text-base">{s.name}</span><span className="badge badge-primary text-[11px]">{s.servings}</span><span className="px-2 py-0.5 rounded-full bg-white/5 text-white/70 text-[11px]">Max {s.maxFillings} recheios</span></div><p className="text-xs text-white/50">Peso estimado: {s.weightKg} kg</p></div><div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 pt-2 sm:pt-0 border-white/5"><span className="text-base font-bold text-white">{formatCurrency(s.basePrice)}</span><div className="flex items-center gap-2"><button onClick={() => setEditModal({ type: "size", item: s })} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 hover:text-white" title="Editar"><Edit3 className="w-4 h-4" /></button><button onClick={() => requestDeleteItem("size", s.id, s.name)} className="p-2 rounded-lg bg-error/10 hover:bg-error/20 text-error" title="Excluir"><Trash2 className="w-4 h-4" /></button></div></div></div>)}</div></div>}
         {activeTab === "flavors" && <div className="space-y-4"><div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3"><p className="text-xs text-white/50">Cadastre massas e recheios com imagem e valores adicionais</p><button onClick={() => setEditModal({ type: "flavor", item: { name: "", type: "RECHEIO", additionalPrice: 0, isSpecial: false, imageUrl: "", active: true, sortOrder: menu.flavors.length } })} className="btn-primary text-xs flex items-center justify-center gap-1.5 py-2 px-3 self-start sm:self-auto"><Plus className="w-4 h-4" /> Novo Sabor</button></div><div className="grid sm:grid-cols-2 gap-3">{menu.flavors.map((f) => <div key={f.id} className="glass-card p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 overflow-hidden"><div className="flex items-center gap-3 min-w-0">{f.imageUrl ? <img src={f.imageUrl} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" /> : <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0"><UtensilsCrossed className="w-5 h-5 text-white/30" /></div>}<div className="min-w-0 flex-1"><div className="flex items-center gap-1.5 flex-wrap"><span className="font-semibold text-sm truncate text-white">{f.name}</span>{f.isSpecial && <span className="badge badge-special text-[9px]">Especial</span>}</div><p className="text-xs text-white/40">{f.type === "MASSA" ? "Massa" : "Recheio"}</p></div></div><div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/5"><span className="text-xs font-semibold text-brand-secondary">{f.additionalPrice > 0 ? `+${formatCurrency(f.additionalPrice)}` : "Grátis"}</span><div className="flex items-center gap-1.5"><button onClick={() => setEditModal({ type: "flavor", item: f })} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/80"><Edit3 className="w-3.5 h-3.5" /></button><button onClick={() => requestDeleteItem("flavor", f.id, f.name)} className="p-1.5 rounded-lg bg-error/10 hover:bg-error/20 text-error"><Trash2 className="w-3.5 h-3.5" /></button></div></div></div>)}</div></div>}
@@ -868,7 +611,6 @@ function AdminMenuSection({ tenantId, showToast }: { tenantId: string; showToast
         {editModal.type === "addon" && <div className="space-y-3"><div><label className="block text-xs font-medium text-white/70 mb-1">Nome do Adicional</label><input type="text" required value={editModal.item.name} onChange={(e) => setEditModal({ ...editModal, item: { ...editModal.item, name: e.target.value } })} className="input-field" placeholder="Ex: Topo de Bolo Personalizado" /></div><ImageUploaderDropzone label="Imagem do Adicional (Opcional)" value={editModal.item.imageUrl || ""} onChange={(url) => setEditModal({ ...editModal, item: { ...editModal.item, imageUrl: url } })} aspect="square" /><div><label className="block text-xs font-medium text-white/70 mb-1">Descricao</label><input type="text" value={editModal.item.description} onChange={(e) => setEditModal({ ...editModal, item: { ...editModal.item, description: e.target.value } })} className="input-field" placeholder="Ex: Topo em acrilico com nome" /></div><CurrencyInput label="Preco (R$)" value={editModal.item.price} onChange={(val) => setEditModal({ ...editModal, item: { ...editModal.item, price: val } })} required /></div>}
         <div className="pt-2 flex justify-end gap-2"><button type="button" onClick={() => setEditModal(null)} className="btn-secondary text-xs">Cancelar</button><button type="submit" className="btn-primary text-xs font-semibold">Salvar Alteracoes</button></div>
       </form></div>}
-
       <ConfirmModal isOpen={confirmDialog.isOpen} title="Excluir Item" message={`Tem certeza que deseja excluir "${confirmDialog.name}"? Esta acao nao pode ser desfeita.`} confirmLabel="Sim, Excluir" cancelLabel="Cancelar" variant="danger" onConfirm={executeDeleteItem} onCancel={() => setConfirmDialog({ isOpen: false, type: "", id: "", name: "" })} />
     </div>
   );
@@ -882,12 +624,12 @@ function AdminCalendarSection({ tenantId, showToast }: { tenantId: string; showT
   const [newReason, setNewReason] = useState("Agenda Lotada");
   const daysName = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
 
-  const fetchCalendar = useCallback(async () => { setLoading(true); try { const res = await fetch(`/api/admin/calendar?tenantId=${tenantId}`); if (res.ok) { const data = await res.json(); setBlockedDates(data.blockedDates || []); setWorkSchedule(data.workSchedule || []); } } catch { showToast("Erro ao carregar agenda"); } finally { setLoading(false); } }, [tenantId, showToast]);
-  useEffect(() => { fetchCalendar(); }, [fetchCalendar]);
+  const fetchCalendar = useCallback(async () => { try { const res = await fetch(`/api/admin/calendar?tenantId=${tenantId}`); if (res.ok) { const data = await res.json(); setBlockedDates(data.blockedDates || []); setWorkSchedule(data.workSchedule || []); } } catch { showToast("Erro ao carregar agenda"); } finally { setLoading(false); } }, [tenantId, showToast]);
+  useEffect(() => { void fetchCalendar(); }, [fetchCalendar]);
 
-  const toggleDayOpen = async (dayOfWeek: number, currentOpen: boolean) => { try { const res = await fetch("/api/admin/calendar", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tenantId, dayOfWeek, isOpen: !currentOpen }) }); if (res.ok) { showToast("Horario atualizado!"); fetchCalendar(); } } catch { showToast("Erro ao atualizar horario"); } };
-  const handleBlockDate = async () => { if (!newDate) return; try { const res = await fetch("/api/admin/calendar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tenantId, date: newDate, reason: newReason }) }); if (res.ok) { showToast("Data bloqueada com sucesso!"); setNewDate(""); fetchCalendar(); } else { const d = await res.json(); showToast(d.error || "Erro ao bloquear data"); } } catch { showToast("Erro ao bloquear data"); } };
-  const handleUnblockDate = async (id: string) => { try { const res = await fetch(`/api/admin/calendar?id=${id}`, { method: "DELETE" }); if (res.ok) { showToast("Data desbloqueada!"); fetchCalendar(); } } catch { showToast("Erro ao desbloquear data"); } };
+  const toggleDayOpen = async (dayOfWeek: number, currentOpen: boolean) => { try { const res = await fetch("/api/admin/calendar", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tenantId, dayOfWeek, isOpen: !currentOpen }) }); if (res.ok) { showToast("Horario atualizado!"); void fetchCalendar(); } } catch { showToast("Erro ao atualizar horario"); } };
+  const handleBlockDate = async () => { if (!newDate) return; try { const res = await fetch("/api/admin/calendar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tenantId, date: newDate, reason: newReason }) }); if (res.ok) { showToast("Data bloqueada com sucesso!"); setNewDate(""); void fetchCalendar(); } else { const d = await res.json(); showToast(d.error || "Erro ao bloquear data"); } } catch { showToast("Erro ao bloquear data"); } };
+  const handleUnblockDate = async (id: string) => { try { const res = await fetch(`/api/admin/calendar?id=${id}`, { method: "DELETE" }); if (res.ok) { showToast("Data desbloqueada!"); void fetchCalendar(); } } catch { showToast("Erro ao desbloquear data"); } };
 
   return <div className="space-y-8"><div><h1 className="text-xl sm:text-2xl font-bold">Agenda & Regras de Funcionamento</h1><p className="text-white/50 text-xs sm:text-sm">Gerencie os dias de atendimento e bloqueie datas lotadas</p></div>{loading ? <div className="glass-card p-12 text-center text-white/50">Carregando configuracoes da agenda...</div> : <div className="grid md:grid-cols-2 gap-6"><div className="glass-card p-5 space-y-4"><div className="flex items-center gap-2"><CalendarIcon className="w-5 h-5 text-brand-primary" /><h2 className="font-bold text-base">Dias de Funcionamento Semanal</h2></div><p className="text-xs text-white/50">Marque os dias em que a confeitaria atende pedidos</p><div className="space-y-2">{[0,1,2,3,4,5,6].map((dayIdx) => { const item = workSchedule.find((w) => w.dayOfWeek === dayIdx); const isOpen = item ? item.isOpen : true; return <div key={dayIdx} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5"><span className="text-sm font-medium">{daysName[dayIdx]}</span><button onClick={() => toggleDayOpen(dayIdx, isOpen)} className={cn("px-3 py-1 rounded-full text-xs font-semibold transition-all", isOpen ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-rose-500/20 text-rose-300 border border-rose-500/30")}>{isOpen ? "Aberto" : "Fechado"}</button></div>; })}</div></div><div className="glass-card p-5 space-y-4"><div className="flex items-center gap-2"><Ban className="w-5 h-5 text-brand-secondary" /><h2 className="font-bold text-base">Bloquear Data Específica</h2></div><p className="text-xs text-white/50">Bloqueie datas para feriados, folgas ou quando a agenda estiver cheia</p><div className="space-y-3 pt-2"><div><label className="block text-xs font-medium text-white/70 mb-1">Selecione a Data</label><div className="flex gap-2 items-center"><input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} className="input-field text-xs flex-1" /><button type="button" onClick={() => setNewDate(new Date().toISOString().split("T")[0])} className="btn-secondary text-[11px] py-2 px-2.5 flex-shrink-0">Hoje</button><button type="button" onClick={() => { const tmr = new Date(); tmr.setDate(tmr.getDate()+1); setNewDate(tmr.toISOString().split("T")[0]); }} className="btn-secondary text-[11px] py-2 px-2.5 flex-shrink-0">Amanhã</button></div></div><CustomSelect label="Motivo do Bloqueio" value={newReason} onChange={setNewReason} options={[{ value: "Agenda Lotada", label: "Agenda Lotada / Esgotado" }, { value: "Feriado", label: "Feriado Nacional / Municipal" }, { value: "Folga / Manutencao", label: "Folga do Ateliê / Manutenção" }, { value: "Ferias Coletivas", label: "Férias Coletivas" }]} /><button onClick={handleBlockDate} disabled={!newDate} className="btn-primary w-full py-2.5 text-xs font-semibold flex items-center justify-center gap-1.5 mt-2"><Plus className="w-4 h-4" /> Bloquear Data</button></div><div className="pt-4 border-t border-white/10 space-y-2"><h3 className="text-xs font-bold text-white/70">Datas Bloqueadas ({blockedDates.length})</h3>{blockedDates.length === 0 ? <p className="text-xs text-white/40">Nenhuma data bloqueada manualmente.</p> : <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">{blockedDates.map((b) => <div key={b.id} className="flex items-center justify-between p-2 rounded-lg bg-white/5 text-xs"><div><span className="font-semibold text-white">{b.date}</span><span className="text-white/50 ml-2">({b.reason})</span></div><button onClick={() => handleUnblockDate(b.id)} className="p-1 text-error hover:bg-error/10 rounded"><Trash2 className="w-3.5 h-3.5" /></button></div>)}</div>}</div></div></div>}</div>;
 }
@@ -895,7 +637,7 @@ function AdminCalendarSection({ tenantId, showToast }: { tenantId: string; showT
 function AdminBrandSection({ tenantId, showToast }: { tenantId: string; showToast: (m: string) => void }) {
   const [form, setForm] = useState({ name: "", whatsapp: "", pixKey: "", logoUrl: "", bannerUrl: "", primaryColor: "#8B5CF6", secondaryColor: "#EC4899", backgroundColor: "#0F0A1A", buttonColor: "#8B5CF6", shadowColor: "#8B5CF6", textColor: "#FFFFFF" });
   const [loading, setLoading] = useState(true);
-  useEffect(() => { async function load() { try { const res = await fetch(`/api/admin/settings?tenantId=${tenantId}`); if (res.ok) { const data = await res.json(); const s = data.settings; setForm({ name: s.name || "", whatsapp: s.whatsapp || "", pixKey: s.pixKey || "", logoUrl: s.logoUrl || "", bannerUrl: s.bannerUrl || "", primaryColor: s.primaryColor || "#8B5CF6", secondaryColor: s.secondaryColor || "#EC4899", backgroundColor: s.backgroundColor || "#0F0A1A", buttonColor: s.buttonColor || "#8B5CF6", shadowColor: s.shadowColor || s.primaryColor || "#8B5CF6", textColor: s.textColor || "#FFFFFF" }); } } catch { showToast("Erro ao carregar marca"); } finally { setLoading(false); } } load(); }, [tenantId, showToast]);
+  useEffect(() => { async function load() { try { const res = await fetch(`/api/admin/settings?tenantId=${tenantId}`); if (res.ok) { const data = await res.json(); const s = data.settings; setForm({ name: s.name || "", whatsapp: s.whatsapp || "", pixKey: s.pixKey || "", logoUrl: s.logoUrl || "", bannerUrl: s.bannerUrl || "", primaryColor: s.primaryColor || "#8B5CF6", secondaryColor: s.secondaryColor || "#EC4899", backgroundColor: s.backgroundColor || "#0F0A1A", buttonColor: s.buttonColor || "#8B5CF6", shadowColor: s.shadowColor || s.primaryColor || "#8B5CF6", textColor: s.textColor || "#FFFFFF" }); } } catch { showToast("Erro ao carregar marca"); } finally { setLoading(false); } } void load(); }, [tenantId, showToast]);
   const applyPreset = (preset: ColorPreset) => { setForm((f) => ({ ...f, primaryColor: preset.primaryColor, secondaryColor: preset.secondaryColor, backgroundColor: preset.backgroundColor, buttonColor: preset.buttonColor, shadowColor: preset.shadowColor || preset.primaryColor })); showToast(`Paleta "${preset.name}" aplicada!`); };
   const handleSave = async (e: React.FormEvent) => { e.preventDefault(); try { const res = await fetch("/api/admin/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tenantId, ...form }) }); if (res.ok) showToast("Estilo e Marca salvos com sucesso!"); } catch { showToast("Erro ao salvar marca"); } };
 
@@ -907,7 +649,7 @@ function AdminFeaturesSection({ tenantId, showToast }: { tenantId: string; showT
   const [maxOrdersPerDay, setMaxOrdersPerDay] = useState(5);
   const [minLeadDays, setMinLeadDays] = useState(3);
   const [loading, setLoading] = useState(true);
-  useEffect(() => { async function load() { try { const res = await fetch(`/api/admin/settings?tenantId=${tenantId}`); if (res.ok) { const data = await res.json(); if (data.settings.featuresConfig) setConfig(data.settings.featuresConfig); if (data.settings.maxOrdersPerDay) setMaxOrdersPerDay(data.settings.maxOrdersPerDay); if (data.settings.minLeadDays) setMinLeadDays(data.settings.minLeadDays); } } catch { showToast("Erro ao carregar funcionalidades"); } finally { setLoading(false); } } load(); }, [tenantId, showToast]);
+  useEffect(() => { async function load() { try { const res = await fetch(`/api/admin/settings?tenantId=${tenantId}`); if (res.ok) { const data = await res.json(); if (data.settings.featuresConfig) setConfig(data.settings.featuresConfig); if (data.settings.maxOrdersPerDay) setMaxOrdersPerDay(data.settings.maxOrdersPerDay); if (data.settings.minLeadDays) setMinLeadDays(data.settings.minLeadDays); } } catch { showToast("Erro ao carregar funcionalidades"); } finally { setLoading(false); } } void load(); }, [tenantId, showToast]);
   const handleSave = async () => { try { const res = await fetch("/api/admin/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tenantId, featuresConfig: config, maxOrdersPerDay, minLeadDays }) }); if (res.ok) showToast("Funcionalidades salvas com sucesso!"); } catch { showToast("Erro ao salvar funcionalidades"); } };
   const depositModes: Array<{ id: FeaturesConfig["deposit_mode"]; title: string; desc: string }> = [
     { id: "50_percent", title: "Sinal de 50%", desc: "Cliente paga metade para confirmar e metade na entrega" },
