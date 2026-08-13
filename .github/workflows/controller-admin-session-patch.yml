@@ -1,0 +1,47 @@
+name: Controller admin session patch
+
+on:
+  push:
+    branches:
+      - work/2-admin-auth-isolation
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: work/2-admin-auth-isolation
+      - name: Apply bounded lifecycle patch
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('src/app/admin/page.tsx')
+          s = p.read_text()
+          old = '''  const [authenticated, setAuthenticated] = useState(false); const [tenantId, setTenantId] = useState(""); const [tenantSlug, setTenantSlug] = useState(""); const [tenantName, setTenantName] = useState(""); const [section, setSection] = useState<AdminSection>("orders"); const [slug, setSlug] = useState("doce-arte"); const [password, setPassword] = useState(""); const [authError, setAuthError] = useState(""); const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false); const [toast, setToast] = useState<string | null>(null);'''
+          new = '''  const [authenticated, setAuthenticated] = useState(false); const [sessionResolved, setSessionResolved] = useState(false); const [tenantId, setTenantId] = useState(""); const [tenantSlug, setTenantSlug] = useState(""); const [tenantName, setTenantName] = useState(""); const [section, setSection] = useState<AdminSection>("orders"); const [slug, setSlug] = useState("doce-arte"); const [password, setPassword] = useState(""); const [authError, setAuthError] = useState(""); const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false); const [toast, setToast] = useState<string | null>(null);'''
+          assert old in s
+          s = s.replace(old, new, 1)
+          marker = '''  const showToast = useCallback((msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); }, []);'''
+          insert = marker + '''\n  useEffect(() => { async function restoreSession() { try { const res = await fetch("/api/admin/auth", { cache: "no-store" }); if (res.ok) { const data = await res.json(); setTenantId(data.tenant.id); setTenantSlug(data.tenant.slug); setTenantName(data.tenant.name); setAuthenticated(true); } } catch { /* Login remains available when session validation is unreachable. */ } finally { setSessionResolved(true); } } void restoreSession(); }, []);\n  const handleLogout = async () => { try { await fetch("/api/admin/auth", { method: "DELETE" }); } finally { setAuthenticated(false); setTenantId(""); setTenantSlug(""); setTenantName(""); setPassword(""); setMobileDrawerOpen(false); } };'''
+          assert marker in s
+          s = s.replace(marker, insert, 1)
+          login = '''  if (!authenticated) return <div className="min-h-dvh flex items-center justify-center px-4 bg-surface-950">'''
+          replacement = '''  if (!sessionResolved) return <div className="min-h-dvh flex items-center justify-center bg-surface-950 text-white/50 text-sm">Validando sessão...</div>;\n  if (!authenticated) return <div className="min-h-dvh flex items-center justify-center px-4 bg-surface-950">'''
+          assert login in s
+          s = s.replace(login, replacement, 1)
+          assert s.count('onClick={() => setAuthenticated(false)}') == 2
+          s = s.replace('onClick={() => setAuthenticated(false)}', 'onClick={() => { void handleLogout(); }}')
+          p.write_text(s)
+      - name: Commit lifecycle implementation
+        run: |
+          if git diff --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/app/admin/page.tsx
+          git commit -m "fix: restore and revoke admin browser session"
+          git push origin HEAD:work/2-admin-auth-isolation
