@@ -60,9 +60,12 @@ test.describe("authenticated admin tenant isolation", () => {
     const calendarB = await request.get("/api/admin/calendar", { headers: tenantBHeaders });
     expect((await calendarB.json()).blockedDates.map((item: { id: string }) => item.id)).toContain(blockedBId);
 
+    // The request lies about tenantId, but the server must still update Tenant A only.
+    // Use Tenant A's existing value so this assertion proves scoping without polluting
+    // the shared deterministic fixture for later desktop/mobile tests.
     const settingsAttack = await request.put("/api/admin/settings", {
       headers: tenantAHeaders,
-      data: { tenantId: "ci-tenant-b", name: "CI Tenant A Scoped" },
+      data: { tenantId: "ci-tenant-b", name: "CI Tenant A" },
     });
     expect(settingsAttack.status()).toBe(200);
     expect((await settingsAttack.json()).settings.id).toBe("ci-tenant-a");
