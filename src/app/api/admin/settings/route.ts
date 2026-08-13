@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       settings: {
         ...settings,
-        shadowColor: (tenant as Record<string, unknown>).shadowColor || tenant.primaryColor || "#8B5CF6",
+        shadowColor: tenant.shadowColor || tenant.primaryColor || "#8B5CF6",
         featuresConfig: JSON.parse(tenant.featuresConfig),
       },
     });
@@ -51,21 +51,13 @@ export async function PUT(request: Request) {
 
     const sanitized: Record<string, unknown> = {};
     for (const key of allowedFields) {
-      if (rawUpdates[key] !== undefined && key !== "shadowColor") {
+      if (rawUpdates[key] !== undefined) {
         if (key === "featuresConfig" && typeof rawUpdates[key] === "object") {
           sanitized[key] = JSON.stringify(rawUpdates[key]);
         } else {
           sanitized[key] = rawUpdates[key];
         }
       }
-    }
-
-    if (rawUpdates.shadowColor) {
-      await prisma.$executeRawUnsafe(
-        `UPDATE Tenant SET shadowColor = ? WHERE id = ?`,
-        String(rawUpdates.shadowColor),
-        tenantId
-      );
     }
 
     const tenant = await prisma.tenant.update({
@@ -78,7 +70,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({
       settings: {
         ...settings,
-        shadowColor: String(rawUpdates.shadowColor || (tenant as Record<string, unknown>).shadowColor || tenant.primaryColor || "#8B5CF6"),
+        shadowColor: tenant.shadowColor || tenant.primaryColor || "#8B5CF6",
         featuresConfig: JSON.parse(tenant.featuresConfig),
       },
     });
