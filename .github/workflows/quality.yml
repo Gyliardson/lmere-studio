@@ -59,17 +59,45 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Enforce lint result
-        if: steps.lint.outputs.exit_code != '0'
-        run: |
-          echo "ESLint failed with exit code ${{ steps.lint.outputs.exit_code }}. See eslint-report artifact for exact findings."
-          exit 1
-
       - name: Typecheck
+        id: typecheck
+        continue-on-error: true
         run: npm run typecheck
 
       - name: Validate Prisma schema
+        id: prisma_validate
+        continue-on-error: true
         run: npm run db:validate
 
       - name: Production build
+        id: production_build
+        continue-on-error: true
         run: npm run build
+
+      - name: Enforce static quality gates
+        if: always()
+        shell: bash
+        run: |
+          failed=0
+
+          if [ "${{ steps.lint.outputs.exit_code }}" != "0" ]; then
+            echo "ESLint failed with exit code ${{ steps.lint.outputs.exit_code }}. See eslint-report artifact for exact findings."
+            failed=1
+          fi
+
+          if [ "${{ steps.typecheck.outcome }}" != "success" ]; then
+            echo "Typecheck failed."
+            failed=1
+          fi
+
+          if [ "${{ steps.prisma_validate.outcome }}" != "success" ]; then
+            echo "Prisma schema validation failed."
+            failed=1
+          fi
+
+          if [ "${{ steps.production_build.outcome }}" != "success" ]; then
+            echo "Production build failed."
+            failed=1
+          fi
+
+          exit "$failed"
