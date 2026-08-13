@@ -9,7 +9,7 @@ async function reachSummary(page: Page) {
   const monthsForward = (targetYear - now.year) * 12 + (targetMonth - now.month);
   for (let index = 0; index < monthsForward; index += 1) await page.locator("#cal-next").click();
 
-  await page.locator("#cal-day-18").click();
+  await page.locator("#cal-day-14").click();
   await page.locator("#btn-next").click();
   await page.locator("#size-ci-size-a").click();
   await page.locator("#btn-next").click();
