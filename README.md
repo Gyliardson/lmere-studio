@@ -12,7 +12,7 @@
 
 L'Mere Studio is a white-label, multi-tenant web application for artisan bakeries, cake designers, and confectioneries. It combines a five-step public cake-order flow with a self-service admin dashboard for catalog, schedule, branding, and order management.
 
-> **Professionalization in progress:** the `portfolio/revamp-2026` program is actively hardening authorization, server-side business rules, accessibility, documentation, and reproducibility. The current README describes only behavior and infrastructure that exist in the repository; release-grade security claims are intentionally deferred until the corresponding gates are complete.
+> **Professionalization in progress:** the `portfolio/revamp-2026` program is actively hardening server-side business rules, client session lifecycle, accessibility, documentation, and reproducibility. The current README describes only behavior and infrastructure that exist in the repository; release-grade certification is intentionally deferred until the corresponding gates are complete.
 
 ---
 
@@ -99,6 +99,16 @@ flowchart TD
 - Versioned migrations bootstrap an empty database via `prisma migrate deploy`.
 - Deterministic CI fixtures create two tenants for relational and isolation-oriented tests.
 
+### Administrative security boundary
+
+- Administrative authentication creates an expiry-bound HMAC-SHA256 session token.
+- The token is stored in an HttpOnly cookie with `SameSite=Strict`; production cookies are marked `Secure`.
+- `ADMIN_SESSION_SECRET` is required and must contain at least 32 bytes of unique secret material.
+- Admin order, menu, calendar, and settings routes derive tenant identity from the verified server-side session rather than trusting request-supplied tenant IDs.
+- Mutations that target existing tenant resources verify ownership before changing or deleting them.
+- CI exercises unauthenticated negative paths and authenticated Tenant A != Tenant B isolation against disposable PostgreSQL.
+- The remaining professionalization work for this boundary is the browser-side session lifecycle: restoring a valid session after `/admin` refresh and invoking server logout from the UI.
+
 ---
 
 ## Tech Stack
@@ -110,6 +120,7 @@ flowchart TD
 | Icons | Lucide React |
 | Database | PostgreSQL, Prisma 7.9.1, `@prisma/adapter-pg` |
 | Password hashing | bcryptjs |
+| Admin sessions | HMAC-SHA256 signed HttpOnly cookie |
 | Language | TypeScript 5 |
 | Browser testing | Playwright |
 | CI database | Disposable PostgreSQL 16 |
@@ -140,7 +151,7 @@ flowchart TD
    ```bash
    cp .env.example .env
    ```
-   Set `POSTGRES_PRISMA_URL` to the development PostgreSQL connection.
+   Set `POSTGRES_PRISMA_URL` to the development PostgreSQL connection and replace the placeholder `ADMIN_SESSION_SECRET` with a unique random value containing at least 32 bytes. Never commit a real session secret.
 
 4. Generate Prisma Client and apply versioned migrations:
    ```bash
@@ -189,7 +200,7 @@ Current CI on the professionalization branch verifies:
 - Prisma Client generation;
 - ESLint with a retained machine-readable report;
 - TypeScript typecheck;
-- risk-focused pricing/deposit unit tests;
+- risk-focused pricing/deposit and admin-session unit tests;
 - Prisma schema validation;
 - production build;
 - PostgreSQL 16 startup;
@@ -199,12 +210,15 @@ Current CI on the professionalization branch verifies:
 - application build/start against disposable PostgreSQL;
 - public tenant API smoke for Tenant A, non-exposure of the admin password hash, absence of Tenant B fixture leakage, and 404 behavior for an unknown tenant;
 - deterministic Playwright smoke on desktop and mobile for storefront loading, Tenant B fixture non-leakage, and the missing-tenant state;
+- unauthenticated negative-path checks for protected admin routes;
+- authenticated Tenant A/B isolation checks proving request-supplied tenant IDs cannot redirect tested reads/mutations across tenants;
+- cross-tenant mutation checks for menu resources, blocked dates, and orders;
 - an initial accessibility role/landmark smoke on desktop and mobile;
 - read-only Gitleaks secret scanning;
 - post-test migration status;
 - server diagnostics and Playwright trace/screenshot/video artifacts on relevant failures.
 
-The browser accessibility smoke is intentionally narrow and is not a claim of complete WCAG compliance. Admin session/tenant authorization, broader negative-path security tests, deeper keyboard/focus/contrast/axe coverage, and additional static security analysis remain explicit program work.
+The browser accessibility smoke is intentionally narrow and is not a claim of complete WCAG compliance. The admin backend/session isolation boundary now has automated negative-path evidence, but `/admin` refresh/session restoration and UI-driven server logout remain explicit work before #2 is complete. Deeper keyboard/focus/contrast/axe coverage and additional static security analysis remain later program work.
 
 ---
 
@@ -214,13 +228,13 @@ The browser accessibility smoke is intentionally narrow and is not a claim of co
 | --- | --- | --- | --- |
 | `/api/tenants/[slug]` | `GET` | Tenant public branding, menu, and schedule | Public |
 | `/api/orders` | `POST` | Order submission | Public |
-| `/api/admin/auth` | `POST` | Admin authentication | Admin |
-| `/api/admin/orders` | `GET`, `PATCH` | Order listing/status updates | Admin |
-| `/api/admin/menu` | `GET`, `POST`, `PUT`, `DELETE` | Menu CRUD | Admin |
-| `/api/admin/calendar` | `GET`, `POST`, `DELETE` | Blocked-date management | Admin |
-| `/api/admin/settings` | `GET`, `PUT` | Tenant branding/configuration | Admin |
+| `/api/admin/auth` | `POST`, `GET`, `DELETE` | Authenticate, validate current session, and clear session cookie | Admin |
+| `/api/admin/orders` | `GET`, `PUT` | Tenant-scoped order listing/status updates | Admin session |
+| `/api/admin/menu` | `GET`, `POST`, `PUT`, `DELETE` | Tenant-scoped menu CRUD with ownership checks | Admin session |
+| `/api/admin/calendar` | `GET`, `POST`, `PUT`, `DELETE` | Tenant-scoped schedule and blocked-date management | Admin session |
+| `/api/admin/settings` | `GET`, `PUT` | Tenant-scoped branding/configuration | Admin session |
 
-> The table describes intended access boundaries, not a security certification. Server-verifiable admin sessions and comprehensive tenant ownership enforcement are tracked as release-blocking professionalization work.
+> The administrative API routes above enforce the validated session tenant on the current professionalization branch and have automated Tenant A/B negative-path coverage. This is not a final project security certification: browser session lifecycle remains incomplete, and public order submission is still undergoing separate server-authority hardening in #3.
 
 ---
 
