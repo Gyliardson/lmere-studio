@@ -1,0 +1,82 @@
+name: E2E
+
+on:
+  pull_request:
+    branches:
+      - portfolio/revamp-2026
+      - master
+  push:
+    branches:
+      - portfolio/revamp-2026
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  storefront:
+    name: Storefront Playwright smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: lmere_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d lmere_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      POSTGRES_PRISMA_URL: postgresql://postgres:postgres@127.0.0.1:5432/lmere_ci?sslmode=disable
+      NODE_ENV: test
+      CI: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Apply migrations
+        run: npm run db:migrate
+
+      - name: Seed deterministic fixtures
+        run: npx prisma db execute --file prisma/ci-seed.sql --config=prisma.config.ts
+
+      - name: Build application
+        run: npm run build
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright smoke
+        run: npx playwright test tests/e2e/storefront.spec.ts
+
+      - name: Upload Playwright evidence
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-failure-evidence
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: warn
+          retention-days: 7
