@@ -19,6 +19,6 @@ test.describe("deterministic storefront smoke", () => {
     await page.goto("/ci-tenant-missing");
 
     await expect(page.getByRole("heading", { name: "Ateliê não encontrado" })).toBeVisible();
-    await expect(page.getByText(/não existe|não encontrado|indisponível/i)).toBeVisible();
+    await expect(page.getByRole("paragraph")).toHaveText("Ateliê não encontrado");
   });
 });
