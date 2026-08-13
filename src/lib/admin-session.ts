@@ -95,7 +95,7 @@ export function adminSessionCookieOptions() {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict" as const,
-    path: "/",
+    path: "/api/admin",
     maxAge: ADMIN_SESSION_TTL_SECONDS,
   };
 }
