@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   static-quality:
-    name: Lint, typecheck, Prisma validate, build
+    name: Lint, typecheck, unit, Prisma validate, build
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -64,6 +64,11 @@ jobs:
         continue-on-error: true
         run: npm run typecheck
 
+      - name: Unit tests
+        id: unit_tests
+        continue-on-error: true
+        run: npm run test:unit
+
       - name: Validate Prisma schema
         id: prisma_validate
         continue-on-error: true
@@ -87,6 +92,10 @@ jobs:
             echo "Typecheck failed."
             failed=1
           fi
+          if [ "${{ steps.unit_tests.outcome }}" != "success" ]; then
+            echo "Unit tests failed."
+            failed=1
+          fi
           if [ "${{ steps.prisma_validate.outcome }}" != "success" ]; then
             echo "Prisma schema validation failed."
             failed=1
@@ -98,7 +107,7 @@ jobs:
           exit "$failed"
 
   database-bootstrap:
-    name: PostgreSQL migrate and seed
+    name: PostgreSQL migrate, seed, integration assertions
     runs-on: ubuntu-latest
     timeout-minutes: 10
     services:
@@ -139,6 +148,9 @@ jobs:
 
       - name: Seed deterministic CI fixtures
         run: npx prisma db execute --file prisma/ci-seed.sql --config=prisma.config.ts
+
+      - name: Run PostgreSQL integration assertions
+        run: npm run test:integration:db
 
       - name: Verify migration state
         run: npx prisma migrate status --config=prisma.config.ts
