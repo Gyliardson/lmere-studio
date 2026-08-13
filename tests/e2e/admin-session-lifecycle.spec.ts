@@ -24,7 +24,7 @@ test("admin logout revokes the cookie-backed session across reloads", async ({ c
 
   const viewport = page.viewportSize();
   if (viewport && viewport.width < 768) {
-    await page.locator("header button").first().click();
+    await page.getByRole("button", { name: "Abrir menu do painel" }).click();
     await page.getByRole("button", { name: "Sair do Painel" }).click();
   } else {
     await page.getByRole("button", { name: "Sair", exact: true }).click();
