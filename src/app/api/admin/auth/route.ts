@@ -9,26 +9,45 @@ import {
 } from "@/lib/admin-session";
 
 const UNAUTHORIZED = { error: "Credenciais inválidas" };
+const NO_STORE_HEADERS = { "Cache-Control": "no-store" };
 // Fixed non-production credential hash used only to keep unknown-tenant login
 // attempts on the same bcrypt verification path as known tenants.
 const DUMMY_PASSWORD_HASH = "$2b$10$vGcCuvAGtutf9QbLKDl2VOTxm/yNRchJO5qpcyDgqP5a5kZWo8dDa";
+
+function jsonNoStore(body: unknown, init?: ResponseInit) {
+  return NextResponse.json(body, {
+    ...init,
+    headers: {
+      ...NO_STORE_HEADERS,
+      ...init?.headers,
+    },
+  });
+}
+
+function clearSessionCookie(response: NextResponse) {
+  response.cookies.set(ADMIN_SESSION_COOKIE, "", {
+    ...adminSessionCookieOptions(),
+    maxAge: 0,
+  });
+  return response;
+}
 
 export async function POST(request: Request) {
   try {
     const { slug, password } = await request.json();
 
     if (typeof slug !== "string" || typeof password !== "string" || !slug.trim() || !password) {
-      return NextResponse.json({ error: "Credenciais ausentes" }, { status: 400 });
+      return jsonNoStore({ error: "Credenciais ausentes" }, { status: 400 });
     }
 
     const tenant = await prisma.tenant.findUnique({ where: { slug: slug.trim() } });
     const passwordValid = compareSync(password, tenant?.adminPasswordHash ?? DUMMY_PASSWORD_HASH);
     if (!tenant || !passwordValid) {
-      return NextResponse.json(UNAUTHORIZED, { status: 401 });
+      return jsonNoStore(UNAUTHORIZED, { status: 401 });
     }
 
     const token = createAdminSessionToken(tenant.id);
-    const response = NextResponse.json({
+    const response = jsonNoStore({
       tenant: {
         id: tenant.id,
         slug: tenant.slug,
@@ -39,33 +58,32 @@ export async function POST(request: Request) {
     return response;
   } catch (error) {
     console.error("[ERROR] Admin authentication failed", error instanceof Error ? error.message : "unknown error");
-    return NextResponse.json({ error: "Erro na autenticação" }, { status: 500 });
+    return jsonNoStore({ error: "Erro na autenticação" }, { status: 500 });
   }
 }
 
 export async function GET(request: Request) {
   try {
     const session = getAdminSession(request);
-    if (!session) return NextResponse.json({ error: "Sessão inválida ou expirada" }, { status: 401 });
+    if (!session) {
+      return clearSessionCookie(jsonNoStore({ error: "Sessão inválida ou expirada" }, { status: 401 }));
+    }
 
     const tenant = await prisma.tenant.findUnique({
       where: { id: session.tenantId },
       select: { id: true, slug: true, name: true },
     });
-    if (!tenant) return NextResponse.json({ error: "Sessão inválida ou expirada" }, { status: 401 });
+    if (!tenant) {
+      return clearSessionCookie(jsonNoStore({ error: "Sessão inválida ou expirada" }, { status: 401 }));
+    }
 
-    return NextResponse.json({ tenant, expiresAt: session.expiresAt });
+    return jsonNoStore({ tenant, expiresAt: session.expiresAt });
   } catch (error) {
     console.error("[ERROR] Admin session validation failed", error instanceof Error ? error.message : "unknown error");
-    return NextResponse.json({ error: "Erro na autenticação" }, { status: 500 });
+    return jsonNoStore({ error: "Erro na autenticação" }, { status: 500 });
   }
 }
 
 export async function DELETE() {
-  const response = NextResponse.json({ success: true });
-  response.cookies.set(ADMIN_SESSION_COOKIE, "", {
-    ...adminSessionCookieOptions(),
-    maxAge: 0,
-  });
-  return response;
+  return clearSessionCookie(jsonNoStore({ success: true }));
 }
