@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   static-quality:
-    name: Lint, typecheck, unit, Prisma validate, build
+    name: Lint, typecheck, unit, security, Prisma validate, build
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -59,6 +59,25 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Audit production dependencies
+        id: dependency_audit
+        shell: bash
+        run: |
+          set +e
+          npm audit --omit=dev --audit-level=high --json > npm-audit.json
+          status=$?
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Upload dependency audit report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: npm-audit-report
+          path: npm-audit.json
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Typecheck
         id: typecheck
         continue-on-error: true
@@ -86,6 +105,10 @@ jobs:
           failed=0
           if [ "${{ steps.lint.outputs.exit_code }}" != "0" ]; then
             echo "ESLint failed with exit code ${{ steps.lint.outputs.exit_code }}. See eslint-report artifact for exact findings."
+            failed=1
+          fi
+          if [ "${{ steps.dependency_audit.outputs.exit_code }}" != "0" ]; then
+            echo "Production dependency audit found high-or-critical vulnerabilities. See npm-audit-report artifact."
             failed=1
           fi
           if [ "${{ steps.typecheck.outcome }}" != "success" ]; then
