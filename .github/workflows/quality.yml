@@ -34,8 +34,8 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Regenerate lockfile and install dependencies
-        run: npm install --ignore-scripts
+      - name: Install dependencies
+        run: npm ci
 
       - name: Generate Prisma client
         run: npm run db:generate
@@ -69,16 +69,14 @@ jobs:
           echo "exit_code=$status" >> "$GITHUB_OUTPUT"
           exit 0
 
-      - name: Upload dependency remediation evidence
+      - name: Upload dependency audit report
         if: always()
         uses: actions/upload-artifact@v6
         with:
           name: npm-audit-report
-          path: |
-            npm-audit.json
-            package-lock.json
+          path: npm-audit.json
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 7
 
       - name: Typecheck
         id: typecheck
