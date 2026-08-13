@@ -1,0 +1,18 @@
+import { createHmac } from "node:crypto";
+import { expect, test } from "@playwright/test";
+
+const SESSION_SECRET = process.env.ADMIN_SESSION_SECRET || "lmere-ci-admin-session-secret-at-least-32-bytes";
+
+function createSessionToken(tenantId: string) {
+  const payload = Buffer.from(JSON.stringify({ version: 1, tenantId, expiresAt: Math.floor(Date.now() / 1000) + 3600 }), "utf8").toString("base64url");
+  const signature = createHmac("sha256", SESSION_SECRET).update(payload).digest("base64url");
+  return `${payload}.${signature}`;
+}
+
+test("admin UI restores a valid cookie-backed session after reload", async ({ context, page }) => {
+  await context.addCookies([{ name: "lmere_admin_session", value: createSessionToken("ci-tenant-a"), domain: "127.0.0.1", path: "/api/admin", httpOnly: true, sameSite: "Strict" }]);
+  await page.goto("/admin");
+  await expect(page.getByRole("heading", { name: "Gestão de Pedidos" })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Gestão de Pedidos" })).toBeVisible();
+});
