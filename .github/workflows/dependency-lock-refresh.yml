@@ -6,7 +6,7 @@ on:
       - work/4-ci-foundation
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   refresh-lockfile:
@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          ref: work/4-ci-foundation
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -32,6 +34,19 @@ jobs:
 
       - name: Verify production dependency audit
         run: npm audit --omit=dev --audit-level=high
+
+      - name: Commit verified manifests when changed
+        shell: bash
+        run: |
+          if git diff --quiet -- package.json package-lock.json; then
+            echo "Dependency manifests already match the verified state."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "chore: remediate production dependency vulnerabilities"
+          git push origin HEAD:work/4-ci-foundation
 
       - name: Upload refreshed dependency manifests
         if: always()
