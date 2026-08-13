@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type APIRequestContext } from "@playwright/test";
 
 const base = {
   tenantId: "ci-tenant-a",
@@ -11,7 +11,7 @@ const base = {
   addonIds: [],
 };
 
-async function expectRejected(request: { post: Function }, patch: Record<string, unknown>, code: string) {
+async function expectRejected(request: APIRequestContext, patch: Record<string, unknown>, code: string) {
   const response = await request.post("/api/orders", { data: { ...base, ...patch } });
   expect(response.status()).toBe(400);
   expect((await response.json()).code).toBe(code);
