@@ -62,7 +62,7 @@ export async function POST(request: Request) {
           data: {
             tenantId: session.tenantId,
             name: String(rawData.name || ""),
-            type: String(rawData.flavorType || rawData.category || "RECHEIO"),
+            type: String(rawData.flavorType || rawData.category || (rawData.itemType ? rawData.type : undefined) || "RECHEIO"),
             additionalPrice: Number(rawData.additionalPrice) || 0,
             isSpecial: Boolean(rawData.isSpecial),
             imageUrl: String(rawData.imageUrl || ""),
@@ -127,7 +127,8 @@ export async function PUT(request: Request) {
         const updateData: Record<string, unknown> = {};
         if (rawData.name !== undefined) updateData.name = String(rawData.name);
         if (rawData.flavorType !== undefined) updateData.type = String(rawData.flavorType);
-        if (rawData.category !== undefined) updateData.type = String(rawData.category);
+        else if (rawData.category !== undefined) updateData.type = String(rawData.category);
+        else if (rawData.itemType && rawData.type !== undefined) updateData.type = String(rawData.type);
         if (rawData.additionalPrice !== undefined) updateData.additionalPrice = Number(rawData.additionalPrice);
         if (rawData.isSpecial !== undefined) updateData.isSpecial = Boolean(rawData.isSpecial);
         if (rawData.imageUrl !== undefined) updateData.imageUrl = String(rawData.imageUrl);
