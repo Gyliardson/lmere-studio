@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
 const DAY_MS = 86_400_000;
+const MAX_IDEMPOTENCY_KEY_LENGTH = 128;
 const reject = (status: number, code: string, error: string) => NextResponse.json({ code, error }, { status });
 const cents = (value: number) => Math.round(value * 100);
 const money = (value: number) => Math.round(value) / 100;
@@ -10,7 +11,9 @@ function depositMode(config: string): "50_percent" | "100_percent" | "quote_only
   try {
     const mode = (JSON.parse(config) as { deposit_mode?: unknown }).deposit_mode;
     if (mode === "100_percent" || mode === "quote_only") return mode;
-  } catch { /* legacy config falls back to 50% */ }
+  } catch {
+    // Legacy/malformed configuration falls back to the historical 50% behavior.
+  }
   return "50_percent";
 }
 
@@ -20,9 +23,17 @@ function parseIds(value: unknown) {
   return new Set(ids).size === ids.length ? ids : null;
 }
 
+function parseIdempotencyKey(request: Request, body: Record<string, unknown>) {
+  const candidate = request.headers.get("idempotency-key") ?? body.idempotencyKey;
+  if (candidate == null || candidate === "") return { key: null, valid: true };
+  if (typeof candidate !== "string") return { key: null, valid: false };
+  const key = candidate.trim();
+  return { key, valid: key.length > 0 && key.length <= MAX_IDEMPOTENCY_KEY_LENGTH };
+}
+
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body = await request.json() as Record<string, unknown>;
     const tenantId = typeof body.tenantId === "string" ? body.tenantId.trim() : "";
     const customerName = typeof body.customerName === "string" ? body.customerName.trim() : "";
     const customerPhone = typeof body.customerPhone === "string" ? body.customerPhone.trim() : "";
@@ -31,7 +42,11 @@ export async function POST(request: Request) {
     const flavorId = typeof body.flavorId === "string" ? body.flavorId.trim() : "";
     const fillingIds = parseIds(body.fillingIds);
     const addonIds = parseIds(body.addonIds ?? []);
+    const idempotency = parseIdempotencyKey(request, body);
 
+    if (!idempotency.valid) {
+      return reject(400, "INVALID_IDEMPOTENCY_KEY", `A chave de idempotência deve ter entre 1 e ${MAX_IDEMPOTENCY_KEY_LENGTH} caracteres`);
+    }
     if (!tenantId || !customerName || !customerPhone || !eventDate || !cakeSizeId || !flavorId || !fillingIds || !addonIds) {
       return reject(400, "INVALID_REQUEST", "Campos obrigatórios ausentes ou inválidos");
     }
@@ -44,6 +59,21 @@ export async function POST(request: Request) {
     const result = await prisma.$transaction(async (tx) => {
       const tenant = await tx.tenant.findUnique({ where: { id: tenantId } });
       if (!tenant) return reject(404, "TENANT_NOT_FOUND", "Ateliê não encontrado");
+
+      if (idempotency.key) {
+        const existing = await tx.order.findFirst({ where: { tenantId, idempotencyKey: idempotency.key } });
+        if (existing) {
+          return {
+            order: existing,
+            pricing: {
+              subtotal: existing.subtotal,
+              depositAmount: existing.depositAmount,
+              depositMode: existing.depositMode,
+            },
+            idempotentReplay: true,
+          };
+        }
+      }
 
       const size = await tx.cakeSize.findFirst({ where: { id: cakeSizeId, tenantId, active: true } });
       if (!size) return reject(400, "INVALID_CAKE_SIZE", "Tamanho inválido ou indisponível");
@@ -76,20 +106,45 @@ export async function POST(request: Request) {
       const subtotal = money(totalCents);
       const mode = depositMode(tenant.featuresConfig);
       const depositAmount = mode === "quote_only" ? 0 : mode === "100_percent" ? subtotal : money(Math.round(totalCents / 2));
+      const selectionSnapshot = JSON.stringify({
+        version: 1,
+        size: { id: size.id, name: size.name, basePrice: size.basePrice, maxFillings: size.maxFillings },
+        dough: { id: dough.id, name: dough.name, additionalPrice: dough.additionalPrice },
+        fillings: fillingIds.map((id) => {
+          const item = fillings.find((candidate) => candidate.id === id)!;
+          return { id: item.id, name: item.name, additionalPrice: item.additionalPrice };
+        }),
+        addons: addonIds.map((id) => {
+          const item = addons.find((candidate) => candidate.id === id)!;
+          return { id: item.id, name: item.name, price: item.price };
+        }),
+        pricing: { subtotal, depositAmount, depositMode: mode },
+      });
 
       const order = await tx.order.create({ data: {
-        tenantId, customerName, customerPhone, eventDate, cakeSizeId: size.id, flavorId: dough.id,
-        fillingIds: JSON.stringify(fillingIds), addonIds: JSON.stringify(addonIds),
+        tenantId,
+        customerName,
+        customerPhone,
+        eventDate,
+        cakeSizeId: size.id,
+        flavorId: dough.id,
+        fillingIds: JSON.stringify(fillingIds),
+        addonIds: JSON.stringify(addonIds),
         referenceImageUrl: typeof body.referenceImageUrl === "string" ? body.referenceImageUrl.trim() : "",
         cakeMessage: typeof body.cakeMessage === "string" ? body.cakeMessage.trim() : "",
         details: typeof body.details === "string" ? body.details.trim() : "",
-        subtotal, depositAmount, depositMode: mode, status: "pending",
+        subtotal,
+        depositAmount,
+        depositMode: mode,
+        status: "pending",
+        idempotencyKey: idempotency.key,
+        selectionSnapshot,
       }});
-      return { order, pricing: { subtotal, depositAmount, depositMode: mode } };
+      return { order, pricing: { subtotal, depositAmount, depositMode: mode }, idempotentReplay: false };
     });
 
     if (result instanceof NextResponse) return result;
-    return NextResponse.json(result, { status: 201 });
+    return NextResponse.json(result, { status: result.idempotentReplay ? 200 : 201 });
   } catch (error) {
     console.error("[ERROR] Failed to create order", error instanceof Error ? error.message : "unknown error");
     return reject(500, "ORDER_CREATE_FAILED", "Erro ao criar pedido");
