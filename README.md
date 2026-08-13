@@ -12,7 +12,7 @@
 
 L'Mere Studio is a white-label, multi-tenant web application for artisan bakeries, cake designers, and confectioneries. It combines a five-step public cake-order flow with a self-service admin dashboard for catalog, schedule, branding, and order management.
 
-> **Professionalization in progress:** the `portfolio/revamp-2026` program is actively hardening automated testing, authorization, server-side business rules, accessibility, documentation, and reproducibility. The current README describes only behavior and infrastructure that exist in the repository; release-grade security claims are intentionally deferred until the corresponding gates are complete.
+> **Professionalization in progress:** the `portfolio/revamp-2026` program is actively hardening authorization, server-side business rules, accessibility, documentation, and reproducibility. The current README describes only behavior and infrastructure that exist in the repository; release-grade security claims are intentionally deferred until the corresponding gates are complete.
 
 ---
 
@@ -97,7 +97,7 @@ flowchart TD
 - Prisma runtime uses `@prisma/adapter-pg`, so ordinary PostgreSQL TCP works locally and in disposable CI while Neon remains a compatible production PostgreSQL provider.
 - CI uses a disposable **PostgreSQL 16** service and never depends on live Neon credentials.
 - Versioned migrations bootstrap an empty database via `prisma migrate deploy`.
-- Deterministic CI fixtures create two tenants for relational and future isolation tests.
+- Deterministic CI fixtures create two tenants for relational and isolation-oriented tests.
 
 ---
 
@@ -111,7 +111,7 @@ flowchart TD
 | Database | PostgreSQL, Prisma 7.9.1, `@prisma/adapter-pg` |
 | Password hashing | bcryptjs |
 | Language | TypeScript 5 |
-| Browser testing foundation | Playwright |
+| Browser testing | Playwright |
 | CI database | Disposable PostgreSQL 16 |
 
 ---
@@ -159,7 +159,13 @@ flowchart TD
    npm run quality
    ```
 
-7. Start the development server:
+7. Run browser verification after preparing the deterministic test database and a production build:
+   ```bash
+   npm run test:e2e
+   ```
+   See [`docs/QUALITY.md`](docs/QUALITY.md) for the complete quality/test contract and database prerequisites.
+
+8. Start the development server:
    ```bash
    npm run dev
    ```
@@ -171,7 +177,6 @@ The public storefront is available at `/<tenant-slug>` and the admin interface a
 - `npm run db:migrate` — applies committed migrations with `prisma migrate deploy`.
 - `npm run db:validate` — validates the Prisma schema/configuration.
 - `npm run db:push` — development-only schema synchronization; do not use it as the production/CI migration strategy.
-- `npm run db:reset` — destructive development helper. Never point it at production data.
 
 ---
 
@@ -193,10 +198,13 @@ Current CI on the professionalization branch verifies:
 - database-level relational/constraint negative paths;
 - application build/start against disposable PostgreSQL;
 - public tenant API smoke for Tenant A, non-exposure of the admin password hash, absence of Tenant B fixture leakage, and 404 behavior for an unknown tenant;
+- deterministic Playwright smoke on desktop and mobile for storefront loading, Tenant B fixture non-leakage, and the missing-tenant state;
+- an initial accessibility role/landmark smoke on desktop and mobile;
+- read-only Gitleaks secret scanning;
 - post-test migration status;
-- server diagnostics artifact on application-smoke failure.
+- server diagnostics and Playwright trace/screenshot/video artifacts on relevant failures.
 
-Admin tenant-authorization tests, deterministic browser E2E, accessibility, secret scanning, and broader static security analysis remain explicit program work and are not claimed complete here.
+The browser accessibility smoke is intentionally narrow and is not a claim of complete WCAG compliance. Admin session/tenant authorization, broader negative-path security tests, deeper keyboard/focus/contrast/axe coverage, and additional static security analysis remain explicit program work.
 
 ---
 
