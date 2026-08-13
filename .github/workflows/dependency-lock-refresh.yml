@@ -1,0 +1,39 @@
+name: Dependency Lock Refresh
+
+on:
+  push:
+    branches:
+      - work/4-ci-foundation
+
+permissions:
+  contents: read
+
+jobs:
+  refresh-lockfile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Refresh patched dependency lockfile
+        run: npm install next@16.3.0 eslint-config-next@16.3.0 --package-lock-only --ignore-scripts
+
+      - name: Verify production dependency audit
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Upload refreshed dependency manifests
+        uses: actions/upload-artifact@v6
+        with:
+          name: refreshed-dependency-manifests
+          path: |
+            package.json
+            package-lock.json
+          if-no-files-found: error
+          retention-days: 1
