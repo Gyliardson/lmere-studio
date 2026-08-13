@@ -82,4 +82,28 @@ test.describe("deterministic storefront smoke", () => {
     await page.waitForResponse((response) => response.url().endsWith("/api/orders") && response.request().method() === "POST");
     await expect.poll(() => orderRequests).toBe(1);
   });
+
+  test("structured server rejection is surfaced and aborts WhatsApp handoff", async ({ page, context }) => {
+    await reachSummary(page);
+    await page.route("**/api/orders", async (route) => {
+      await route.fulfill({
+        status: 409,
+        contentType: "application/json",
+        body: JSON.stringify({ code: "DATE_BLOCKED", error: "A data selecionada está indisponível" }),
+      });
+    });
+
+    const popupPromise = page.waitForEvent("popup");
+    const dialogPromise = page.waitForEvent("dialog");
+    await page.locator("#btn-send-whatsapp").click();
+
+    const popup = await popupPromise;
+    const dialog = await dialogPromise;
+    expect(dialog.message()).toBe("A data selecionada está indisponível");
+    await dialog.dismiss();
+    await expect.poll(() => popup.isClosed()).toBe(true);
+
+    const pages = context.pages();
+    expect(pages.some((candidate) => candidate.url().startsWith("https://wa.me/"))).toBe(false);
+  });
 });
