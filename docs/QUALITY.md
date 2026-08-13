@@ -20,7 +20,7 @@ Playwright is separate from demo/media capture. After preparing the test databas
 
 `playwright.config.ts` defines deterministic desktop and mobile Chromium projects, `pt-BR` locale, the `America/Sao_Paulo` timezone, and retained trace/screenshot/video evidence on failures.
 
-Current coverage includes storefront loading, missing-tenant behavior, baseline accessible roles, protected-admin unauthenticated paths, real synthetic admin login, and signed Tenant A != Tenant B isolation through the Next.js admin APIs. Cross-tenant tests verify that request-controlled tenant identifiers cannot redirect tested reads and that foreign menu, blocked-date, and order mutations are rejected.
+Current coverage includes storefront loading, missing-tenant behavior, baseline accessible roles, protected-admin unauthenticated paths, real synthetic admin login, signed Tenant A != Tenant B isolation through the Next.js admin APIs, and the `/admin` browser session lifecycle. Cross-tenant tests verify that request-controlled tenant identifiers cannot redirect tested reads and that foreign menu, blocked-date, and order mutations are rejected. Browser lifecycle tests exercise signed-session restoration after reload and server-backed logout persistence across a subsequent reload on desktop and mobile.
 
 The accessibility smoke is a foundation check, not a claim of complete WCAG certification. Deeper keyboard, focus, contrast, dialog, and axe coverage belongs to later UI/accessibility work.
 
@@ -28,9 +28,9 @@ The accessibility smoke is a foundation check, not a claim of complete WCAG cert
 
 The Quality workflow blocks high/critical production dependency findings. A separate read-only Gitleaks workflow scans pull-request changes for secrets.
 
-Admin authentication uses an expiry-bound signed HttpOnly cookie, and protected admin routes derive tenant identity from the verified session. Unit and PostgreSQL-backed E2E tests cover malformed/tampered/expired sessions, unauthenticated requests, valid synthetic login, and authenticated tenant isolation.
+Admin authentication uses an expiry-bound signed HttpOnly cookie, and protected admin routes derive tenant identity from the verified session. Unit and PostgreSQL-backed E2E tests cover malformed/tampered/expired sessions, unauthenticated requests, valid synthetic login, authenticated tenant isolation, browser session restoration, and server-backed logout. Production session cookies are required to be `Secure`, `HttpOnly`, and `SameSite=Strict` and are scoped to `/api/admin`.
 
-The remaining #2 gap is client lifecycle behavior in `/admin`: restoring an existing valid session after refresh and invoking the server logout endpoint from the UI. Public order server-authority is tracked separately in #3 and is not implied by admin isolation tests.
+Public order server-authority is tracked separately in #3 and is not implied by the admin isolation tests.
 
 ## Failure policy
 
