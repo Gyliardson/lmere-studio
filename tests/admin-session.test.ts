@@ -41,3 +41,10 @@ test("request session is read from the admin cookie", () => {
   assert.equal(getAdminSession(request, NOW)?.tenantId, "tenant-a");
   assert.equal(getAdminSession(new Request("http://localhost/api/admin/orders"), NOW), null);
 });
+
+test("malformed percent-encoded session cookie is rejected instead of throwing", () => {
+  const request = new Request("http://localhost/api/admin/orders", {
+    headers: { cookie: `${ADMIN_SESSION_COOKIE}=%E0%A4%A` },
+  });
+  assert.equal(getAdminSession(request, NOW), null);
+});
