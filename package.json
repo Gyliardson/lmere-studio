@@ -11,6 +11,7 @@
     "quality": "npm run lint && npm run typecheck && npm run db:validate && npm run build",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate --config=prisma.config.ts",
+    "db:migrate": "prisma migrate deploy --config=prisma.config.ts",
     "db:push": "prisma db push",
     "db:seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts",
     "db:reset": "prisma db push --force-reset && npm run db:seed",
