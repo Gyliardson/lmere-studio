@@ -13,6 +13,7 @@ test.describe("admin session cookie contract", () => {
     const setCookie = login.headers()["set-cookie"] ?? "";
     expect(setCookie).toContain(`${SESSION_COOKIE}=`);
     expect(setCookie).toMatch(/HttpOnly/i);
+    expect(setCookie).toMatch(/Secure/i);
     expect(setCookie).toMatch(/SameSite=Strict/i);
     expect(setCookie).toMatch(/Path=\/api\/admin/i);
   });
