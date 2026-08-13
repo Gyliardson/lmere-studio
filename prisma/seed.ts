@@ -90,7 +90,7 @@ async function main() {
         id,
         tenantId,
         name: f.name,
-        type: f.type as any,
+        type: f.type,
         additionalPrice: f.additionalPrice,
         isSpecial: f.isSpecial,
         imageUrl: f.imageUrl,
@@ -254,7 +254,7 @@ async function main() {
         subtotal: o.subtotal,
         depositAmount: o.deposit,
         depositMode: "50_percent",
-        status: o.status as any,
+        status: o.status,
       }
     });
   }
