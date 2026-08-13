@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test:unit": "tsc -p tsconfig.tests.json && node --test .tmp-tests/tests/pricing.test.js",
+    "test:unit": "tsc -p tsconfig.tests.json && node --test .tmp-tests/tests/*.test.js",
     "test:integration:db": "prisma db execute --file prisma/ci-integration.sql --config=prisma.config.ts",
     "test:e2e": "playwright test",
     "quality": "npm run lint && npm run typecheck && npm run test:unit && npm run db:validate && npm run build",
