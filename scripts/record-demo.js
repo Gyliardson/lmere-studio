@@ -1,6 +1,7 @@
-const { chromium } = require('playwright');
-const fs = require('fs');
-const path = require('path');
+(async () => {
+const { chromium } = await import('playwright');
+const fs = await import('node:fs');
+const path = await import('node:path');
 
 const BASE_URL = 'http://localhost:3000';
 const STORE_SLUG = 'doce-arte';
@@ -15,7 +16,7 @@ if (fs.existsSync(timingFile)) {
   try {
     timingData = JSON.parse(fs.readFileSync(timingFile, 'utf-8'));
     console.log('[OK] Loaded timing.json:', timingData);
-  } catch (err) {
+  } catch {
     console.warn('[WARN] Could not parse timing.json');
   }
 }
@@ -366,3 +367,4 @@ main().catch(err => {
   console.error('[ERROR] Recording failed:', err);
   process.exit(1);
 });
+})();
