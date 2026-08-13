@@ -6,28 +6,32 @@ The portfolio professionalization branch uses reproducible automated gates rathe
 
 Use Node.js 22 or newer, install the locked dependencies, generate Prisma Client, and run `npm run quality`.
 
-The quality command covers ESLint, TypeScript typechecking, risk-focused unit tests, Prisma validation, and the production build. The GitHub Actions Quality workflow additionally performs dependency auditing and database/application smoke verification.
+The quality command covers ESLint, TypeScript typechecking, risk-focused unit tests, Prisma validation, and the production build. GitHub Actions additionally performs dependency auditing and database/application smoke verification.
 
 ## PostgreSQL integration
 
-CI provisions PostgreSQL 16 without using live Neon credentials. It verifies an empty database can receive the committed migrations, deterministic Tenant A and Tenant B fixtures, database integration assertions, and a production application start that queries the disposable database.
+CI provisions PostgreSQL 16 without live Neon credentials. It verifies an empty database can receive committed migrations, deterministic Tenant A and Tenant B fixtures, database integration assertions, and a production application start against the disposable database.
 
-The relevant test fixtures are `prisma/ci-seed.sql` and `prisma/ci-integration.sql`.
+The relevant fixtures are `prisma/ci-seed.sql` and `prisma/ci-integration.sql`.
 
 ## Browser E2E
 
-Playwright is intentionally separate from demo/media capture. After preparing the test database and production build, run `npm run test:e2e`.
+Playwright is separate from demo/media capture. After preparing the test database and production build, run `npm run test:e2e`.
 
 `playwright.config.ts` defines deterministic desktop and mobile Chromium projects, `pt-BR` locale, the `America/Sao_Paulo` timezone, and retained trace/screenshot/video evidence on failures.
 
-Current browser smoke coverage proves that the deterministic Tenant A storefront loads without Tenant B fixture leakage, a missing tenant reaches the expected error state, and critical storefront landmarks/primary action are exposed through accessible roles on desktop and mobile.
+Current coverage includes storefront loading, missing-tenant behavior, baseline accessible roles, protected-admin unauthenticated paths, real synthetic admin login, signed Tenant A != Tenant B isolation through the Next.js admin APIs, and the `/admin` browser session lifecycle. Cross-tenant tests verify that request-controlled tenant identifiers cannot redirect tested reads and that foreign menu, blocked-date, and order mutations are rejected. Browser lifecycle tests exercise signed-session restoration after reload and server-backed logout persistence across a subsequent reload on desktop and mobile.
 
-The accessibility smoke is a foundation check, not a claim of complete WCAG certification. Deeper keyboard, focus, contrast, dialog, and automated axe coverage belongs to subsequent UI/accessibility work.
+The accessibility smoke is a foundation check, not a claim of complete WCAG certification. Deeper keyboard, focus, contrast, dialog, and axe coverage belongs to later UI/accessibility work.
 
 ## Security gates
 
-The Quality workflow blocks high/critical production dependency audit findings. A separate read-only Gitleaks workflow scans pull-request changes for secrets. Application authorization and tenant isolation remain behavior-level concerns and must be proved by dedicated tests.
+The Quality workflow blocks high/critical production dependency findings. A separate read-only Gitleaks workflow scans pull-request changes for secrets.
+
+Admin authentication uses an expiry-bound signed HttpOnly cookie, and protected admin routes derive tenant identity from the verified session. Unit and PostgreSQL-backed E2E tests cover malformed/tampered/expired sessions, unauthenticated requests, valid synthetic login, authenticated tenant isolation, browser session restoration, and server-backed logout. Production session cookies are required to be `Secure`, `HttpOnly`, and `SameSite=Strict` and are scoped to `/api/admin`.
+
+Public order server-authority is tracked separately in #3 and is not implied by the admin isolation tests.
 
 ## Failure policy
 
-Do not remove meaningful tests, suppress relevant lint rules, loosen authorization, or mark failures flaky merely to make CI green. Diagnose the first real cause, preserve useful evidence, and fix the underlying implementation or test assumption.
+Do not remove meaningful tests, suppress relevant lint rules, loosen authorization, or mark failures flaky merely to make CI green. Diagnose the first real cause, preserve useful evidence, and fix the implementation or test assumption.

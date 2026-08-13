@@ -1,47 +1,45 @@
+import { getAdminSession } from "@/lib/admin-session";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
+const unauthorized = () => NextResponse.json({ error: "Sessão inválida ou expirada" }, { status: 401 });
+
+function serializeSettings(tenant: {
+  adminPasswordHash: string;
+  shadowColor: string;
+  primaryColor: string;
+  featuresConfig: string;
+  [key: string]: unknown;
+}) {
+  const { adminPasswordHash: _adminPasswordHash, ...settings } = tenant;
+  return {
+    ...settings,
+    shadowColor: tenant.shadowColor || tenant.primaryColor || "#8B5CF6",
+    featuresConfig: JSON.parse(tenant.featuresConfig),
+  };
+}
+
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const tenantId = searchParams.get("tenantId");
-    if (!tenantId) {
-      return NextResponse.json({ error: "tenantId obrigatório" }, { status: 400 });
-    }
+    const session = getAdminSession(request);
+    if (!session) return unauthorized();
 
-    const tenant = await prisma.tenant.findUnique({
-      where: { id: tenantId },
-    });
+    const tenant = await prisma.tenant.findUnique({ where: { id: session.tenantId } });
+    if (!tenant) return unauthorized();
 
-    if (!tenant) {
-      return NextResponse.json({ error: "Ateliê não encontrado" }, { status: 404 });
-    }
-
-    const { adminPasswordHash, ...settings } = tenant;
-
-    return NextResponse.json({
-      settings: {
-        ...settings,
-        shadowColor: tenant.shadowColor || tenant.primaryColor || "#8B5CF6",
-        featuresConfig: JSON.parse(tenant.featuresConfig),
-      },
-    });
+    return NextResponse.json({ settings: serializeSettings(tenant) });
   } catch (error) {
-    console.error("[ERROR] Failed to fetch settings:", error);
+    console.error("[ERROR] Failed to fetch admin settings", error instanceof Error ? error.message : "unknown error");
     return NextResponse.json({ error: "Erro ao buscar configurações" }, { status: 500 });
   }
 }
 
 export async function PUT(request: Request) {
   try {
-    const body = await request.json();
-    const { tenantId, ...rawUpdates } = body;
+    const session = getAdminSession(request);
+    if (!session) return unauthorized();
 
-    if (!tenantId) {
-      return NextResponse.json({ error: "tenantId obrigatório" }, { status: 400 });
-    }
-
-    /* Whitelist only valid Tenant fields to prevent Prisma errors */
+    const rawUpdates = await request.json();
     const allowedFields = [
       "name", "logoUrl", "bannerUrl", "whatsapp", "pixKey",
       "primaryColor", "secondaryColor", "backgroundColor",
@@ -52,7 +50,7 @@ export async function PUT(request: Request) {
     const sanitized: Record<string, unknown> = {};
     for (const key of allowedFields) {
       if (rawUpdates[key] !== undefined) {
-        if (key === "featuresConfig" && typeof rawUpdates[key] === "object") {
+        if (key === "featuresConfig" && typeof rawUpdates[key] === "object" && rawUpdates[key] !== null) {
           sanitized[key] = JSON.stringify(rawUpdates[key]);
         } else {
           sanitized[key] = rawUpdates[key];
@@ -61,21 +59,13 @@ export async function PUT(request: Request) {
     }
 
     const tenant = await prisma.tenant.update({
-      where: { id: tenantId },
+      where: { id: session.tenantId },
       data: sanitized,
     });
 
-    const { adminPasswordHash, ...settings } = tenant;
-
-    return NextResponse.json({
-      settings: {
-        ...settings,
-        shadowColor: tenant.shadowColor || tenant.primaryColor || "#8B5CF6",
-        featuresConfig: JSON.parse(tenant.featuresConfig),
-      },
-    });
+    return NextResponse.json({ settings: serializeSettings(tenant) });
   } catch (error) {
-    console.error("[ERROR] Failed to update settings:", error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    console.error("[ERROR] Failed to update admin settings", error instanceof Error ? error.message : "unknown error");
+    return NextResponse.json({ error: "Erro ao atualizar configurações" }, { status: 500 });
   }
 }
