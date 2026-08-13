@@ -9,6 +9,9 @@ import {
 } from "@/lib/admin-session";
 
 const UNAUTHORIZED = { error: "Credenciais inválidas" };
+// Fixed non-production credential hash used only to keep unknown-tenant login
+// attempts on the same bcrypt verification path as known tenants.
+const DUMMY_PASSWORD_HASH = "$2b$10$vGcCuvAGtutf9QbLKDl2VOTxm/yNRchJO5qpcyDgqP5a5kZWo8dDa";
 
 export async function POST(request: Request) {
   try {
@@ -19,7 +22,8 @@ export async function POST(request: Request) {
     }
 
     const tenant = await prisma.tenant.findUnique({ where: { slug: slug.trim() } });
-    if (!tenant || !compareSync(password, tenant.adminPasswordHash)) {
+    const passwordValid = compareSync(password, tenant?.adminPasswordHash ?? DUMMY_PASSWORD_HASH);
+    if (!tenant || !passwordValid) {
       return NextResponse.json(UNAUTHORIZED, { status: 401 });
     }
 
