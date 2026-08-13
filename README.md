@@ -1,7 +1,7 @@
 # L'Mere Studio - Multi-Tenant Cake Order Simulator & CMS
 
 [![Version](https://img.shields.io/badge/version-1.2.0-purple.svg)](CHANGELOG.md)
-[![Next.js](https://img.shields.io/badge/Next.js-16.2.12-black.svg)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16.3.0-black.svg)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.2.4-blue.svg)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
 [![Prisma](https://img.shields.io/badge/Prisma-7.9.1-darkblue.svg)](https://www.prisma.io/)
@@ -93,11 +93,11 @@ flowchart TD
 ### Database/runtime contract
 
 - Prisma schema provider: **PostgreSQL**.
-- Production-style runtime currently uses `@prisma/adapter-neon` with `POSTGRES_PRISMA_URL`.
+- Application runtime and Prisma tooling use the canonical `POSTGRES_PRISMA_URL` connection variable.
+- Prisma runtime uses `@prisma/adapter-pg`, so ordinary PostgreSQL TCP works locally and in disposable CI while Neon remains a compatible production PostgreSQL provider.
 - CI uses a disposable **PostgreSQL 16** service and never depends on live Neon credentials.
 - Versioned migrations bootstrap an empty database via `prisma migrate deploy`.
 - Deterministic CI fixtures create two tenants for relational and future isolation tests.
-- A remaining professionalization item is making the application runtime itself portable to ordinary PostgreSQL TCP for application-backed integration tests; until that change lands, local runtime should use a Neon-compatible PostgreSQL connection.
 
 ---
 
@@ -105,10 +105,10 @@ flowchart TD
 
 | Domain | Technology |
 | --- | --- |
-| Framework | Next.js 16.2.12 (App Router) |
+| Framework | Next.js 16.3.0 (App Router) |
 | UI & Styling | React 19.2.4, Tailwind CSS v4 |
 | Icons | Lucide React |
-| Database | PostgreSQL, Prisma 7.9.1, Neon serverless adapter in the current runtime |
+| Database | PostgreSQL, Prisma 7.9.1, `@prisma/adapter-pg` |
 | Password hashing | bcryptjs |
 | Language | TypeScript 5 |
 | Browser testing foundation | Playwright |
@@ -121,7 +121,7 @@ flowchart TD
 ### Prerequisites
 - Node.js **22.x or higher**
 - npm compatible with the selected Node.js release
-- A PostgreSQL/Neon connection suitable for the current runtime
+- PostgreSQL locally, or a PostgreSQL-compatible hosted connection such as Neon
 
 ### Installation
 
@@ -140,7 +140,7 @@ flowchart TD
    ```bash
    cp .env.example .env
    ```
-   Set `POSTGRES_PRISMA_URL` to the development database connection. The current application runtime uses the Neon serverless adapter; CI database bootstrapping itself works with ordinary PostgreSQL 16.
+   Set `POSTGRES_PRISMA_URL` to the development PostgreSQL connection.
 
 4. Generate Prisma Client and apply versioned migrations:
    ```bash
@@ -180,6 +180,7 @@ The public storefront is available at `/<tenant-slug>` and the admin interface a
 Current CI on the professionalization branch verifies:
 
 - dependency installation from `package-lock.json`;
+- production dependency audit blocking high/critical findings;
 - Prisma Client generation;
 - ESLint with a retained machine-readable report;
 - TypeScript typecheck;
@@ -190,9 +191,12 @@ Current CI on the professionalization branch verifies:
 - migrations from an empty database;
 - deterministic Tenant A / Tenant B fixture creation;
 - database-level relational/constraint negative paths;
-- post-test migration status.
+- application build/start against disposable PostgreSQL;
+- public tenant API smoke for Tenant A, non-exposure of the admin password hash, absence of Tenant B fixture leakage, and 404 behavior for an unknown tenant;
+- post-test migration status;
+- server diagnostics artifact on application-smoke failure.
 
-Application-backed API integration, tenant-authorization tests, deterministic E2E, accessibility, and security/dependency gates are still explicit program work and are not claimed complete here.
+Admin tenant-authorization tests, deterministic browser E2E, accessibility, secret scanning, and broader static security analysis remain explicit program work and are not claimed complete here.
 
 ---
 
