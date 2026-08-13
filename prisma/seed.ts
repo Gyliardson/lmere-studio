@@ -15,7 +15,7 @@ async function main() {
   const tenantId = uuid();
   const adminHash = bcryptjs.hashSync("admin123", 10);
 
-  const tenant = await prisma.tenant.create({
+  await prisma.tenant.create({
     data: {
       id: tenantId,
       slug: "doce-arte",
