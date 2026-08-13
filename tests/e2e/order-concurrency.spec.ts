@@ -10,12 +10,16 @@ const base = {
 };
 
 test("concurrent submissions cannot exceed daily capacity", async ({ request }, testInfo) => {
-  const eventDate = testInfo.project.name.includes("mobile") ? "2030-02-11" : "2030-02-04";
+  const projectOffset = testInfo.project.name.includes("mobile") ? 7 : 0;
+  const retryOffset = testInfo.retry * 14;
+  const day = 4 + projectOffset + retryOffset;
+  const eventDate = `2030-02-${String(day).padStart(2, "0")}`;
+  const attemptKey = `${testInfo.project.name}-${testInfo.retry}`;
 
   const responses = await Promise.all(
     Array.from({ length: 6 }, (_, index) => request.post("/api/orders", {
-      headers: { "Idempotency-Key": `capacity-race-${testInfo.project.name}-${index}` },
-      data: { ...base, eventDate, customerName: `Capacity race ${index}` },
+      headers: { "Idempotency-Key": `capacity-race-${attemptKey}-${index}` },
+      data: { ...base, eventDate, customerName: `Capacity race ${attemptKey} ${index}` },
     })),
   );
 
