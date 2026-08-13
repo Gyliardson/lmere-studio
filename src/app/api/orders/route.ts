@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 
 const DAY_MS = 86_400_000;
 const MAX_IDEMPOTENCY_KEY_LENGTH = 128;
-const MAX_TRANSACTION_RETRIES = 4;
+const MAX_TRANSACTION_RETRIES = 8;
 const reject = (status: number, code: string, error: string) => NextResponse.json({ code, error }, { status });
 const cents = (value: number) => Math.round(value * 100);
 const money = (value: number) => Math.round(value) / 100;
@@ -36,6 +36,10 @@ function parseIdempotencyKey(request: Request, body: Record<string, unknown>) {
 function retryableTransactionError(error: unknown, hasIdempotencyKey: boolean) {
   if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return false;
   return error.code === "P2034" || (hasIdempotencyKey && error.code === "P2002");
+}
+
+function retryDelay(attempt: number) {
+  return new Promise((resolve) => setTimeout(resolve, Math.min(10 * 2 ** attempt, 160)));
 }
 
 export async function POST(request: Request) {
@@ -165,7 +169,11 @@ export async function POST(request: Request) {
         if (result instanceof NextResponse) return result;
         return NextResponse.json(result, { status: result.idempotentReplay ? 200 : 201 });
       } catch (error) {
-        if (attempt + 1 < MAX_TRANSACTION_RETRIES && retryableTransactionError(error, Boolean(idempotency.key))) {
+        if (retryableTransactionError(error, Boolean(idempotency.key))) {
+          if (attempt + 1 >= MAX_TRANSACTION_RETRIES) {
+            return reject(503, "ORDER_RETRY_EXHAUSTED", "Não foi possível confirmar o pedido; tente novamente");
+          }
+          await retryDelay(attempt);
           continue;
         }
         throw error;
