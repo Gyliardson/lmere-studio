@@ -75,7 +75,12 @@ function getCookieValue(cookieHeader: string | null, name: string): string | und
     const separator = part.indexOf("=");
     if (separator < 0) continue;
     const key = part.slice(0, separator).trim();
-    if (key === name) return decodeURIComponent(part.slice(separator + 1).trim());
+    if (key !== name) continue;
+    try {
+      return decodeURIComponent(part.slice(separator + 1).trim());
+    } catch {
+      return undefined;
+    }
   }
   return undefined;
 }
