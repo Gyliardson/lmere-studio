@@ -11,7 +11,9 @@
   },
   "include": [
     "tests/pricing.test.ts",
+    "tests/admin-session.test.ts",
     "src/lib/pricing.ts",
-    "src/lib/types.ts"
+    "src/lib/types.ts",
+    "src/lib/admin-session.ts"
   ]
 }
