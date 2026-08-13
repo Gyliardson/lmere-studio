@@ -137,8 +137,8 @@ jobs:
       - name: Apply versioned migrations to empty PostgreSQL
         run: npm run db:migrate
 
-      - name: Seed disposable PostgreSQL
-        run: npm run db:seed
+      - name: Seed deterministic CI fixtures
+        run: npx prisma db execute --file prisma/ci-seed.sql --config=prisma.config.ts
 
       - name: Verify migration state
         run: npx prisma migrate status --config=prisma.config.ts
