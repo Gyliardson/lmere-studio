@@ -9,10 +9,29 @@ function createSessionToken(tenantId: string) {
   return `${payload}.${signature}`;
 }
 
+async function installTenantASession(context: Parameters<typeof test>[0] extends never ? never : never) {
+  void context;
+}
+
 test("admin UI restores a valid cookie-backed session after reload", async ({ context, page }) => {
   await context.addCookies([{ name: "lmere_admin_session", value: createSessionToken("ci-tenant-a"), domain: "127.0.0.1", path: "/api/admin", httpOnly: true, sameSite: "Strict" }]);
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Gestão de Pedidos" })).toBeVisible();
   await page.reload();
   await expect(page.getByRole("heading", { name: "Gestão de Pedidos" })).toBeVisible();
+});
+
+test("admin logout revokes the cookie-backed session across reloads", async ({ context, page }) => {
+  await context.addCookies([{ name: "lmere_admin_session", value: createSessionToken("ci-tenant-a"), domain: "127.0.0.1", path: "/api/admin", httpOnly: true, sameSite: "Strict" }]);
+  await page.goto("/admin");
+  await expect(page.getByRole("heading", { name: "Gestão de Pedidos" })).toBeVisible();
+
+  await page.getByRole("button", { name: /^Sair/ }).click();
+  await expect(page.getByRole("heading", { name: "Painel Admin" })).toBeVisible();
+
+  const cookies = await context.cookies("http://127.0.0.1:3000/api/admin/auth");
+  expect(cookies.some((cookie) => cookie.name === "lmere_admin_session")).toBe(false);
+
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Painel Admin" })).toBeVisible();
 });
