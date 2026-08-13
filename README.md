@@ -12,7 +12,7 @@
 
 L'Mere Studio is a white-label, multi-tenant web application for artisan bakeries, cake designers, and confectioneries. It combines a five-step public cake-order flow with a self-service admin dashboard for catalog, schedule, branding, and order management.
 
-> **Professionalization in progress:** the `portfolio/revamp-2026` program is actively hardening server-side business rules, client session lifecycle, accessibility, documentation, and reproducibility. The current README describes only behavior and infrastructure that exist in the repository; release-grade certification is intentionally deferred until the corresponding gates are complete.
+> **Professionalization in progress:** the `portfolio/revamp-2026` program is actively hardening server-side business rules, security, accessibility, documentation, and reproducibility. The current README describes only behavior and infrastructure that exist in the repository; release-grade certification is intentionally deferred until the corresponding gates are complete.
 
 ---
 
@@ -106,8 +106,8 @@ flowchart TD
 - `ADMIN_SESSION_SECRET` is required and must contain at least 32 bytes of unique secret material.
 - Admin order, menu, calendar, and settings routes derive tenant identity from the verified server-side session rather than trusting request-supplied tenant IDs.
 - Mutations that target existing tenant resources verify ownership before changing or deleting them.
-- CI exercises unauthenticated negative paths and authenticated Tenant A != Tenant B isolation against disposable PostgreSQL.
-- The remaining professionalization work for this boundary is the browser-side session lifecycle: restoring a valid session after `/admin` refresh and invoking server logout from the UI.
+- The `/admin` client restores an existing valid session before deciding whether to show the login form, and its logout controls revoke the server cookie before clearing local authenticated state.
+- CI exercises unauthenticated negative paths, authenticated Tenant A != Tenant B isolation, refresh restoration, and server-backed logout persistence against disposable PostgreSQL.
 
 ---
 
@@ -213,12 +213,13 @@ Current CI on the professionalization branch verifies:
 - unauthenticated negative-path checks for protected admin routes;
 - authenticated Tenant A/B isolation checks proving request-supplied tenant IDs cannot redirect tested reads/mutations across tenants;
 - cross-tenant mutation checks for menu resources, blocked dates, and orders;
+- admin browser session restoration and server-backed logout persistence across reloads on desktop and mobile;
 - an initial accessibility role/landmark smoke on desktop and mobile;
 - read-only Gitleaks secret scanning;
 - post-test migration status;
 - server diagnostics and Playwright trace/screenshot/video artifacts on relevant failures.
 
-The browser accessibility smoke is intentionally narrow and is not a claim of complete WCAG compliance. The admin backend/session isolation boundary now has automated negative-path evidence, but `/admin` refresh/session restoration and UI-driven server logout remain explicit work before #2 is complete. Deeper keyboard/focus/contrast/axe coverage and additional static security analysis remain later program work.
+The browser accessibility smoke is intentionally narrow and is not a claim of complete WCAG compliance. The admin session and tenant-isolation boundary has automated unit/API/browser evidence, while deeper keyboard/focus/contrast/axe coverage and additional static security analysis remain later program work.
 
 ---
 
@@ -234,7 +235,7 @@ The browser accessibility smoke is intentionally narrow and is not a claim of co
 | `/api/admin/calendar` | `GET`, `POST`, `PUT`, `DELETE` | Tenant-scoped schedule and blocked-date management | Admin session |
 | `/api/admin/settings` | `GET`, `PUT` | Tenant-scoped branding/configuration | Admin session |
 
-> The administrative API routes above enforce the validated session tenant on the current professionalization branch and have automated Tenant A/B negative-path coverage. This is not a final project security certification: browser session lifecycle remains incomplete, and public order submission is still undergoing separate server-authority hardening in #3.
+> The administrative API routes above enforce the validated session tenant and have automated Tenant A/B negative-path coverage, including browser refresh/logout lifecycle checks. This is not a final project security certification: public order submission is still undergoing separate server-authority hardening in #3.
 
 ---
 
