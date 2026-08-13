@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const isCI = Boolean(process.env.CI);
+const testAdminSessionSecret = process.env.ADMIN_SESSION_SECRET || "lmere-ci-admin-session-secret-at-least-32-bytes";
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -45,5 +46,9 @@ export default defineConfig({
     timeout: 60_000,
     stdout: "pipe",
     stderr: "pipe",
+    env: {
+      ...process.env,
+      ADMIN_SESSION_SECRET: testAdminSessionSecret,
+    },
   },
 });
