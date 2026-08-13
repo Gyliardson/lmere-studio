@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   ADMIN_SESSION_COOKIE,
   ADMIN_SESSION_TTL_SECONDS,
+  adminSessionCookieOptions,
   createAdminSessionToken,
   getAdminSession,
   verifyAdminSessionToken,
@@ -47,4 +48,17 @@ test("malformed percent-encoded session cookie is rejected instead of throwing",
     headers: { cookie: `${ADMIN_SESSION_COOKIE}=%E0%A4%A` },
   });
   assert.equal(getAdminSession(request, NOW), null);
+});
+
+test("admin cookie is constrained to the protected API surface", () => {
+  const previousNodeEnv = process.env.NODE_ENV;
+  process.env.NODE_ENV = "production";
+  assert.deepEqual(adminSessionCookieOptions(), {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+    path: "/api/admin",
+    maxAge: ADMIN_SESSION_TTL_SECONDS,
+  });
+  process.env.NODE_ENV = previousNodeEnv;
 });
