@@ -36,11 +36,11 @@ The deterministic fixture exposes only synthetic `ci-tenant-a`/`ci-tenant-b` dat
 
 Generated files are written to `docs/media/generated/` with explicit viewport prefixes:
 
-- `desktop-storefront.png`
-- `desktop-storefront-summary.png`
-- `desktop-admin-orders.png`
-- `desktop-admin-menu.png`
-- `desktop-admin-brand.png`
+- `desktop-storefront.jpg`
+- `desktop-storefront-summary.jpg`
+- `desktop-admin-orders.jpg`
+- `desktop-admin-menu.jpg`
+- `desktop-admin-brand.jpg`
 - corresponding `mobile-*` captures
 
 The capture projects use fixed 1440×900 and 390×844 CSS-pixel viewports, Chromium for both desktop and mobile emulation, `pt-BR`, `America/Sao_Paulo`, dark color scheme, disabled decorative motion, deterministic catalog IDs, and a fixed future order date.
