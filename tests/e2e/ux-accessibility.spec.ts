@@ -3,7 +3,9 @@ import { expect, test, type Page, type TestInfo } from "@playwright/test";
 function storefrontDate(testInfo: TestInfo, slot: number) {
   const projectOffset = testInfo.project.name.includes("mobile") ? 6 : 0;
   const retryOffset = testInfo.retry * 12;
-  const date = new Date(Date.UTC(2031, 0, 14 + 7 * (slot + projectOffset + retryOffset)));
+  // CI tenant A is open on Mondays (dayOfWeek=1); keep every generated case
+  // on that weekday so the accessibility test exercises the intended flow.
+  const date = new Date(Date.UTC(2031, 0, 13 + 7 * (slot + projectOffset + retryOffset)));
   return { year: date.getUTCFullYear(), month: date.getUTCMonth(), day: date.getUTCDate() };
 }
 
