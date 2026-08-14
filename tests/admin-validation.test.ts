@@ -89,6 +89,19 @@ test("partial catalog updates reject empty and invalid mutations", () => {
   expectInvalid(validateMenuUpdate({ id: "flavor-a", itemType: "flavor", category: "OTHER" }), "type");
 });
 
+test("explicit nulls are rejected instead of being coerced to defaults", () => {
+  expectInvalid(validateMenuUpdate({ id: "size-a", itemType: "size", active: null }), "active");
+  expectInvalid(validateMenuUpdate({ id: "size-a", itemType: "size", sortOrder: null }), "sortOrder");
+  expectInvalid(validateMenuUpdate({ id: "flavor-a", itemType: "flavor", additionalPrice: null }), "additionalPrice");
+  expectInvalid(validateMenuUpdate({ id: "addon-a", itemType: "addon", description: null }), "description");
+  expectInvalid(validateMenuCreate({
+    itemType: null,
+    type: "addon",
+    name: "Null type",
+    price: 1,
+  }), "itemType");
+});
+
 test("tenant settings normalize bounded values and phone", () => {
   const result = validateTenantSettingsUpdate({
     tenantId: "ignored-client-tenant",
