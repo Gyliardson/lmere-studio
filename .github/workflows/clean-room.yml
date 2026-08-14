@@ -1,0 +1,184 @@
+name: Clean Room
+
+on:
+  pull_request:
+    branches:
+      - portfolio/revamp-2026
+      - master
+    paths:
+      - ".github/workflows/clean-room.yml"
+      - "docs/RELEASE.md"
+      - "README.md"
+      - "package.json"
+      - "package-lock.json"
+      - "prisma/**"
+      - "src/**"
+      - "tests/**"
+      - "playwright.config.ts"
+  push:
+    branches:
+      - portfolio/revamp-2026
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: clean-room-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Fresh checkout → PostgreSQL → build → runtime → E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: lmere_release
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d lmere_release"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      POSTGRES_PRISMA_URL: postgresql://postgres:postgres@127.0.0.1:5432/lmere_release?sslmode=disable
+      ADMIN_SESSION_SECRET: ci-clean-room-admin-session-secret-at-least-32-bytes
+      RATE_LIMIT_SECRET: ci-clean-room-rate-limit-secret-at-least-32-bytes
+      NODE_ENV: test
+      CI: true
+    steps:
+      - name: Checkout exact candidate repository state
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Apply committed migrations to empty PostgreSQL
+        run: npm run db:migrate
+
+      - name: Seed deterministic Tenant A/B fixtures
+        run: npx prisma db execute --file prisma/ci-seed.sql --config=prisma.config.ts
+
+      - name: Run PostgreSQL integration assertions
+        run: npm run test:integration:db
+
+      - name: Validate schema
+        run: npm run db:validate
+
+      - name: Run unit tests
+        run: npm run test:unit
+
+      - name: Build production application
+        run: npm run build
+
+      - name: Prove built application queries disposable PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          node node_modules/next/dist/bin/next start > clean-room-server.log 2>&1 &
+          server_pid=$!
+          cleanup_server() {
+            kill "$server_pid" 2>/dev/null || true
+            wait "$server_pid" 2>/dev/null || true
+          }
+          trap cleanup_server EXIT
+
+          ready=0
+          for attempt in {1..30}; do
+            status=$(curl --silent --output clean-room-tenant-a.json --write-out '%{http_code}' http://127.0.0.1:3000/api/tenants/ci-tenant-a || true)
+            if [ "$status" = "200" ]; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+
+          if [ "$ready" != "1" ]; then
+            echo "Built application did not become ready."
+            cat clean-room-server.log
+            exit 1
+          fi
+
+          node <<'NODE'
+          const fs = require('node:fs');
+          const payload = JSON.parse(fs.readFileSync('clean-room-tenant-a.json', 'utf8'));
+          if (payload.tenant?.id !== 'ci-tenant-a') throw new Error('Expected deterministic Tenant A');
+          if ('adminPasswordHash' in payload.tenant) throw new Error('Public API exposed adminPasswordHash');
+          const resourceIds = [
+            ...(payload.sizes ?? []).map((item) => item.id),
+            ...(payload.doughs ?? []).map((item) => item.id),
+            ...(payload.fillings ?? []).map((item) => item.id),
+          ];
+          if (!resourceIds.includes('ci-size-a') || !resourceIds.includes('ci-flavor-a') || !resourceIds.includes('ci-filling-a')) {
+            throw new Error('Tenant A deterministic resources missing');
+          }
+          if (resourceIds.some((id) => String(id).endsWith('-b'))) {
+            throw new Error('Tenant B resource leaked into Tenant A response');
+          }
+          NODE
+
+          missing_status=$(curl --silent --output clean-room-tenant-missing.json --write-out '%{http_code}' http://127.0.0.1:3000/api/tenants/ci-tenant-missing)
+          test "$missing_status" = "404"
+
+          cleanup_server
+          trap - EXIT
+
+      - name: Verify migration state
+        run: npx prisma migrate status --config=prisma.config.ts
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run isolated Playwright E2E suite
+        shell: bash
+        run: |
+          set -uo pipefail
+          mapfile -t specs < <(find tests/e2e -maxdepth 1 -type f -name '*.spec.ts' -print | sort)
+          test "${#specs[@]}" -gt 0
+
+          failed=0
+          for spec in "${specs[@]}"; do
+            echo "::group::Playwright ${spec}"
+            if ! npx prisma db execute --file prisma/ci-reset-rate-limits.sql --config=prisma.config.ts; then
+              failed=1
+              echo "::error::Failed to reset rate-limit fixtures before ${spec}"
+            elif ! npx playwright test "${spec}"; then
+              failed=1
+            fi
+            echo "::endgroup::"
+          done
+
+          exit "$failed"
+
+      - name: Upload clean-room diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: clean-room-failure-evidence
+          path: |
+            clean-room-server.log
+            clean-room-tenant-a.json
+            clean-room-tenant-missing.json
+            playwright-report
+            test-results
+          if-no-files-found: warn
+          retention-days: 7
