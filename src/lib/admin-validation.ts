@@ -88,6 +88,10 @@ function issue(issues: ValidationIssue[], field: string, message: string) {
   issues.push({ field, message });
 }
 
+function defaultIfUndefined(value: unknown, fallback: unknown): unknown {
+  return value === undefined ? fallback : value;
+}
+
 function stringValue(
   value: unknown,
   field: string,
@@ -198,7 +202,11 @@ function phoneValue(value: unknown, field: string, issues: ValidationIssue[]): s
 }
 
 function menuType(raw: Record<string, unknown>, issues: ValidationIssue[]): MenuItemType | undefined {
-  const candidate = raw.itemType ?? (raw.type === "size" || raw.type === "flavor" || raw.type === "addon" ? raw.type : undefined);
+  const candidate = raw.itemType !== undefined
+    ? raw.itemType
+    : raw.type === "size" || raw.type === "flavor" || raw.type === "addon"
+      ? raw.type
+      : undefined;
   return enumValue(candidate, "itemType", ["size", "flavor", "addon"] as const, issues);
 }
 
@@ -217,8 +225,8 @@ function sizeData(raw: Record<string, unknown>, issues: ValidationIssue[], parti
   if (take("weightKg")) data.weightKg = numberValue(raw.weightKg, "weightKg", issues, { min: 0.1, max: ADMIN_LIMITS.weightKg });
   if (take("basePrice")) data.basePrice = numberValue(raw.basePrice, "basePrice", issues, { min: 0, max: ADMIN_LIMITS.money });
   if (take("maxFillings")) data.maxFillings = numberValue(raw.maxFillings, "maxFillings", issues, { min: 1, max: ADMIN_LIMITS.maxFillings, integer: true });
-  if (take("sortOrder")) data.sortOrder = numberValue(raw.sortOrder ?? 0, "sortOrder", issues, { min: 0, max: ADMIN_LIMITS.sortOrder, integer: true });
-  if (take("active")) data.active = booleanValue(raw.active ?? true, "active", issues);
+  if (take("sortOrder")) data.sortOrder = numberValue(defaultIfUndefined(raw.sortOrder, 0), "sortOrder", issues, { min: 0, max: ADMIN_LIMITS.sortOrder, integer: true });
+  if (take("active")) data.active = booleanValue(defaultIfUndefined(raw.active, true), "active", issues);
   return Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) as Partial<SizeData>;
 }
 
@@ -227,11 +235,11 @@ function flavorData(raw: Record<string, unknown>, issues: ValidationIssue[], par
   const take = (key: keyof FlavorData) => !partial || raw[key] !== undefined || (key === "type" && (raw.flavorType !== undefined || raw.category !== undefined));
   if (take("name")) data.name = stringValue(raw.name, "name", issues, { max: 80 });
   if (take("type")) data.type = enumValue(flavorCategory(raw), "type", ["MASSA", "RECHEIO"] as const, issues);
-  if (take("additionalPrice")) data.additionalPrice = numberValue(raw.additionalPrice ?? 0, "additionalPrice", issues, { min: 0, max: ADMIN_LIMITS.money });
-  if (take("isSpecial")) data.isSpecial = booleanValue(raw.isSpecial ?? false, "isSpecial", issues);
-  if (take("imageUrl")) data.imageUrl = imageValue(raw.imageUrl ?? "", "imageUrl", issues);
-  if (take("sortOrder")) data.sortOrder = numberValue(raw.sortOrder ?? 0, "sortOrder", issues, { min: 0, max: ADMIN_LIMITS.sortOrder, integer: true });
-  if (take("active")) data.active = booleanValue(raw.active ?? true, "active", issues);
+  if (take("additionalPrice")) data.additionalPrice = numberValue(defaultIfUndefined(raw.additionalPrice, 0), "additionalPrice", issues, { min: 0, max: ADMIN_LIMITS.money });
+  if (take("isSpecial")) data.isSpecial = booleanValue(defaultIfUndefined(raw.isSpecial, false), "isSpecial", issues);
+  if (take("imageUrl")) data.imageUrl = imageValue(defaultIfUndefined(raw.imageUrl, ""), "imageUrl", issues);
+  if (take("sortOrder")) data.sortOrder = numberValue(defaultIfUndefined(raw.sortOrder, 0), "sortOrder", issues, { min: 0, max: ADMIN_LIMITS.sortOrder, integer: true });
+  if (take("active")) data.active = booleanValue(defaultIfUndefined(raw.active, true), "active", issues);
   return Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) as Partial<FlavorData>;
 }
 
@@ -239,11 +247,11 @@ function addonData(raw: Record<string, unknown>, issues: ValidationIssue[], part
   const data: Partial<AddonData> = {};
   const take = (key: keyof AddonData) => !partial || raw[key] !== undefined;
   if (take("name")) data.name = stringValue(raw.name, "name", issues, { max: 80 });
-  if (take("description")) data.description = stringValue(raw.description ?? "", "description", issues, { allowEmpty: true, max: ADMIN_LIMITS.description });
+  if (take("description")) data.description = stringValue(defaultIfUndefined(raw.description, ""), "description", issues, { allowEmpty: true, max: ADMIN_LIMITS.description });
   if (take("price")) data.price = numberValue(raw.price, "price", issues, { min: 0, max: ADMIN_LIMITS.money });
-  if (take("imageUrl")) data.imageUrl = imageValue(raw.imageUrl ?? "", "imageUrl", issues);
-  if (take("sortOrder")) data.sortOrder = numberValue(raw.sortOrder ?? 0, "sortOrder", issues, { min: 0, max: ADMIN_LIMITS.sortOrder, integer: true });
-  if (take("active")) data.active = booleanValue(raw.active ?? true, "active", issues);
+  if (take("imageUrl")) data.imageUrl = imageValue(defaultIfUndefined(raw.imageUrl, ""), "imageUrl", issues);
+  if (take("sortOrder")) data.sortOrder = numberValue(defaultIfUndefined(raw.sortOrder, 0), "sortOrder", issues, { min: 0, max: ADMIN_LIMITS.sortOrder, integer: true });
+  if (take("active")) data.active = booleanValue(defaultIfUndefined(raw.active, true), "active", issues);
   return Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) as Partial<AddonData>;
 }
 
