@@ -23,7 +23,7 @@ model Tenant {
   adminPasswordHash String   @default("")
   maxOrdersPerDay   Int      @default(5)
   minLeadDays       Int      @default(3)
-  featuresConfig    String   @default("{}")
+  featuresConfig    String   @default("{\"allow_photo_upload\":true,\"deposit_mode\":\"50_percent\",\"enable_delivery_step\":false,\"custom_fields\":[]}")
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

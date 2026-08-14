@@ -1,9 +1,24 @@
 import { getAdminSession } from "@/lib/admin-session";
+import { validateMenuCreate, validateMenuUpdate, type ValidationIssue } from "@/lib/admin-validation";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
 const unauthorized = () => NextResponse.json({ error: "Sessão inválida ou expirada" }, { status: 401 });
 const notFound = () => NextResponse.json({ error: "Item não encontrado" }, { status: 404 });
+const invalidJson = () => NextResponse.json({ code: "INVALID_JSON", error: "Corpo JSON inválido" }, { status: 400 });
+const validationError = (issues: ValidationIssue[]) => NextResponse.json({
+  code: "VALIDATION_ERROR",
+  error: "Dados inválidos",
+  issues,
+}, { status: 422 });
+
+async function jsonBody(request: Request) {
+  try {
+    return { ok: true as const, value: await request.json() as unknown };
+  } catch {
+    return { ok: false as const };
+  }
+}
 
 export async function GET(request: Request) {
   try {
@@ -11,18 +26,9 @@ export async function GET(request: Request) {
     if (!session) return unauthorized();
 
     const [sizes, flavors, addons] = await Promise.all([
-      prisma.cakeSize.findMany({
-        where: { tenantId: session.tenantId },
-        orderBy: { sortOrder: "asc" },
-      }),
-      prisma.cakeFlavor.findMany({
-        where: { tenantId: session.tenantId },
-        orderBy: { sortOrder: "asc" },
-      }),
-      prisma.addon.findMany({
-        where: { tenantId: session.tenantId },
-        orderBy: { sortOrder: "asc" },
-      }),
+      prisma.cakeSize.findMany({ where: { tenantId: session.tenantId }, orderBy: { sortOrder: "asc" } }),
+      prisma.cakeFlavor.findMany({ where: { tenantId: session.tenantId }, orderBy: { sortOrder: "asc" } }),
+      prisma.addon.findMany({ where: { tenantId: session.tenantId }, orderBy: { sortOrder: "asc" } }),
     ]);
 
     return NextResponse.json({ sizes, flavors, addons });
@@ -37,55 +43,22 @@ export async function POST(request: Request) {
     const session = getAdminSession(request);
     if (!session) return unauthorized();
 
-    const rawData = await request.json();
-    const itemType = rawData.itemType || rawData.type;
-    if (!itemType) return NextResponse.json({ error: "itemType obrigatório" }, { status: 400 });
+    const body = await jsonBody(request);
+    if (!body.ok) return invalidJson();
+    const parsed = validateMenuCreate(body.value);
+    if (!parsed.ok) return validationError(parsed.issues);
 
     let item;
-    switch (itemType) {
+    switch (parsed.value.itemType) {
       case "size":
-        item = await prisma.cakeSize.create({
-          data: {
-            tenantId: session.tenantId,
-            name: String(rawData.name || ""),
-            servings: String(rawData.servings || ""),
-            weightKg: Number(rawData.weightKg) || 1.5,
-            basePrice: Number(rawData.basePrice) || 0,
-            maxFillings: Number(rawData.maxFillings) || 2,
-            sortOrder: Number(rawData.sortOrder) || 0,
-            active: rawData.active !== false,
-          },
-        });
+        item = await prisma.cakeSize.create({ data: { tenantId: session.tenantId, ...parsed.value.data } });
         break;
       case "flavor":
-        item = await prisma.cakeFlavor.create({
-          data: {
-            tenantId: session.tenantId,
-            name: String(rawData.name || ""),
-            type: String(rawData.flavorType || rawData.category || (rawData.itemType ? rawData.type : undefined) || "RECHEIO"),
-            additionalPrice: Number(rawData.additionalPrice) || 0,
-            isSpecial: Boolean(rawData.isSpecial),
-            imageUrl: String(rawData.imageUrl || ""),
-            sortOrder: Number(rawData.sortOrder) || 0,
-            active: rawData.active !== false,
-          },
-        });
+        item = await prisma.cakeFlavor.create({ data: { tenantId: session.tenantId, ...parsed.value.data } });
         break;
       case "addon":
-        item = await prisma.addon.create({
-          data: {
-            tenantId: session.tenantId,
-            name: String(rawData.name || ""),
-            description: String(rawData.description || ""),
-            price: Number(rawData.price) || 0,
-            imageUrl: String(rawData.imageUrl || ""),
-            sortOrder: Number(rawData.sortOrder) || 0,
-            active: rawData.active !== false,
-          },
-        });
+        item = await prisma.addon.create({ data: { tenantId: session.tenantId, ...parsed.value.data } });
         break;
-      default:
-        return NextResponse.json({ error: "Tipo inválido" }, { status: 400 });
     }
 
     return NextResponse.json({ item }, { status: 201 });
@@ -100,58 +73,31 @@ export async function PUT(request: Request) {
     const session = getAdminSession(request);
     if (!session) return unauthorized();
 
-    const rawData = await request.json();
-    const id = typeof rawData.id === "string" ? rawData.id : "";
-    const itemType = rawData.itemType || rawData.type;
-    if (!id || !itemType) return NextResponse.json({ error: "id e itemType obrigatórios" }, { status: 400 });
+    const body = await jsonBody(request);
+    if (!body.ok) return invalidJson();
+    const parsed = validateMenuUpdate(body.value);
+    if (!parsed.ok) return validationError(parsed.issues);
 
     let item;
-    switch (itemType) {
+    switch (parsed.value.itemType) {
       case "size": {
-        const owned = await prisma.cakeSize.findFirst({ where: { id, tenantId: session.tenantId }, select: { id: true } });
+        const owned = await prisma.cakeSize.findFirst({ where: { id: parsed.value.id, tenantId: session.tenantId }, select: { id: true } });
         if (!owned) return notFound();
-        const updateData: Record<string, unknown> = {};
-        if (rawData.name !== undefined) updateData.name = String(rawData.name);
-        if (rawData.servings !== undefined) updateData.servings = String(rawData.servings);
-        if (rawData.weightKg !== undefined) updateData.weightKg = Number(rawData.weightKg);
-        if (rawData.basePrice !== undefined) updateData.basePrice = Number(rawData.basePrice);
-        if (rawData.maxFillings !== undefined) updateData.maxFillings = Number(rawData.maxFillings);
-        if (rawData.sortOrder !== undefined) updateData.sortOrder = Number(rawData.sortOrder);
-        if (rawData.active !== undefined) updateData.active = Boolean(rawData.active);
-        item = await prisma.cakeSize.update({ where: { id: owned.id }, data: updateData });
+        item = await prisma.cakeSize.update({ where: { id: owned.id }, data: parsed.value.data });
         break;
       }
       case "flavor": {
-        const owned = await prisma.cakeFlavor.findFirst({ where: { id, tenantId: session.tenantId }, select: { id: true } });
+        const owned = await prisma.cakeFlavor.findFirst({ where: { id: parsed.value.id, tenantId: session.tenantId }, select: { id: true } });
         if (!owned) return notFound();
-        const updateData: Record<string, unknown> = {};
-        if (rawData.name !== undefined) updateData.name = String(rawData.name);
-        if (rawData.flavorType !== undefined) updateData.type = String(rawData.flavorType);
-        else if (rawData.category !== undefined) updateData.type = String(rawData.category);
-        else if (rawData.itemType && rawData.type !== undefined) updateData.type = String(rawData.type);
-        if (rawData.additionalPrice !== undefined) updateData.additionalPrice = Number(rawData.additionalPrice);
-        if (rawData.isSpecial !== undefined) updateData.isSpecial = Boolean(rawData.isSpecial);
-        if (rawData.imageUrl !== undefined) updateData.imageUrl = String(rawData.imageUrl);
-        if (rawData.sortOrder !== undefined) updateData.sortOrder = Number(rawData.sortOrder);
-        if (rawData.active !== undefined) updateData.active = Boolean(rawData.active);
-        item = await prisma.cakeFlavor.update({ where: { id: owned.id }, data: updateData });
+        item = await prisma.cakeFlavor.update({ where: { id: owned.id }, data: parsed.value.data });
         break;
       }
       case "addon": {
-        const owned = await prisma.addon.findFirst({ where: { id, tenantId: session.tenantId }, select: { id: true } });
+        const owned = await prisma.addon.findFirst({ where: { id: parsed.value.id, tenantId: session.tenantId }, select: { id: true } });
         if (!owned) return notFound();
-        const updateData: Record<string, unknown> = {};
-        if (rawData.name !== undefined) updateData.name = String(rawData.name);
-        if (rawData.description !== undefined) updateData.description = String(rawData.description);
-        if (rawData.price !== undefined) updateData.price = Number(rawData.price);
-        if (rawData.imageUrl !== undefined) updateData.imageUrl = String(rawData.imageUrl);
-        if (rawData.sortOrder !== undefined) updateData.sortOrder = Number(rawData.sortOrder);
-        if (rawData.active !== undefined) updateData.active = Boolean(rawData.active);
-        item = await prisma.addon.update({ where: { id: owned.id }, data: updateData });
+        item = await prisma.addon.update({ where: { id: owned.id }, data: parsed.value.data });
         break;
       }
-      default:
-        return NextResponse.json({ error: "Tipo inválido" }, { status: 400 });
     }
 
     return NextResponse.json({ item });
@@ -191,7 +137,7 @@ export async function DELETE(request: Request) {
         break;
       }
       default:
-        return NextResponse.json({ error: "Tipo inválido" }, { status: 400 });
+        return validationError([{ field: "type", message: "valor suportado: size, flavor, addon" }]);
     }
 
     return NextResponse.json({ success: true });

@@ -13,9 +13,14 @@
     "tests/pricing.test.ts",
     "tests/admin-session.test.ts",
     "tests/order-validation.test.ts",
+    "tests/admin-validation.test.ts",
+    "tests/features-config.test.ts",
     "src/lib/pricing.ts",
     "src/lib/types.ts",
     "src/lib/admin-session.ts",
-    "src/lib/order-validation.ts"
+    "src/lib/order-validation.ts",
+    "src/lib/admin-validation.ts",
+    "src/lib/features-config.ts",
+    "src/lib/utils.ts"
   ]
 }
