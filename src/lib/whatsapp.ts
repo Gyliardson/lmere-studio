@@ -180,6 +180,7 @@ function submissionButton() {
 function renderSubmissionStatus(
   state: "submitting" | "confirmed" | "error",
   message: string,
+  code?: string,
 ) {
   const button = submissionButton();
   if (!button?.parentElement) return;
@@ -193,6 +194,8 @@ function renderSubmissionStatus(
   }
 
   status.dataset.state = state;
+  if (code) status.dataset.code = code;
+  else delete status.dataset.code;
   status.setAttribute("role", state === "error" ? "alert" : "status");
   status.setAttribute("aria-live", state === "error" ? "assertive" : "polite");
   status.textContent = message;
@@ -235,7 +238,8 @@ export function openWhatsApp(phone: string, submission: Promise<ConfirmedHandoff
     .catch((error: unknown) => {
       popup?.close();
       const message = error instanceof Error ? error.message : "Não foi possível confirmar o pedido.";
-      renderSubmissionStatus("error", message);
+      const code = error instanceof OrderSubmissionError ? error.code : "ORDER_CREATE_FAILED";
+      renderSubmissionStatus("error", message, code);
     })
     .finally(() => {
       if (button) button.disabled = false;
