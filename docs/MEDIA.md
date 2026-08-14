@@ -21,13 +21,16 @@ npm ci
 npm run db:generate
 npm run db:migrate
 npx prisma db execute --file prisma/ci-seed.sql --config=prisma.config.ts
+npx prisma db execute --file prisma/media-seed.sql --config=prisma.config.ts
 npm run build
 npm run demo:capture
 ```
 
+`ci-seed.sql` establishes the same deterministic relational baseline used by CI. `media-seed.sql` is a presentation-only overlay: it keeps those fixed IDs and test-only credentials, but replaces visible `CI ...` labels with polished synthetic bakery copy for portfolio screenshots. Neither fixture is appropriate for production data.
+
 `demo:capture` starts the production build on `127.0.0.1:3000` unless `PLAYWRIGHT_SKIP_WEBSERVER=1` is set. Set `PLAYWRIGHT_BASE_URL` when capturing an already-running local build on another URL.
 
-The deterministic fixture exposes only synthetic `ci-tenant-a`/`ci-tenant-b` data and synthetic admin credentials intended for local/CI verification.
+The deterministic fixture exposes only synthetic `ci-tenant-a`/`ci-tenant-b` data and synthetic admin credentials intended for local/CI verification. The capture also creates one idempotent synthetic order so the admin Orders evidence represents a populated operational state without relying on personal data.
 
 ## Outputs
 
@@ -40,7 +43,7 @@ Generated files are written to `docs/media/generated/` with explicit viewport pr
 - `desktop-admin-brand.png`
 - corresponding `mobile-*` captures
 
-The capture projects use fixed 1440×900 and 390×844 viewports, `pt-BR`, `America/Sao_Paulo`, dark color scheme, disabled decorative motion, deterministic catalog IDs, and a fixed future order date.
+The capture projects use fixed 1440×900 and 390×844 CSS-pixel viewports, Chromium for both desktop and mobile emulation, `pt-BR`, `America/Sao_Paulo`, dark color scheme, disabled decorative motion, deterministic catalog IDs, and a fixed future order date.
 
 Generated screenshots should be visually inspected before they replace README media. Check overflow, typography, spacing, hierarchy, long-content containment, mobile navigation, sensitive-data absence, and whether the screenshot still represents current product behavior.
 
