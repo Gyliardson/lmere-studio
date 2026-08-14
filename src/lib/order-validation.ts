@@ -7,7 +7,7 @@ export function normalizeBrazilianPhone(value: string) {
   return /^\d{10,11}$/.test(localDigits) && /^[1-9]{2}/.test(localDigits) ? localDigits : null;
 }
 
-export function businessDateOrdinal(now = new Date()) {
+export function businessDateParts(now = new Date()) {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: BUSINESS_TIME_ZONE,
     year: "numeric",
@@ -15,7 +15,16 @@ export function businessDateOrdinal(now = new Date()) {
     day: "2-digit",
   }).formatToParts(now);
   const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  return Date.UTC(Number(values.year), Number(values.month) - 1, Number(values.day));
+  return {
+    year: Number(values.year),
+    month: Number(values.month),
+    day: Number(values.day),
+  };
+}
+
+export function businessDateOrdinal(now = new Date()) {
+  const { year, month, day } = businessDateParts(now);
+  return Date.UTC(year, month - 1, day);
 }
 
 export function calendarLeadDays(eventDate: string, now = new Date()) {
