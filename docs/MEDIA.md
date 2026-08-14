@@ -47,6 +47,19 @@ The capture projects use fixed 1440×900 and 390×844 CSS-pixel viewports, Chrom
 
 Generated screenshots should be visually inspected before they replace README media. Check overflow, typography, spacing, hierarchy, long-content containment, mobile navigation, sensitive-data absence, and whether the screenshot still represents current product behavior.
 
+### Curated repository media
+
+`docs/media/generated/` is the reproducible capture output and CI artifact contract. It is intentionally broader than the README presentation set.
+
+After visual inspection, a small representative subset may be resized/compressed and committed under `docs/media/portfolio/`. The current README intentionally publishes only four representative views:
+
+- `desktop-storefront-summary.webp`
+- `desktop-admin-orders.webp`
+- `mobile-storefront.webp`
+- `mobile-admin-menu.webp`
+
+These committed files are presentation evidence derived from the deterministic capture, not a second source of product truth. When UI behavior materially changes, regenerate the full capture first, inspect it, and then refresh the curated subset. Historical screenshot assets should not remain alongside current evidence once superseded.
+
 ## Deliberate exclusions
 
 The documentation pipeline does not inject a fake cursor, synthesize narration, add subtitles/background music, or require ffmpeg post-production. Narrated case-study video may be produced separately, but README reproducibility must not depend on it.
