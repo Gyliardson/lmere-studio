@@ -1,4 +1,4 @@
-import { validateFeaturesConfig } from "@/lib/admin-validation";
+import { normalizePersistedFeaturesConfig } from "@/lib/features-config";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
@@ -28,7 +28,7 @@ export async function GET(
     }
 
     const { adminPasswordHash, ...publicTenant } = tenant;
-    const featuresConfig = validateFeaturesConfig(JSON.parse(publicTenant.featuresConfig) as unknown);
+    const featuresConfig = normalizePersistedFeaturesConfig(JSON.parse(publicTenant.featuresConfig) as unknown);
     if (!featuresConfig.ok) {
       console.error("[ERROR] Persisted tenant featuresConfig violates the server contract", tenant.id);
       return NextResponse.json({ error: "Configuração do ateliê inválida" }, { status: 500 });
