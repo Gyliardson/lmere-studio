@@ -2,6 +2,7 @@ import { mkdir } from "node:fs/promises";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
 const outputDir = "docs/media/generated";
+const representativeEventDate = "2032-02-09";
 
 function projectName(testInfo: TestInfo) {
   return testInfo.project.name.includes("mobile") ? "mobile" : "desktop";
@@ -35,6 +36,25 @@ async function reachSummary(page: Page) {
   await expect(page.getByRole("heading", { name: "Resumo do Pedido" })).toBeVisible();
 }
 
+async function ensureRepresentativeOrder(page: Page) {
+  const response = await page.request.post("/api/orders", {
+    headers: { "Idempotency-Key": "portfolio-media-representative-order-v1" },
+    data: {
+      tenantId: "ci-tenant-a",
+      customerName: "Cliente de Demonstração",
+      customerPhone: "11999999999",
+      eventDate: representativeEventDate,
+      cakeSizeId: "ci-size-a",
+      flavorId: "ci-flavor-a",
+      fillingIds: ["ci-filling-a"],
+      addonIds: ["ci-addon-a"],
+      cakeMessage: "Parabéns!",
+      details: "Pedido sintético para evidência visual reproduzível.",
+    },
+  });
+  expect([200, 201]).toContain(response.status());
+}
+
 async function openAdminSection(page: Page, testInfo: TestInfo, label: string, heading: string) {
   if (testInfo.project.name.includes("mobile")) {
     await page.getByRole("button", { name: "Abrir menu do painel" }).click();
@@ -54,11 +74,13 @@ test.describe("portfolio documentation capture", () => {
   });
 
   test("captures representative admin states", async ({ page }, testInfo) => {
+    await ensureRepresentativeOrder(page);
     await page.goto("/admin");
     await page.locator("#admin-slug").fill("ci-tenant-a");
     await page.locator("#admin-password").fill("ci-admin-password");
     await page.locator("#admin-login-btn").click();
     await expect(page.getByRole("heading", { name: "Gestão de Pedidos" })).toBeVisible();
+    await expect(page.getByText("Cliente de Demonstração")).toBeVisible();
     await capture(page, testInfo, "admin-orders", true);
 
     await openAdminSection(page, testInfo, "Cardápio", "Gestao do Cardapio");
