@@ -1,8 +1,19 @@
+import {
+  validateFeaturesConfig,
+  validateTenantSettingsUpdate,
+  type ValidationIssue,
+} from "@/lib/admin-validation";
 import { getAdminSession } from "@/lib/admin-session";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
 const unauthorized = () => NextResponse.json({ error: "Sessão inválida ou expirada" }, { status: 401 });
+const invalidJson = () => NextResponse.json({ code: "INVALID_JSON", error: "Corpo JSON inválido" }, { status: 400 });
+const validationError = (issues: ValidationIssue[]) => NextResponse.json({
+  code: "VALIDATION_ERROR",
+  error: "Dados inválidos",
+  issues,
+}, { status: 422 });
 
 function serializeSettings(tenant: {
   adminPasswordHash: string;
@@ -12,10 +23,13 @@ function serializeSettings(tenant: {
   [key: string]: unknown;
 }) {
   const { adminPasswordHash: _adminPasswordHash, ...settings } = tenant;
+  const rawFeatures = JSON.parse(tenant.featuresConfig) as unknown;
+  const parsedFeatures = validateFeaturesConfig(rawFeatures);
+  if (!parsedFeatures.ok) throw new Error("Persisted featuresConfig violates the server contract");
   return {
     ...settings,
     shadowColor: tenant.shadowColor || tenant.primaryColor || "#8B5CF6",
-    featuresConfig: JSON.parse(tenant.featuresConfig),
+    featuresConfig: parsedFeatures.value,
   };
 }
 
@@ -39,28 +53,19 @@ export async function PUT(request: Request) {
     const session = getAdminSession(request);
     if (!session) return unauthorized();
 
-    const rawUpdates = await request.json();
-    const allowedFields = [
-      "name", "logoUrl", "bannerUrl", "whatsapp", "pixKey",
-      "primaryColor", "secondaryColor", "backgroundColor",
-      "buttonColor", "shadowColor", "textColor",
-      "maxOrdersPerDay", "minLeadDays", "featuresConfig",
-    ];
-
-    const sanitized: Record<string, unknown> = {};
-    for (const key of allowedFields) {
-      if (rawUpdates[key] !== undefined) {
-        if (key === "featuresConfig" && typeof rawUpdates[key] === "object" && rawUpdates[key] !== null) {
-          sanitized[key] = JSON.stringify(rawUpdates[key]);
-        } else {
-          sanitized[key] = rawUpdates[key];
-        }
-      }
+    let rawUpdates: unknown;
+    try {
+      rawUpdates = await request.json();
+    } catch {
+      return invalidJson();
     }
+
+    const parsed = validateTenantSettingsUpdate(rawUpdates);
+    if (!parsed.ok) return validationError(parsed.issues);
 
     const tenant = await prisma.tenant.update({
       where: { id: session.tenantId },
-      data: sanitized,
+      data: parsed.value,
     });
 
     return NextResponse.json({ settings: serializeSettings(tenant) });
