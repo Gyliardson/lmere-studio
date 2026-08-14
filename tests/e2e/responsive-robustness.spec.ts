@@ -1,11 +1,21 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
-async function expectNoHorizontalOverflow(page: import("@playwright/test").Page) {
+async function expectNoHorizontalOverflow(page: Page) {
   const dimensions = await page.evaluate(() => ({
     viewport: document.documentElement.clientWidth,
     scroll: document.documentElement.scrollWidth,
   }));
   expect(dimensions.scroll).toBeLessThanOrEqual(dimensions.viewport + 1);
+}
+
+async function openAdminSection(page: Page, testInfo: TestInfo, label: string, heading: string) {
+  if (testInfo.project.name.includes("mobile")) {
+    await page.getByRole("button", { name: "Abrir menu do painel" }).click();
+    await expectNoHorizontalOverflow(page);
+  }
+  await page.getByRole("button", { name: label, exact: true }).click();
+  await expect(page.getByRole("heading", { name: heading })).toBeVisible();
+  await expectNoHorizontalOverflow(page);
 }
 
 test.describe("responsive robustness", () => {
@@ -35,5 +45,19 @@ test.describe("responsive robustness", () => {
     await page.goto("/admin");
     await expect(page.getByRole("heading", { name: "Painel Admin" })).toBeVisible();
     await expectNoHorizontalOverflow(page);
+  });
+
+  test("authenticated admin sections stay contained on desktop and mobile", async ({ page }, testInfo) => {
+    await page.goto("/admin");
+    await page.locator("#admin-slug").fill("ci-tenant-a");
+    await page.locator("#admin-password").fill("ci-admin-password");
+    await page.locator("#admin-login-btn").click();
+    await expect(page.getByRole("heading", { name: "Gestão de Pedidos" })).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+
+    await openAdminSection(page, testInfo, "Cardápio", "Gestao do Cardapio");
+    await openAdminSection(page, testInfo, "Agenda & Limites", "Agenda & Regras de Funcionamento");
+    await openAdminSection(page, testInfo, "Marca & Estilo", "Marca & Personalizacao Visual");
+    await openAdminSection(page, testInfo, "Funcionalidades", "Funcionalidades & Regras do Ateliê");
   });
 });
