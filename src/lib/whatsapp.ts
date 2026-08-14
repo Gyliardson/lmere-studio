@@ -189,8 +189,8 @@ function renderSubmissionStatus(
   if (!status) {
     status = document.createElement("div");
     status.id = "order-submit-status";
-    status.className = "glass-card p-3 text-sm leading-relaxed";
-    button.insertAdjacentElement("afterend", status);
+    status.className = "glass-card p-3 mb-3 text-sm leading-relaxed";
+    button.insertAdjacentElement("beforebegin", status);
   }
 
   status.dataset.state = state;
