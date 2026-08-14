@@ -73,6 +73,16 @@ export async function consumeRateLimit(
   const windowStartMs = Math.floor(nowMs / policy.windowMs) * policy.windowMs;
   const resetAt = new Date(windowStartMs + policy.windowMs);
   const retryAfterSeconds = Math.max(1, Math.ceil((resetAt.getTime() - nowMs) / 1000));
+
+  // Local/dev requests often have no trustworthy proxy-derived client address.
+  // Do not make unrelated developer/test traffic share one artificial bucket;
+  // focused tests can still exercise the limiter by supplying an explicit
+  // forwarded source. Production remains fail-constrained if its proxy contract
+  // is misconfigured and no source can be identified.
+  if (source === "unidentified-source" && process.env.NODE_ENV !== "production") {
+    return { allowed: true, limit: policy.limit, remaining: policy.limit, retryAfterSeconds, resetAt };
+  }
+
   const key = bucketKey(policy, source, windowStartMs);
 
   let count: number;
