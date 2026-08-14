@@ -13,8 +13,9 @@ test.describe("loading, empty and error states", () => {
     await expect(page.getByRole("heading", { name: "CI Tenant A" })).toBeVisible();
 
     await page.goto("/tenant-that-does-not-exist");
-    await expect(page.getByRole("heading", { name: "Ateliê não encontrado" })).toBeVisible();
-    await expect(page.getByRole("alert")).toContainText("O ateliê solicitado não existe ou está indisponível.");
+    const notFoundAlert = page.getByRole("alert").filter({ has: page.getByRole("heading", { name: "Ateliê não encontrado" }) });
+    await expect(notFoundAlert).toBeVisible();
+    await expect(notFoundAlert).toContainText("O ateliê solicitado não existe ou está indisponível.");
   });
 
   test("admin exposes session loading, authentication error and empty orders", async ({ page }) => {
