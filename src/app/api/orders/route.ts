@@ -6,10 +6,20 @@ import { NextResponse } from "next/server";
 
 const MAX_IDEMPOTENCY_KEY_LENGTH = 128;
 const MAX_TRANSACTION_RETRIES = 8;
-const PUBLIC_ORDER_RATE_LIMIT = { scope: "public-order", limit: 30, windowMs: 10 * 60 * 1000 } as const;
+const PUBLIC_ORDER_SOURCE_RATE_LIMIT = { scope: "public-order-source", limit: 60, windowMs: 10 * 60 * 1000 } as const;
+const PUBLIC_ORDER_TENANT_RATE_LIMIT = { limit: 30, windowMs: 10 * 60 * 1000 } as const;
 const reject = (status: number, code: string, error: string, headers?: HeadersInit) => NextResponse.json({ code, error }, { status, headers });
 const cents = (value: number) => Math.round(value * 100);
 const money = (value: number) => Math.round(value) / 100;
+
+function rateLimitedResponse(rateLimit: Awaited<ReturnType<typeof consumeRateLimit>>) {
+  return reject(
+    429,
+    "RATE_LIMITED",
+    "Muitas tentativas de pedido. Tente novamente em instantes.",
+    rateLimitHeaders(rateLimit),
+  );
+}
 
 function depositMode(config: string): "50_percent" | "100_percent" | "quote_only" {
   try {
@@ -53,15 +63,8 @@ function retryDelay(attempt: number) {
 
 export async function POST(request: Request) {
   try {
-    const rateLimit = await consumeRateLimit(request, PUBLIC_ORDER_RATE_LIMIT);
-    if (!rateLimit.allowed) {
-      return reject(
-        429,
-        "RATE_LIMITED",
-        "Muitas tentativas de pedido. Tente novamente em instantes.",
-        rateLimitHeaders(rateLimit),
-      );
-    }
+    const sourceLimit = await consumeRateLimit(request, PUBLIC_ORDER_SOURCE_RATE_LIMIT);
+    if (!sourceLimit.allowed) return rateLimitedResponse(sourceLimit);
 
     let body: Record<string, unknown>;
     try {
@@ -75,6 +78,14 @@ export async function POST(request: Request) {
     }
 
     const tenantId = typeof body.tenantId === "string" ? body.tenantId.trim() : "";
+    if (tenantId) {
+      const tenantLimit = await consumeRateLimit(request, {
+        scope: `public-order-tenant:${tenantId}`,
+        ...PUBLIC_ORDER_TENANT_RATE_LIMIT,
+      });
+      if (!tenantLimit.allowed) return rateLimitedResponse(tenantLimit);
+    }
+
     const customerName = typeof body.customerName === "string" ? body.customerName.trim() : "";
     const customerPhoneRaw = typeof body.customerPhone === "string" ? body.customerPhone.trim() : "";
     const customerPhone = normalizeBrazilianPhone(customerPhoneRaw);
