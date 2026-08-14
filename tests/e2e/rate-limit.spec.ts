@@ -7,20 +7,27 @@ function source(testInfo: TestInfo, suffix: number) {
   return `198.51.${100 + suffix}.${10 + projectOffset}`;
 }
 
+function sourceHeader(value: string) {
+  // The local E2E server intentionally trusts X-Forwarded-For. Production only
+  // trusts this generic header behind an explicitly configured reverse proxy;
+  // Vercel deployments use their deployment-controlled system header instead.
+  return { "x-forwarded-for": value };
+}
+
 test.describe("sensitive endpoint throttling", () => {
   test("admin login is bounded per source+tenant without blocking another tenant", async ({ request }, testInfo) => {
     const blockedSource = source(testInfo, 1);
 
     for (let attempt = 0; attempt < 8; attempt += 1) {
       const response = await request.post("/api/admin/auth", {
-        headers: { "x-vercel-forwarded-for": blockedSource },
+        headers: sourceHeader(blockedSource),
         data: { slug: "ci-tenant-a", password: `wrong-password-${attempt}` },
       });
       expect(response.status()).toBe(401);
     }
 
     const limited = await request.post("/api/admin/auth", {
-      headers: { "x-vercel-forwarded-for": blockedSource },
+      headers: sourceHeader(blockedSource),
       data: { slug: "ci-tenant-a", password: CI_PASSWORD },
     });
 
@@ -34,13 +41,13 @@ test.describe("sensitive endpoint throttling", () => {
     expect(limited.headers()["x-ratelimit-remaining"]).toBe("0");
 
     const otherTenant = await request.post("/api/admin/auth", {
-      headers: { "x-vercel-forwarded-for": blockedSource },
+      headers: sourceHeader(blockedSource),
       data: { slug: "ci-tenant-b", password: CI_PASSWORD },
     });
     expect(otherTenant.status()).toBe(200);
 
     const independentSource = await request.post("/api/admin/auth", {
-      headers: { "x-vercel-forwarded-for": source(testInfo, 2) },
+      headers: sourceHeader(source(testInfo, 2)),
       data: { slug: "ci-tenant-a", password: CI_PASSWORD },
     });
     expect(independentSource.status()).toBe(200);
@@ -50,7 +57,7 @@ test.describe("sensitive endpoint throttling", () => {
     const abusiveSource = source(testInfo, 3);
     const responses = await Promise.all(
       Array.from({ length: 40 }, () => request.post("/api/orders", {
-        headers: { "x-vercel-forwarded-for": abusiveSource },
+        headers: sourceHeader(abusiveSource),
         data: { tenantId: "ci-tenant-a" },
       })),
     );
@@ -71,13 +78,13 @@ test.describe("sensitive endpoint throttling", () => {
     expect(limited!.headers()["x-ratelimit-remaining"]).toBe("0");
 
     const otherTenant = await request.post("/api/orders", {
-      headers: { "x-vercel-forwarded-for": abusiveSource },
+      headers: sourceHeader(abusiveSource),
       data: { tenantId: "ci-tenant-b" },
     });
     expect(otherTenant.status()).toBe(400);
 
     const independentSource = await request.post("/api/orders", {
-      headers: { "x-vercel-forwarded-for": source(testInfo, 4) },
+      headers: sourceHeader(source(testInfo, 4)),
       data: { tenantId: "ci-tenant-a" },
     });
     expect(independentSource.status()).toBe(400);
