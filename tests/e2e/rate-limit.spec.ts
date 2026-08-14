@@ -53,6 +53,26 @@ test.describe("sensitive endpoint throttling", () => {
     expect(independentSource.status()).toBe(200);
   });
 
+  test("admin login source ceiling prevents tenant cycling bypass", async ({ request }, testInfo) => {
+    const cyclingSource = source(testInfo, 5);
+
+    for (let attempt = 0; attempt < 24; attempt += 1) {
+      const response = await request.post("/api/admin/auth", {
+        headers: sourceHeader(cyclingSource),
+        data: { slug: `unknown-tenant-${attempt}`, password: `wrong-password-${attempt}` },
+      });
+      expect(response.status()).toBe(401);
+    }
+
+    const limited = await request.post("/api/admin/auth", {
+      headers: sourceHeader(cyclingSource),
+      data: { slug: "ci-tenant-b", password: CI_PASSWORD },
+    });
+    expect(limited.status()).toBe(429);
+    expect(limited.headers()["x-ratelimit-limit"]).toBe("24");
+    expect(limited.headers()["x-ratelimit-remaining"]).toBe("0");
+  });
+
   test("public order tenant limiter remains atomic under an abusive concurrent burst", async ({ request }, testInfo) => {
     const abusiveSource = source(testInfo, 3);
     const responses = await Promise.all(
@@ -88,5 +108,25 @@ test.describe("sensitive endpoint throttling", () => {
       data: { tenantId: "ci-tenant-a" },
     });
     expect(independentSource.status()).toBe(400);
+  });
+
+  test("public order source ceiling prevents tenant cycling bypass", async ({ request }, testInfo) => {
+    const cyclingSource = source(testInfo, 6);
+    const responses = await Promise.all(
+      Array.from({ length: 70 }, (_, attempt) => request.post("/api/orders", {
+        headers: sourceHeader(cyclingSource),
+        data: { tenantId: `unknown-tenant-${attempt}` },
+      })),
+    );
+
+    const statuses = responses.map((response) => response.status());
+    expect(statuses.filter((status) => status === 400)).toHaveLength(60);
+    expect(statuses.filter((status) => status === 429)).toHaveLength(10);
+    expect(statuses.every((status) => status === 400 || status === 429)).toBe(true);
+
+    const limited = responses.find((response) => response.status() === 429);
+    expect(limited).toBeDefined();
+    expect(limited!.headers()["x-ratelimit-limit"]).toBe("60");
+    expect(limited!.headers()["x-ratelimit-remaining"]).toBe("0");
   });
 });
