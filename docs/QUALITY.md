@@ -24,13 +24,19 @@ Current coverage includes storefront loading, missing-tenant behavior, baseline 
 
 The accessibility smoke is a foundation check, not a claim of complete WCAG certification. Deeper keyboard, focus, contrast, dialog, and axe coverage belongs to later UI/accessibility work.
 
+## Public order integrity
+
+Public order creation is server-authoritative. `/api/orders` resolves active catalog resources within the submitted tenant, recalculates subtotal and deposit from persisted data, enforces filling limits, validates blocked/closed/lead-time/capacity rules, and persists the order inside a serializable transaction. Tenant-scoped idempotency keys protect one submit/retry window from duplicate persistence without treating a later intentional identical order as a replay.
+
+The storefront labels browser calculations as estimates until the POST succeeds. During submission it disables the WhatsApp action, exposes an accessible `submitting`, `confirmed`, or structured `error` status, and opens at most one handoff for the in-flight attempt. The confirmed status and WhatsApp message use the server-returned order ID and financial values. Phone shape is validated in both the browser and server, while lead-time uses the `America/Sao_Paulo` business calendar and the tenant-configured `minLeadDays`.
+
+PostgreSQL/API/browser coverage includes manipulated client pricing, cross-tenant/stale catalog IDs, inactive/invalid catalog paths, filling limits, deposit modes, blocked dates, closed weekdays, lead time, capacity, concurrent submissions, idempotent retries, later intentional identical submissions, invalid phones, one-POST/one-handoff double-submit behavior, and recoverable server rejection feedback.
+
 ## Security gates
 
 The Quality workflow blocks high/critical production dependency findings. A separate read-only Gitleaks workflow scans pull-request changes for secrets.
 
 Admin authentication uses an expiry-bound signed HttpOnly cookie, and protected admin routes derive tenant identity from the verified session. Unit and PostgreSQL-backed E2E tests cover malformed/tampered/expired sessions, unauthenticated requests, valid synthetic login, authenticated tenant isolation, browser session restoration, and server-backed logout. Production session cookies are required to be `Secure`, `HttpOnly`, and `SameSite=Strict` and are scoped to `/api/admin`.
-
-Public order server-authority is tracked separately in #3 and is not implied by the admin isolation tests.
 
 ## Failure policy
 
