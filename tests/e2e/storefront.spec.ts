@@ -46,8 +46,9 @@ test.describe("deterministic storefront smoke", () => {
   test("unknown tenant exposes a stable not-found state", async ({ page }) => {
     await page.goto("/ci-tenant-missing");
 
-    await expect(page.getByRole("heading", { name: "Ateliê não encontrado" })).toBeVisible();
-    await expect(page.getByRole("alert")).toContainText("O ateliê solicitado não existe ou está indisponível.");
+    const notFoundAlert = page.getByRole("alert").filter({ has: page.getByRole("heading", { name: "Ateliê não encontrado" }) });
+    await expect(notFoundAlert).toBeVisible();
+    await expect(notFoundAlert).toContainText("O ateliê solicitado não existe ou está indisponível.");
   });
 
   test("invalid browser phone prevents order submission", async ({ page }, testInfo) => {
