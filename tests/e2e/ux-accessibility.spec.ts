@@ -52,8 +52,14 @@ test.describe("UX accessibility foundation", () => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/ci-tenant-a");
 
-    const duration = await page.locator("#btn-next").evaluate((element) => getComputedStyle(element).transitionDuration);
-    expect(duration === "0s" || duration === "0.00001s").toBeTruthy();
+    const maxTransitionDurationMs = await page.locator("#btn-next").evaluate((element) => {
+      const durations = getComputedStyle(element).transitionDuration
+        .split(",")
+        .map((value) => value.trim())
+        .map((value) => (value.endsWith("ms") ? Number.parseFloat(value) : Number.parseFloat(value) * 1000));
+      return Math.max(...durations);
+    });
+    expect(maxTransitionDurationMs).toBeLessThanOrEqual(0.01);
   });
 
   test("stepper, calendar and catalog selections expose semantic state", async ({ page }, testInfo) => {
