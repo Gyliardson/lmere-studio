@@ -3,14 +3,17 @@ import { expect, test, type TestInfo } from "@playwright/test";
 const CI_PASSWORD = "ci-admin-password";
 
 function source(testInfo: TestInfo, suffix: number) {
-  const projectOffset = testInfo.project.name.includes("mobile") ? 100 : 0;
-  return `198.51.${100 + suffix}.${10 + projectOffset}`;
+  // Use TEST-NET-2 addresses and isolate projects/retries so a deliberately
+  // saturated bucket from one attempt cannot poison a later retry/project.
+  const projectOffset = testInfo.project.name.includes("mobile") ? 80 : 0;
+  const retryOffset = testInfo.retry * 20;
+  return `198.51.100.${10 + projectOffset + retryOffset + suffix}`;
 }
 
 function sourceHeader(value: string) {
-  // The local E2E server intentionally trusts X-Forwarded-For. Production only
-  // trusts this generic header behind an explicitly configured reverse proxy;
-  // Vercel deployments use their deployment-controlled system header instead.
+  // The spawned local E2E production build explicitly opts in to trusting
+  // synthetic X-Forwarded-For. Real production deployments remain governed by
+  // the proxy contract in requestRateLimitSource().
   return { "x-forwarded-for": value };
 }
 
