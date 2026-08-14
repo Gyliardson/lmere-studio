@@ -1,11 +1,13 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { calendarLeadDays, normalizeBrazilianPhone } from "@/lib/order-validation";
+import { consumeRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
 
 const MAX_IDEMPOTENCY_KEY_LENGTH = 128;
 const MAX_TRANSACTION_RETRIES = 8;
-const reject = (status: number, code: string, error: string) => NextResponse.json({ code, error }, { status });
+const PUBLIC_ORDER_RATE_LIMIT = { scope: "public-order", limit: 30, windowMs: 10 * 60 * 1000 } as const;
+const reject = (status: number, code: string, error: string, headers?: HeadersInit) => NextResponse.json({ code, error }, { status, headers });
 const cents = (value: number) => Math.round(value * 100);
 const money = (value: number) => Math.round(value) / 100;
 
@@ -51,6 +53,16 @@ function retryDelay(attempt: number) {
 
 export async function POST(request: Request) {
   try {
+    const rateLimit = await consumeRateLimit(request, PUBLIC_ORDER_RATE_LIMIT);
+    if (!rateLimit.allowed) {
+      return reject(
+        429,
+        "RATE_LIMITED",
+        "Muitas tentativas de pedido. Tente novamente em instantes.",
+        rateLimitHeaders(rateLimit),
+      );
+    }
+
     let body: Record<string, unknown>;
     try {
       const parsed = await request.json();
