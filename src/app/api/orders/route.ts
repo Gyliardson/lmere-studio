@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { normalizePersistedFeaturesConfig } from "@/lib/features-config";
+import { validateImageReference } from "@/lib/image-reference";
 import { prisma } from "@/lib/prisma";
 import { calendarLeadDays, normalizeBrazilianPhone } from "@/lib/order-validation";
 import { consumeRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
@@ -95,9 +96,13 @@ export async function POST(request: Request) {
     const fillingIds = parseIds(body.fillingIds);
     const addonIds = parseIds(body.addonIds ?? []);
     const idempotency = parseIdempotencyKey(request, body);
+    const referenceImage = validateImageReference(body.referenceImageUrl ?? "");
 
     if (!idempotency.valid) {
       return reject(400, "INVALID_IDEMPOTENCY_KEY", `A chave de idempotência deve ter entre 1 e ${MAX_IDEMPOTENCY_KEY_LENGTH} caracteres`);
+    }
+    if (!referenceImage.ok) {
+      return reject(400, "INVALID_REFERENCE_IMAGE", referenceImage.message);
     }
     if (!tenantId || !customerName || !eventDate || !cakeSizeId || !flavorId || !fillingIds || !addonIds) {
       return reject(400, "INVALID_REQUEST", "Campos obrigatórios ausentes ou inválidos");
@@ -188,7 +193,7 @@ export async function POST(request: Request) {
             flavorId: dough.id,
             fillingIds: JSON.stringify(fillingIds),
             addonIds: JSON.stringify(addonIds),
-            referenceImageUrl: typeof body.referenceImageUrl === "string" ? body.referenceImageUrl.trim() : "",
+            referenceImageUrl: referenceImage.value,
             cakeMessage: typeof body.cakeMessage === "string" ? body.cakeMessage.trim() : "",
             details: typeof body.details === "string" ? body.details.trim() : "",
             subtotal,
