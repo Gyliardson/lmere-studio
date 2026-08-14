@@ -1,9 +1,9 @@
 import {
-  validateFeaturesConfig,
   validateTenantSettingsUpdate,
   type ValidationIssue,
 } from "@/lib/admin-validation";
 import { getAdminSession } from "@/lib/admin-session";
+import { normalizePersistedFeaturesConfig } from "@/lib/features-config";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
@@ -24,7 +24,7 @@ function serializeSettings(tenant: {
 }) {
   const { adminPasswordHash: _adminPasswordHash, ...settings } = tenant;
   const rawFeatures = JSON.parse(tenant.featuresConfig) as unknown;
-  const parsedFeatures = validateFeaturesConfig(rawFeatures);
+  const parsedFeatures = normalizePersistedFeaturesConfig(rawFeatures);
   if (!parsedFeatures.ok) throw new Error("Persisted featuresConfig violates the server contract");
   return {
     ...settings,
