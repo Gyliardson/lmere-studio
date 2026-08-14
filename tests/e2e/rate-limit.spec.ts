@@ -1,6 +1,8 @@
 import { expect, test, type TestInfo } from "@playwright/test";
 
 const CI_PASSWORD = "ci-admin-password";
+const ADMIN_WINDOW_MS = 15 * 60 * 1000;
+const ORDER_WINDOW_MS = 10 * 60 * 1000;
 
 function source(testInfo: TestInfo, suffix: number) {
   // Use TEST-NET-2 addresses and isolate projects/retries so a deliberately
@@ -17,8 +19,20 @@ function sourceHeader(value: string) {
   return { "x-forwarded-for": value };
 }
 
+async function avoidFixedWindowBoundary(windowMs: number, guardMs: number) {
+  // These assertions intentionally verify one fixed window. If a test begins in
+  // the last few seconds of that window, the legitimate fixed-window reset can
+  // split the burst and make the expected ceiling nondeterministic. Wait only
+  // through that tiny boundary instead of changing production semantics.
+  const remainingMs = windowMs - (Date.now() % windowMs);
+  if (remainingMs <= guardMs) {
+    await new Promise((resolve) => setTimeout(resolve, remainingMs + 250));
+  }
+}
+
 test.describe("sensitive endpoint throttling", () => {
   test("admin login is bounded per source+tenant without blocking another tenant", async ({ request }, testInfo) => {
+    await avoidFixedWindowBoundary(ADMIN_WINDOW_MS, 5_000);
     const blockedSource = source(testInfo, 1);
 
     for (let attempt = 0; attempt < 8; attempt += 1) {
@@ -57,6 +71,7 @@ test.describe("sensitive endpoint throttling", () => {
   });
 
   test("admin login source ceiling prevents tenant cycling bypass", async ({ request }, testInfo) => {
+    await avoidFixedWindowBoundary(ADMIN_WINDOW_MS, 7_000);
     const cyclingSource = source(testInfo, 5);
 
     for (let attempt = 0; attempt < 24; attempt += 1) {
@@ -77,6 +92,7 @@ test.describe("sensitive endpoint throttling", () => {
   });
 
   test("public order tenant limiter remains atomic under an abusive concurrent burst", async ({ request }, testInfo) => {
+    await avoidFixedWindowBoundary(ORDER_WINDOW_MS, 3_000);
     const abusiveSource = source(testInfo, 3);
     const responses = await Promise.all(
       Array.from({ length: 40 }, () => request.post("/api/orders", {
@@ -114,6 +130,7 @@ test.describe("sensitive endpoint throttling", () => {
   });
 
   test("public order source ceiling prevents tenant cycling bypass", async ({ request }, testInfo) => {
+    await avoidFixedWindowBoundary(ORDER_WINDOW_MS, 3_000);
     const cyclingSource = source(testInfo, 6);
     const responses = await Promise.all(
       Array.from({ length: 70 }, (_, attempt) => request.post("/api/orders", {
