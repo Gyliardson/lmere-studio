@@ -38,6 +38,14 @@ async function reachStorefrontSummary(page: Page) {
   await page.locator("#input-phone").fill("11999999999");
 }
 
+async function openAdminSection(page: Page, testInfo: TestInfo, label: string, heading: string) {
+  if (testInfo.project.name.includes("mobile")) {
+    await page.getByRole("button", { name: "Abrir menu do painel" }).click();
+  }
+  await page.getByRole("button", { name: label, exact: true }).click();
+  await expect(page.getByRole("heading", { name: heading })).toBeVisible();
+}
+
 test.describe("deterministic visual review evidence", () => {
   test("storefront initial and summary states", async ({ page }, testInfo) => {
     await page.goto("/ci-tenant-a");
@@ -49,7 +57,7 @@ test.describe("deterministic visual review evidence", () => {
     await saveEvidence(page, testInfo, "storefront-summary");
   });
 
-  test("admin login and authenticated dashboard states", async ({ page }, testInfo) => {
+  test("admin login and representative authenticated sections", async ({ page }, testInfo) => {
     await page.goto("/admin");
     await expect(page.getByRole("heading", { name: "Painel Admin" })).toBeVisible();
     await saveEvidence(page, testInfo, "admin-login");
@@ -58,6 +66,18 @@ test.describe("deterministic visual review evidence", () => {
     await page.locator("#admin-password").fill("ci-admin-password");
     await page.locator("#admin-login-btn").click();
     await expect(page.getByRole("heading", { name: "Gestão de Pedidos" })).toBeVisible();
-    await saveEvidence(page, testInfo, "admin-dashboard");
+    await saveEvidence(page, testInfo, "admin-orders");
+
+    await openAdminSection(page, testInfo, "Cardápio", "Gestao do Cardapio");
+    await saveEvidence(page, testInfo, "admin-menu");
+
+    await openAdminSection(page, testInfo, "Agenda & Limites", "Agenda & Regras de Funcionamento");
+    await saveEvidence(page, testInfo, "admin-calendar");
+
+    await openAdminSection(page, testInfo, "Marca & Estilo", "Marca & Personalizacao Visual");
+    await saveEvidence(page, testInfo, "admin-brand");
+
+    await openAdminSection(page, testInfo, "Funcionalidades", "Funcionalidades & Regras do Ateliê");
+    await saveEvidence(page, testInfo, "admin-features");
   });
 });
