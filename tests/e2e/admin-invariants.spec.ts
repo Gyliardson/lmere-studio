@@ -5,10 +5,6 @@ function authHeaders(tenantId: string) {
   return { cookie: `${ADMIN_SESSION_COOKIE}=${createAdminSessionToken(tenantId)}` };
 }
 
-async function expectValidation(response: Awaited<ReturnType<Parameters<typeof test>[0]>> | never) {
-  void response;
-}
-
 test.describe("authoritative admin mutation invariants", () => {
   test("catalog rejects invalid values without corrupting persisted items", async ({ request }) => {
     const headers = authHeaders("ci-tenant-a");
@@ -179,7 +175,6 @@ test.describe("authoritative admin mutation invariants", () => {
     expect(validSettings.status()).toBe(200);
     expect((await validSettings.json()).settings.id).toBe("ci-tenant-a");
 
-    // Restore deterministic shared fixtures before this spec completes.
     const restoreSettings = await request.put("/api/admin/settings", {
       headers,
       data: {
