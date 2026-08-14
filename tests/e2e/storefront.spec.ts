@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-async function reachSummary(page: Page) {
+async function reachSummary(page: Page, sizeId = "ci-size-a") {
   await page.goto("/ci-tenant-a");
 
   const targetYear = 2030;
@@ -11,7 +11,7 @@ async function reachSummary(page: Page) {
 
   await page.locator("#cal-day-14").click();
   await page.locator("#btn-next").click();
-  await page.locator("#size-ci-size-a").click();
+  await page.locator(`#size-${sizeId}`).click();
   await page.locator("#btn-next").click();
   await page.locator("#dough-ci-flavor-a").click();
   await page.locator("#filling-ci-filling-a").click();
@@ -27,6 +27,7 @@ test.describe("deterministic storefront smoke", () => {
 
     await expect(page.getByRole("heading", { name: "CI Tenant A" })).toBeVisible();
     await expect(page.getByText("Simulador de Encomendas")).toBeVisible();
+    await expect(page.getByText("Antecedência mínima configurada: 3 dias.")).toBeVisible();
     await expect(page.locator("#simulator-root")).toBeVisible();
 
     const body = page.locator("body");
@@ -41,6 +42,14 @@ test.describe("deterministic storefront smoke", () => {
 
     await expect(page.getByRole("heading", { name: "Ateliê não encontrado" })).toBeVisible();
     await expect(page.getByRole("paragraph")).toHaveText("Ateliê não encontrado");
+  });
+
+  test("invalid browser phone prevents order submission", async ({ page }) => {
+    await reachSummary(page);
+    await page.locator("#input-phone").fill("123");
+
+    await expect(page.getByText("Informe um telefone/WhatsApp válido com DDD")).toBeVisible();
+    await expect(page.locator("#btn-send-whatsapp")).toBeDisabled();
   });
 
   test("storefront persists the order before WhatsApp handoff and exposes server pricing", async ({ page, context }) => {
@@ -136,5 +145,25 @@ test.describe("deterministic storefront smoke", () => {
     await expect(page.locator("#btn-send-whatsapp")).toBeEnabled();
     await expect.poll(() => context.pages().filter((candidate) => candidate !== page && !candidate.isClosed()).length).toBe(0);
     expect(context.pages().some((candidate) => candidate.url().startsWith("https://wa.me/"))).toBe(false);
+  });
+
+  test("real server rejects stale cross-tenant catalog data from the storefront", async ({ page, context }) => {
+    await page.route("**/api/tenants/ci-tenant-a", async (route) => {
+      const response = await route.fetch();
+      const payload = await response.json();
+      payload.sizes = payload.sizes.map((size: { id: string }, index: number) => index === 0 ? { ...size, id: "ci-size-b" } : size);
+      await route.fulfill({ response, json: payload });
+    });
+
+    await reachSummary(page, "ci-size-b");
+    const responsePromise = page.waitForResponse((response) => response.url().endsWith("/api/orders") && response.request().method() === "POST");
+    await page.locator("#btn-send-whatsapp").click();
+
+    const response = await responsePromise;
+    expect(response.status()).toBe(400);
+    expect((await response.json()).code).toBe("INVALID_CAKE_SIZE");
+    await expect(page.locator("#order-submit-status")).toHaveAttribute("data-state", "error");
+    await expect(page.locator("#order-submit-status")).toContainText("Tamanho inválido ou indisponível");
+    await expect.poll(() => context.pages().filter((candidate) => candidate !== page && !candidate.isClosed()).length).toBe(0);
   });
 });
