@@ -8,6 +8,7 @@ on:
     paths:
       - "playwright.demo.config.ts"
       - "tests/demo/**"
+      - "prisma/media-seed.sql"
       - "docs/MEDIA.md"
       - "package.json"
       - "package-lock.json"
@@ -69,6 +70,9 @@ jobs:
 
       - name: Seed deterministic fixtures
         run: npx prisma db execute --file prisma/ci-seed.sql --config=prisma.config.ts
+
+      - name: Apply presentation-safe media fixture overlay
+        run: npx prisma db execute --file prisma/media-seed.sql --config=prisma.config.ts
 
       - name: Build application
         run: npm run build
