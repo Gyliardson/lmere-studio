@@ -47,7 +47,7 @@ The four images below are a compact selection from the deterministic capture pip
 
 | Storefront — desktop summary | Admin — desktop orders |
 | --- | --- |
-| ![Desktop storefront summary showing a configured order and server-confirmed pricing flow](docs/media/portfolio/desktop-storefront-summary.webp) | ![Desktop admin orders workspace with operational order cards](docs/media/portfolio/desktop-admin-orders.webp) |
+| ![Desktop storefront order summary with estimated pricing and handoff controls](docs/media/portfolio/desktop-storefront-summary.webp) | ![Desktop admin orders workspace with operational order cards](docs/media/portfolio/desktop-admin-orders.webp) |
 
 | Storefront — mobile | Admin — mobile catalog |
 | --- | --- |
