@@ -66,6 +66,10 @@ async function openAdminSection(page: Page, testInfo: TestInfo, label: string, h
 }
 
 test.describe("portfolio documentation capture", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+  });
+
   test("captures storefront states", async ({ page }, testInfo) => {
     await page.goto("/ci-tenant-a");
     await expect(page.getByRole("heading", { name: "L'Mere Atelier" })).toBeVisible();
