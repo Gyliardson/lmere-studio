@@ -1,6 +1,7 @@
 import { compareSync } from "bcryptjs";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { consumeRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import {
   ADMIN_SESSION_COOKIE,
   adminSessionCookieOptions,
@@ -10,6 +11,7 @@ import {
 
 const UNAUTHORIZED = { error: "Credenciais inválidas" };
 const NO_STORE_HEADERS = { "Cache-Control": "no-store" };
+const LOGIN_RATE_LIMIT = { scope: "admin-login", limit: 8, windowMs: 15 * 60 * 1000 } as const;
 // Fixed non-production credential hash used only to keep unknown-tenant login
 // attempts on the same bcrypt verification path as known tenants.
 const DUMMY_PASSWORD_HASH = "$2b$10$vGcCuvAGtutf9QbLKDl2VOTxm/yNRchJO5qpcyDgqP5a5kZWo8dDa";
@@ -34,6 +36,14 @@ function clearSessionCookie(response: NextResponse) {
 
 export async function POST(request: Request) {
   try {
+    const rateLimit = await consumeRateLimit(request, LOGIN_RATE_LIMIT);
+    if (!rateLimit.allowed) {
+      return jsonNoStore(
+        { code: "RATE_LIMITED", error: "Muitas tentativas. Tente novamente em instantes." },
+        { status: 429, headers: rateLimitHeaders(rateLimit) },
+      );
+    }
+
     const { slug, password } = await request.json();
 
     if (typeof slug !== "string" || typeof password !== "string" || !slug.trim() || !password) {
