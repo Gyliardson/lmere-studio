@@ -72,18 +72,34 @@ jobs:
       - name: Run isolated Playwright E2E and accessibility specs
         shell: bash
         run: |
-          set -euo pipefail
+          set -uo pipefail
           mapfile -t specs < <(find tests/e2e -maxdepth 1 -type f -name '*.spec.ts' -print | sort)
           test "${#specs[@]}" -gt 0
 
+          failed=0
           for spec in "${specs[@]}"; do
             echo "::group::Playwright ${spec}"
-            npx prisma db execute --file prisma/ci-reset-rate-limits.sql --config=prisma.config.ts
-            npx playwright test "${spec}"
+            if ! npx prisma db execute --file prisma/ci-reset-rate-limits.sql --config=prisma.config.ts; then
+              failed=1
+              echo "::error::Failed to reset rate-limit fixtures before ${spec}"
+            elif ! npx playwright test "${spec}"; then
+              failed=1
+            fi
             echo "::endgroup::"
           done
 
-      - name: Upload Playwright evidence
+          exit "${failed}"
+
+      - name: Upload deterministic visual review evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: ux-visual-evidence
+          path: visual-evidence
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Upload Playwright failure evidence
         if: failure()
         uses: actions/upload-artifact@v6
         with:

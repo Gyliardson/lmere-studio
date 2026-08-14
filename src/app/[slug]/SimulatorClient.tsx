@@ -7,9 +7,9 @@ import { buildWhatsAppMessage, openWhatsApp } from "@/lib/whatsapp";
 import { copyToClipboard, cn, getDateString, isDateBlocked, getDaysInMonth, getFirstDayOfMonth, hexToHsl, hexToRgb, formatPhoneBR, isValidPhoneBR } from "@/lib/utils";
 import {
   Calendar, ChevronLeft, ChevronRight, Cake, Layers, Palette, Upload,
-  ClipboardCheck, MessageCircle, Copy, Check, Star, Plus, Minus,
+  ClipboardCheck, MessageCircle, Copy, Check, Star, Plus,
   ArrowLeft, ArrowRight, Phone, User, FileText, X, Sparkles, Weight,
-  Users, ShieldCheck, Clock, Ban
+  Users, ShieldCheck, Ban
 } from "lucide-react";
 
 const TOTAL_STEPS = 5;
@@ -39,11 +39,11 @@ export function SimulatorClient({ slug }: { slug: string }) {
     async function fetchData() {
       try {
         const res = await fetch(`/api/tenants/${slug}`);
-        if (!res.ok) throw new Error("Ateliê não encontrado");
+        if (!res.ok) throw new Error("O ateliê solicitado não existe ou está indisponível.");
         const json = await res.json();
         setData(json);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Erro ao carregar");
+        setError(err instanceof Error ? err.message : "Erro ao carregar o ateliê.");
       } finally {
         setLoading(false);
       }
@@ -72,9 +72,9 @@ export function SimulatorClient({ slug }: { slug: string }) {
 
   if (loading) {
     return (
-      <div className="min-h-dvh flex items-center justify-center">
+      <div className="min-h-dvh flex items-center justify-center" role="status" aria-live="polite" aria-busy="true">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-brand-primary border-t-transparent rounded-full animate-spin" />
+          <div className="w-12 h-12 border-4 border-brand-primary border-t-transparent rounded-full animate-spin" aria-hidden="true" />
           <p className="text-white/60 text-sm">Carregando...</p>
         </div>
       </div>
@@ -84,8 +84,8 @@ export function SimulatorClient({ slug }: { slug: string }) {
   if (error || !data) {
     return (
       <div className="min-h-dvh flex items-center justify-center px-4">
-        <div className="glass-card p-8 text-center max-w-md">
-          <Ban className="w-12 h-12 text-error mx-auto mb-4" />
+        <div className="glass-card p-8 text-center max-w-md" role="alert">
+          <Ban className="w-12 h-12 text-error mx-auto mb-4" aria-hidden="true" />
           <h1 className="text-xl font-bold mb-2">Ateliê não encontrado</h1>
           <p className="text-white/60 text-sm">{error || "O ateliê solicitado não existe ou está indisponível."}</p>
         </div>
@@ -145,7 +145,6 @@ export function SimulatorClient({ slug }: { slug: string }) {
       className="min-h-dvh transition-colors duration-300"
       id="simulator-root"
     >
-      {/* Header */}
       <header className="relative overflow-hidden">
         {tenant.bannerUrl && (
           <div className="absolute inset-0">
@@ -165,7 +164,7 @@ export function SimulatorClient({ slug }: { slug: string }) {
             <div>
               <h1 className="text-xl font-bold text-white">{tenant.name}</h1>
               <p className="text-white/60 text-sm flex items-center gap-1.5">
-                <Cake className="w-3.5 h-3.5" />
+                <Cake className="w-3.5 h-3.5" aria-hidden="true" />
                 Simulador de Encomendas
               </p>
             </div>
@@ -173,15 +172,14 @@ export function SimulatorClient({ slug }: { slug: string }) {
         </div>
       </header>
 
-      {/* Stepper */}
-      <div className="px-4 py-4 max-w-lg mx-auto">
+      <nav className="px-4 py-4 max-w-lg mx-auto" aria-label="Progresso da encomenda">
         <div className="flex items-center justify-between mb-2">
           {stepIcons.map((Icon, i) => {
             const stepNum = i + 1;
             const isActive = state.step === stepNum;
             const isCompleted = state.step > stepNum;
             return (
-              <div key={i} className="flex flex-col items-center gap-1.5 flex-1">
+              <div key={i} className="flex flex-col items-center gap-1.5 flex-1" aria-current={isActive ? "step" : undefined}>
                 <div
                   style={isActive ? { boxShadow: `0 0 16px rgba(var(--color-brand-shadow-rgb), 0.5)` } : undefined}
                   className={cn(
@@ -190,6 +188,7 @@ export function SimulatorClient({ slug }: { slug: string }) {
                     isCompleted && "bg-brand-primary/20 text-brand-primary",
                     !isActive && !isCompleted && "bg-white/5 text-white/30"
                   )}
+                  aria-hidden="true"
                 >
                   {isCompleted ? <Check className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
                 </div>
@@ -203,21 +202,27 @@ export function SimulatorClient({ slug }: { slug: string }) {
                   <div className={cn(
                     "absolute h-[2px] transition-colors",
                     isCompleted ? "bg-brand-primary" : "bg-white/10"
-                  )} />
+                  )} aria-hidden="true" />
                 )}
               </div>
             );
           })}
         </div>
-        <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+        <div
+          className="h-1 bg-white/5 rounded-full overflow-hidden"
+          role="progressbar"
+          aria-valuemin={1}
+          aria-valuemax={TOTAL_STEPS}
+          aria-valuenow={state.step}
+          aria-valuetext={`${stepLabels[state.step - 1]} — etapa ${state.step} de ${TOTAL_STEPS}`}
+        >
           <div
             className="h-full bg-gradient-to-r from-brand-primary to-brand-secondary rounded-full transition-all duration-500"
             style={{ width: `${(state.step / TOTAL_STEPS) * 100}%` }}
           />
         </div>
-      </div>
+      </nav>
 
-      {/* Running total */}
       {total > 0 && (
         <div className="px-4 max-w-lg mx-auto mb-2">
           <div className="glass-card px-4 py-2.5 flex items-center justify-between">
@@ -227,7 +232,6 @@ export function SimulatorClient({ slug }: { slug: string }) {
         </div>
       )}
 
-      {/* Step Content */}
       <main className="px-4 pb-32 max-w-lg mx-auto">
         <div key={state.step} className="step-enter">
           {state.step === 1 && (
@@ -303,13 +307,12 @@ export function SimulatorClient({ slug }: { slug: string }) {
         </div>
       </main>
 
-      {/* Navigation */}
       <div className="fixed bottom-0 left-0 right-0 z-50">
         <div className="bg-gradient-to-t from-[var(--tenant-bg)] via-[var(--tenant-bg)] to-transparent pt-8 pb-4 px-4">
           <div className="max-w-lg mx-auto flex gap-3">
             {state.step > 1 && (
               <button onClick={goBack} className="btn-secondary flex-shrink-0" id="btn-back">
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="w-4 h-4" aria-hidden="true" />
                 Voltar
               </button>
             )}
@@ -321,18 +324,17 @@ export function SimulatorClient({ slug }: { slug: string }) {
                 id="btn-next"
               >
                 Continuar
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </button>
             )}
           </div>
         </div>
       </div>
 
-      {/* Toast */}
       {toast && (
-        <div className="toast bg-success text-white">
+        <div className="toast bg-success text-white" role="status" aria-live="polite" aria-atomic="true">
           <div className="flex items-center gap-2">
-            <Check className="w-4 h-4" />
+            <Check className="w-4 h-4" aria-hidden="true" />
             {toast}
           </div>
         </div>
@@ -340,10 +342,6 @@ export function SimulatorClient({ slug }: { slug: string }) {
     </div>
   );
 }
-
-/* ============================================================
-   STEP 1: Calendar
-   ============================================================ */
 
 function StepCalendar({
   selectedDate,
@@ -388,7 +386,7 @@ function StepCalendar({
   return (
     <div>
       <h2 className="text-lg font-bold mb-1 flex items-center gap-2">
-        <Calendar className="w-5 h-5 text-brand-primary" />
+        <Calendar className="w-5 h-5 text-brand-primary" aria-hidden="true" />
         Quando sera sua festa?
       </h2>
       <p className="text-white/50 text-sm mb-1">Selecione a data desejada para a entrega do bolo</p>
@@ -396,18 +394,18 @@ function StepCalendar({
 
       <div className="glass-card p-4">
         <div className="flex items-center justify-between mb-4">
-          <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-white/10 transition-colors" id="cal-prev">
-            <ChevronLeft className="w-5 h-5" />
+          <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-white/10 transition-colors" id="cal-prev" aria-label="Mês anterior">
+            <ChevronLeft className="w-5 h-5" aria-hidden="true" />
           </button>
-          <h3 className="font-semibold">
+          <h3 className="font-semibold" aria-live="polite">
             {monthNames[viewMonth]} {viewYear}
           </h3>
-          <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-white/10 transition-colors" id="cal-next">
-            <ChevronRight className="w-5 h-5" />
+          <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-white/10 transition-colors" id="cal-next" aria-label="Próximo mês">
+            <ChevronRight className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
-        <div className="grid grid-cols-7 gap-1 mb-2">
+        <div className="grid grid-cols-7 gap-1 mb-2" aria-hidden="true">
           {dayNames.map((d) => (
             <div key={d} className="text-center text-[11px] font-medium text-white/40 py-1">
               {d}
@@ -415,9 +413,9 @@ function StepCalendar({
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid grid-cols-7 gap-1" role="grid" aria-label={`${monthNames[viewMonth]} de ${viewYear}`}>
           {Array.from({ length: firstDay }).map((_, i) => (
-            <div key={`empty-${i}`} />
+            <div key={`empty-${i}`} aria-hidden="true" />
           ))}
           {Array.from({ length: daysInMonth }).map((_, i) => {
             const day = i + 1;
@@ -428,6 +426,8 @@ function StepCalendar({
             const isSelected = selectedDate === dateStr;
             const isToday = dateStr === todayStr;
             const disabled = isPast || blocked;
+            const readableDate = dateObj.toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" });
+            const availability = isPast ? "indisponível por antecedência" : blocked ? "indisponível" : "disponível";
 
             return (
               <button
@@ -443,10 +443,12 @@ function StepCalendar({
                   blocked && !isPast && "line-through text-error/40"
                 )}
                 id={`cal-day-${day}`}
+                aria-pressed={isSelected}
+                aria-label={`${readableDate}, ${availability}${isToday ? ", hoje" : ""}`}
               >
                 {day}
                 {blocked && !isPast && (
-                  <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-error/60" />
+                  <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-error/60" aria-hidden="true" />
                 )}
               </button>
             );
@@ -455,23 +457,23 @@ function StepCalendar({
 
         <div className="flex items-center gap-4 mt-4 pt-3 border-t border-white/5 text-[11px] text-white/40">
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-brand-primary" />
+            <span className="w-2 h-2 rounded-full bg-brand-primary" aria-hidden="true" />
             Selecionado
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-error/60" />
+            <span className="w-2 h-2 rounded-full bg-error/60" aria-hidden="true" />
             Esgotado
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-white/15" />
+            <span className="w-2 h-2 rounded-full bg-white/15" aria-hidden="true" />
             Indisponível
           </div>
         </div>
       </div>
 
       {selectedDate && (
-        <div className="mt-4 glass-card-light p-3 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-brand-primary/20 flex items-center justify-center">
+        <div className="mt-4 glass-card-light p-3 flex items-center gap-3" role="status" aria-live="polite">
+          <div className="w-10 h-10 rounded-lg bg-brand-primary/20 flex items-center justify-center" aria-hidden="true">
             <Check className="w-5 h-5 text-brand-primary" />
           </div>
           <div>
@@ -491,10 +493,6 @@ function StepCalendar({
   );
 }
 
-/* ============================================================
-   STEP 2: Size / Slices
-   ============================================================ */
-
 function StepSize({
   sizes,
   selected,
@@ -507,7 +505,7 @@ function StepSize({
   return (
     <div>
       <h2 className="text-lg font-bold mb-1 flex items-center gap-2">
-        <Cake className="w-5 h-5 text-brand-primary" />
+        <Cake className="w-5 h-5 text-brand-primary" aria-hidden="true" />
         Qual o tamanho ideal?
       </h2>
       <p className="text-white/50 text-sm mb-5">Escolha o tamanho do bolo baseado no número de convidados</p>
@@ -521,24 +519,25 @@ function StepSize({
               onClick={() => onSelect(size)}
               className={cn("selection-card w-full text-left", isSelected && "selected")}
               id={`size-${size.id}`}
+              aria-pressed={isSelected}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className={cn(
                     "w-12 h-12 rounded-xl flex items-center justify-center",
                     isSelected ? "bg-brand-primary/20" : "bg-white/5"
-                  )}>
+                  )} aria-hidden="true">
                     <Cake className={cn("w-6 h-6", isSelected ? "text-brand-primary" : "text-white/40")} />
                   </div>
                   <div>
                     <p className="font-semibold text-sm">{size.name}</p>
                     <div className="flex items-center gap-3 text-xs text-white/50 mt-0.5">
                       <span className="flex items-center gap-1">
-                        <Users className="w-3 h-3" />
+                        <Users className="w-3 h-3" aria-hidden="true" />
                         {size.servings}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Weight className="w-3 h-3" />
+                        <Weight className="w-3 h-3" aria-hidden="true" />
                         {size.weightKg}kg
                       </span>
                     </div>
@@ -549,7 +548,7 @@ function StepSize({
                     {formatCurrency(size.basePrice)}
                   </p>
                   {isSelected && (
-                    <div className="mt-1">
+                    <div className="mt-1" aria-hidden="true">
                       <Check className="w-4 h-4 text-brand-primary ml-auto" />
                     </div>
                   )}
@@ -562,10 +561,6 @@ function StepSize({
     </div>
   );
 }
-
-/* ============================================================
-   STEP 3: Flavors & Addons
-   ============================================================ */
 
 function StepFlavors({
   doughs,
@@ -602,10 +597,9 @@ function StepFlavors({
   };
   return (
     <div className="space-y-8">
-      {/* Dough */}
       <div>
         <h2 className="text-lg font-bold mb-1 flex items-center gap-2">
-          <Layers className="w-5 h-5 text-brand-primary" />
+          <Layers className="w-5 h-5 text-brand-primary" aria-hidden="true" />
           Escolha a Massa
         </h2>
         <p className="text-white/50 text-sm mb-4">Selecione uma opção de massa</p>
@@ -622,6 +616,7 @@ function StepFlavors({
                   isSelected && "selected"
                 )}
                 id={`dough-${dough.id}`}
+                aria-pressed={isSelected}
               >
                 {dough.imageUrl ? (
                   <div className="w-full h-24 overflow-hidden rounded-lg mb-2 flex-shrink-0">
@@ -632,7 +627,7 @@ function StepFlavors({
                     />
                   </div>
                 ) : (
-                  <div className="w-full h-24 bg-white/5 rounded-lg mb-2 flex items-center justify-center flex-shrink-0">
+                  <div className="w-full h-24 bg-white/5 rounded-lg mb-2 flex items-center justify-center flex-shrink-0" aria-hidden="true">
                     <Cake className="w-8 h-8 text-white/20" />
                   </div>
                 )}
@@ -640,7 +635,7 @@ function StepFlavors({
                   <p className="font-medium text-sm text-center leading-tight">{dough.name}</p>
                   {dough.isSpecial && (
                     <span className="badge badge-special text-[10px]">
-                      <Star className="w-2.5 h-2.5" /> Especial
+                      <Star className="w-2.5 h-2.5" aria-hidden="true" /> Especial
                     </span>
                   )}
                   {dough.additionalPrice > 0 && (
@@ -653,10 +648,9 @@ function StepFlavors({
         </div>
       </div>
 
-      {/* Fillings */}
       <div>
         <h2 className="text-lg font-bold mb-1 flex items-center gap-2">
-          <Palette className="w-5 h-5 text-brand-primary" />
+          <Palette className="w-5 h-5 text-brand-primary" aria-hidden="true" />
           Escolha os Recheios
         </h2>
         <p className="text-white/50 text-sm mb-4">
@@ -672,6 +666,7 @@ function StepFlavors({
                 onClick={() => handleFillingClick(filling)}
                 className={cn("selection-card w-full text-left", isSelected && "selected")}
                 id={`filling-${filling.id}`}
+                aria-pressed={isSelected}
               >
                 <div className="flex items-center gap-3">
                   {filling.imageUrl && (
@@ -686,7 +681,7 @@ function StepFlavors({
                       <p className="font-medium text-sm">{filling.name}</p>
                       {filling.isSpecial && (
                         <span className="badge badge-special text-[10px]">
-                          <Star className="w-2.5 h-2.5" /> Especial
+                          <Star className="w-2.5 h-2.5" aria-hidden="true" /> Especial
                         </span>
                       )}
                     </div>
@@ -697,7 +692,7 @@ function StepFlavors({
                   <div className={cn(
                     "w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all",
                     isSelected ? "bg-brand-primary border-brand-primary" : "border-white/20"
-                  )}>
+                  )} aria-hidden="true">
                     {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
                   </div>
                 </div>
@@ -707,11 +702,10 @@ function StepFlavors({
         </div>
       </div>
 
-      {/* Addons */}
       {addons.length > 0 && (
         <div>
           <h2 className="text-lg font-bold mb-1 flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-brand-primary" />
+            <Sparkles className="w-5 h-5 text-brand-primary" aria-hidden="true" />
             Adicionais
           </h2>
           <p className="text-white/50 text-sm mb-4">Itens opcionais para complementar sua encomenda</p>
@@ -725,6 +719,7 @@ function StepFlavors({
                   onClick={() => onToggleAddon(addon)}
                   className={cn("selection-card w-full text-left", isSelected && "selected")}
                   id={`addon-${addon.id}`}
+                  aria-pressed={isSelected}
                 >
                   <div className="flex items-center gap-3">
                     {addon.imageUrl ? (
@@ -733,7 +728,7 @@ function StepFlavors({
                       <div className={cn(
                         "w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors",
                         isSelected ? "bg-brand-primary/20 text-brand-primary" : "bg-white/5 text-white/40"
-                      )}>
+                      )} aria-hidden="true">
                         <Sparkles className="w-5 h-5" />
                       </div>
                     )}
@@ -750,7 +745,7 @@ function StepFlavors({
                       <div className={cn(
                         "w-6 h-6 rounded-full flex items-center justify-center border transition-all",
                         isSelected ? "bg-brand-primary border-brand-primary text-white shadow-sm" : "border-white/20 text-white/30"
-                      )}>
+                      )} aria-hidden="true">
                         {isSelected ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
                       </div>
                     </div>
@@ -764,10 +759,6 @@ function StepFlavors({
     </div>
   );
 }
-
-/* ============================================================
-   STEP 4: Details & Reference
-   ============================================================ */
 
 function StepDetails({
   state,
@@ -816,13 +807,13 @@ function StepDetails({
   return (
     <div className="space-y-6">
       <h2 className="text-lg font-bold mb-1 flex items-center gap-2">
-        <FileText className="w-5 h-5 text-brand-primary" />
+        <FileText className="w-5 h-5 text-brand-primary" aria-hidden="true" />
         Detalhes do Pedido
       </h2>
       <p className="text-white/50 text-sm mb-5">Informações adicionais para personalizar seu bolo</p>
 
       <div>
-        <label className="block text-sm font-medium mb-2 text-white/80">
+        <label htmlFor="input-cake-message" className="block text-sm font-medium mb-2 text-white/80">
           Mensagem / Placa do Bolo
         </label>
         <input
@@ -836,7 +827,7 @@ function StepDetails({
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2 text-white/80">
+        <label htmlFor="input-details" className="block text-sm font-medium mb-2 text-white/80">
           Observações adicionais
         </label>
         <textarea
@@ -851,12 +842,12 @@ function StepDetails({
 
       {allowUpload && (
         <div>
-          <label className="block text-sm font-medium mb-2 text-white/80">
+          <p className="block text-sm font-medium mb-2 text-white/80" id="photo-reference-label">
             Foto de Referência (opcional)
-          </label>
+          </p>
 
           {state.referenceImage ? (
-            <div className="glass-card p-4 flex items-center justify-between gap-4">
+            <div className="glass-card p-4 flex items-center justify-between gap-4" aria-labelledby="photo-reference-label">
               <div className="flex items-center gap-3 min-w-0">
                 <img
                   src={state.referenceImage}
@@ -866,7 +857,7 @@ function StepDetails({
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-white/90">Foto de referência enviada</p>
                   <p className="text-xs text-success flex items-center gap-1 mt-0.5">
-                    <Check className="w-3.5 h-3.5" /> Pronta para o pedido
+                    <Check className="w-3.5 h-3.5" aria-hidden="true" /> Pronta para o pedido
                   </p>
                 </div>
               </div>
@@ -876,7 +867,7 @@ function StepDetails({
                 className="p-2 rounded-lg bg-error/15 text-error hover:bg-error/25 transition-colors text-xs flex items-center gap-1 flex-shrink-0"
                 id="btn-remove-photo"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4" aria-hidden="true" />
                 Remover
               </button>
             </div>
@@ -893,6 +884,15 @@ function StepDetails({
                     : "border-white/10 hover:border-brand-primary/40 hover:bg-white/5"
                 )}
                 id="dropzone-photo"
+                tabIndex={0}
+                role="button"
+                aria-labelledby="photo-reference-label"
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    document.getElementById("input-file-photo")?.click();
+                  }
+                }}
               >
                 <input
                   type="file"
@@ -900,19 +900,21 @@ function StepDetails({
                   onChange={handleFileSelect}
                   className="hidden"
                   id="input-file-photo"
+                  tabIndex={-1}
                 />
-                <Upload className="w-8 h-8 text-white/40 mx-auto mb-2" />
+                <Upload className="w-8 h-8 text-white/40 mx-auto mb-2" aria-hidden="true" />
                 <p className="text-sm font-medium text-white/80">
                   Clique aqui ou arraste uma foto para enviar
                 </p>
                 <p className="text-xs text-white/40 mt-1">Formatos suportados: PNG, JPG ou WEBP (até 5MB)</p>
               </label>
 
-              <div className="relative flex items-center justify-center my-2">
+              <div className="relative flex items-center justify-center my-2" aria-hidden="true">
                 <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5" /></div>
                 <span className="relative px-3 text-[11px] text-white/30 bg-surface-900">ou insira o link</span>
               </div>
 
+              <label htmlFor="input-reference-url" className="sr-only">URL da imagem de referência</label>
               <input
                 type="url"
                 value={state.referenceImage || ""}
@@ -928,10 +930,6 @@ function StepDetails({
     </div>
   );
 }
-
-/* ============================================================
-   STEP 5: Summary & Checkout
-   ============================================================ */
 
 function StepSummary({
   state,
@@ -952,19 +950,20 @@ function StepSummary({
   onSendWhatsApp: () => void;
   onChange: (updates: Partial<SimulatorState>) => void;
 }) {
+  const phoneInvalid = Boolean(state.customerPhone) && !isValidPhoneBR(state.customerPhone);
+
   return (
     <div className="space-y-6">
       <h2 className="text-lg font-bold mb-1 flex items-center gap-2">
-        <ClipboardCheck className="w-5 h-5 text-brand-primary" />
+        <ClipboardCheck className="w-5 h-5 text-brand-primary" aria-hidden="true" />
         Resumo do Pedido
       </h2>
       <p className="text-white/50 text-sm">Confira os detalhes antes de enviar</p>
 
-      {/* Customer Info */}
       <div className="space-y-3">
         <div>
-          <label className="block text-sm font-medium mb-2 text-white/80 flex items-center gap-1.5">
-            <User className="w-3.5 h-3.5" /> Seu Nome
+          <label htmlFor="input-name" className="block text-sm font-medium mb-2 text-white/80 flex items-center gap-1.5">
+            <User className="w-3.5 h-3.5" aria-hidden="true" /> Seu Nome
           </label>
           <input
             type="text"
@@ -976,8 +975,8 @@ function StepSummary({
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-2 text-white/80 flex items-center gap-1.5">
-            <Phone className="w-3.5 h-3.5" /> Seu WhatsApp
+          <label htmlFor="input-phone" className="block text-sm font-medium mb-2 text-white/80 flex items-center gap-1.5">
+            <Phone className="w-3.5 h-3.5" aria-hidden="true" /> Seu WhatsApp
           </label>
           <input
             type="tel"
@@ -989,19 +988,20 @@ function StepSummary({
             placeholder="(11) 99999-9999"
             className={cn(
               "input-field",
-              state.customerPhone && !isValidPhoneBR(state.customerPhone) && "border-error/60 focus:border-error"
+              phoneInvalid && "border-error/60 focus:border-error"
             )}
             id="input-phone"
+            aria-invalid={phoneInvalid || undefined}
+            aria-describedby={phoneInvalid ? "input-phone-error" : undefined}
           />
-          {state.customerPhone && !isValidPhoneBR(state.customerPhone) && (
-            <p className="text-xs text-error mt-1.5 flex items-center gap-1">
+          {phoneInvalid && (
+            <p id="input-phone-error" className="text-xs text-error mt-1.5 flex items-center gap-1" role="alert">
               Informe um telefone/WhatsApp válido com DDD (ex: (11) 99999-9999)
             </p>
           )}
         </div>
       </div>
 
-      {/* Order Summary */}
       <div className="glass-card p-4 space-y-3">
         <h3 className="font-semibold text-sm text-white/80 mb-3">Detalhamento</h3>
 
@@ -1074,7 +1074,7 @@ function StepSummary({
           {tenant.featuresConfig.deposit_mode === "50_percent" && (
             <div className="flex justify-between text-sm mt-1 text-brand-secondary">
               <span className="flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5" /> Sinal estimado (50%)
+                <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" /> Sinal estimado (50%)
               </span>
               <span className="font-semibold">{formatCurrency(deposit)}</span>
             </div>
@@ -1083,12 +1083,11 @@ function StepSummary({
         </div>
       </div>
 
-      {/* PIX Key */}
       {tenant.pixKey && deposit > 0 && (
         <div className="glass-card p-4">
-          <p className="text-sm font-medium mb-2 text-white/80">Chave PIX para pagamento</p>
+          <p className="text-sm font-medium mb-2 text-white/80" id="pix-key-label">Chave PIX para pagamento</p>
           <div className="flex items-center gap-2">
-            <code className="flex-1 bg-white/5 px-3 py-2 rounded-lg text-sm text-white/70 truncate">
+            <code className="flex-1 bg-white/5 px-3 py-2 rounded-lg text-sm text-white/70 truncate" id="pix-key-value">
               {tenant.pixKey}
             </code>
             <button
@@ -1098,21 +1097,23 @@ function StepSummary({
                 copied ? "bg-success text-white" : "bg-white/10 hover:bg-white/20 text-white/60"
               )}
               id="btn-copy-pix"
+              aria-label={copied ? "Chave PIX copiada" : "Copiar chave PIX"}
+              aria-describedby="pix-key-value pix-copy-status"
             >
-              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              {copied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}
             </button>
           </div>
+          <span id="pix-copy-status" className="sr-only" aria-live="polite">{copied ? "Chave PIX copiada para a área de transferência" : ""}</span>
         </div>
       )}
 
-      {/* Send via WhatsApp */}
       <button
         onClick={onSendWhatsApp}
         disabled={!state.customerName.trim() || !isValidPhoneBR(state.customerPhone)}
         className="btn-primary w-full py-4 text-base"
         id="btn-send-whatsapp"
       >
-        <MessageCircle className="w-5 h-5" />
+        <MessageCircle className="w-5 h-5" aria-hidden="true" />
         Enviar Pedido no WhatsApp
       </button>
     </div>
