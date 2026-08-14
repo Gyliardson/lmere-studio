@@ -1,3 +1,4 @@
+import { validateFeaturesConfig } from "@/lib/admin-validation";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
@@ -27,6 +28,11 @@ export async function GET(
     }
 
     const { adminPasswordHash, ...publicTenant } = tenant;
+    const featuresConfig = validateFeaturesConfig(JSON.parse(publicTenant.featuresConfig) as unknown);
+    if (!featuresConfig.ok) {
+      console.error("[ERROR] Persisted tenant featuresConfig violates the server contract", tenant.id);
+      return NextResponse.json({ error: "Configuração do ateliê inválida" }, { status: 500 });
+    }
 
     const doughs = tenant.cakeFlavors.filter((f) => f.type === "MASSA");
     const fillings = tenant.cakeFlavors.filter((f) => f.type === "RECHEIO");
@@ -35,7 +41,7 @@ export async function GET(
       tenant: {
         ...publicTenant,
         shadowColor: (publicTenant as Record<string, unknown>).shadowColor || publicTenant.primaryColor || "#8B5CF6",
-        featuresConfig: JSON.parse(publicTenant.featuresConfig),
+        featuresConfig: featuresConfig.value,
       },
       sizes: tenant.cakeSizes,
       doughs,
