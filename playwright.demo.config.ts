@@ -1,6 +1,16 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3000";
+const webServer = process.env.PLAYWRIGHT_SKIP_WEBSERVER === "1"
+  ? {}
+  : {
+      webServer: {
+        command: "npm run start",
+        url: baseURL,
+        reuseExistingServer: true,
+        timeout: 120_000,
+      },
+    };
 
 export default defineConfig({
   testDir: "./tests/demo",
@@ -19,12 +29,7 @@ export default defineConfig({
     screenshot: "off",
     video: "off",
   },
-  webServer: process.env.PLAYWRIGHT_SKIP_WEBSERVER === "1" ? undefined : {
-    command: "npm run start",
-    url: baseURL,
-    reuseExistingServer: true,
-    timeout: 120_000,
-  },
+  ...webServer,
   projects: [
     {
       name: "desktop",
