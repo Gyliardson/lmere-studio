@@ -11,7 +11,7 @@ test("normalizes Brazilian phones with or without country code", () => {
 test("rejects malformed Brazilian phone shapes", () => {
   assert.equal(normalizeBrazilianPhone("123"), null);
   assert.equal(normalizeBrazilianPhone("00 99999-9999"), null);
-  assert.equal(normalizeBrazilianPhone("+55 1 9999-9999"), null);
+  assert.equal(normalizeBrazilianPhone("+55 00 99999-9999"), null);
 });
 
 test("business date uses America/Sao_Paulo across the UTC rollover", () => {
