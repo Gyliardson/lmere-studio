@@ -13,8 +13,19 @@ interface OrderResponse {
   idempotentReplay: boolean;
 }
 
-const orderKeys = new Map<string, string>();
+export class OrderSubmissionError extends Error {
+  constructor(
+    message: string,
+    readonly code: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = "OrderSubmissionError";
+  }
+}
+
 const pendingMessages = new Map<string, Promise<string>>();
+const handoffWindows = new WeakMap<Promise<string>, Window | null>();
 
 function orderSignature(state: SimulatorState, tenant: TenantData) {
   return JSON.stringify({
@@ -26,32 +37,36 @@ function orderSignature(state: SimulatorState, tenant: TenantData) {
     flavorId: state.dough?.id,
     fillingIds: state.fillings.map((item) => item.id),
     addonIds: state.addons.map((item) => item.id),
+    referenceImage: state.referenceImage,
     cakeMessage: state.cakeMessage,
     details: state.details,
   });
 }
 
-function idempotencyKey(signature: string) {
-  const existing = orderKeys.get(signature);
-  if (existing) return existing;
-  const key = typeof crypto !== "undefined" && "randomUUID" in crypto
+function newIdempotencyKey() {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
     : `order-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  orderKeys.set(signature, key);
-  return key;
 }
 
-async function createServerOrder(state: SimulatorState, tenant: TenantData): Promise<OrderResponse> {
+async function createServerOrder(
+  state: SimulatorState,
+  tenant: TenantData,
+  idempotencyKey: string,
+): Promise<OrderResponse> {
   if (!state.eventDate || !state.cakeSize || !state.dough || !state.fillings.length) {
-    throw new Error("Revise os dados obrigatórios do pedido antes de enviar.");
+    throw new OrderSubmissionError(
+      "Revise os dados obrigatórios do pedido antes de enviar.",
+      "INVALID_REQUEST",
+      400,
+    );
   }
 
-  const signature = orderSignature(state, tenant);
   const response = await fetch("/api/orders", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Idempotency-Key": idempotencyKey(signature),
+      "Idempotency-Key": idempotencyKey,
     },
     body: JSON.stringify({
       tenantId: tenant.id,
@@ -68,9 +83,13 @@ async function createServerOrder(state: SimulatorState, tenant: TenantData): Pro
     }),
   });
 
-  const payload = await response.json().catch(() => null) as (OrderResponse & { error?: string }) | null;
+  const payload = await response.json().catch(() => null) as (OrderResponse & { code?: string; error?: string }) | null;
   if (!response.ok || !payload?.order || !payload.pricing) {
-    throw new Error(payload?.error || "Não foi possível confirmar o pedido. Tente novamente.");
+    throw new OrderSubmissionError(
+      payload?.error || "Não foi possível confirmar o pedido. Tente novamente.",
+      payload?.code || "ORDER_CREATE_FAILED",
+      response.status,
+    );
   }
 
   return payload;
@@ -79,8 +98,9 @@ async function createServerOrder(state: SimulatorState, tenant: TenantData): Pro
 async function buildConfirmedMessage(
   state: SimulatorState,
   tenant: TenantData,
+  idempotencyKey: string,
 ): Promise<string> {
-  const confirmed = await createServerOrder(state, tenant);
+  const confirmed = await createServerOrder(state, tenant, idempotencyKey);
   const { subtotal, depositAmount, depositMode } = confirmed.pricing;
 
   const lines: string[] = [
@@ -133,7 +153,10 @@ export function buildWhatsAppMessage(
   const pending = pendingMessages.get(signature);
   if (pending) return pending;
 
-  const operation = buildConfirmedMessage(state, tenant).finally(() => {
+  // A key belongs to one intentional submit attempt/retry window. Once this
+  // Promise settles, a later identical order receives a fresh key.
+  const idempotencyKey = newIdempotencyKey();
+  const operation = buildConfirmedMessage(state, tenant, idempotencyKey).finally(() => {
     pendingMessages.delete(signature);
   });
   pendingMessages.set(signature, operation);
@@ -141,9 +164,16 @@ export function buildWhatsAppMessage(
 }
 
 export function openWhatsApp(phone: string, message: string | Promise<string>): void {
-  const popup = window.open("about:blank", "_blank");
+  const operation = Promise.resolve(message);
 
-  void Promise.resolve(message)
+  // Double-clicks share buildWhatsAppMessage's pending Promise. Reusing that
+  // same Promise here guarantees at most one popup/handoff for that attempt.
+  if (handoffWindows.has(operation)) return;
+
+  const popup = window.open("about:blank", "_blank");
+  handoffWindows.set(operation, popup);
+
+  void operation
     .then((resolvedMessage) => {
       const encodedMessage = encodeURIComponent(resolvedMessage);
       const cleanPhone = phone.replace(/\D/g, "");
@@ -154,6 +184,9 @@ export function openWhatsApp(phone: string, message: string | Promise<string>): 
     .catch((error: unknown) => {
       popup?.close();
       window.alert(error instanceof Error ? error.message : "Não foi possível confirmar o pedido.");
+    })
+    .finally(() => {
+      handoffWindows.delete(operation);
     });
 }
 
