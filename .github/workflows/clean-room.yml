@@ -93,9 +93,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm start > clean-room-server.log 2>&1 &
+          node node_modules/next/dist/bin/next start > clean-room-server.log 2>&1 &
           server_pid=$!
-          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          cleanup_server() {
+            kill "$server_pid" 2>/dev/null || true
+            wait "$server_pid" 2>/dev/null || true
+          }
+          trap cleanup_server EXIT
 
           ready=0
           for attempt in {1..30}; do
@@ -133,6 +137,9 @@ jobs:
 
           missing_status=$(curl --silent --output clean-room-tenant-missing.json --write-out '%{http_code}' http://127.0.0.1:3000/api/tenants/ci-tenant-missing)
           test "$missing_status" = "404"
+
+          cleanup_server
+          trap - EXIT
 
       - name: Verify migration state
         run: npx prisma migrate status --config=prisma.config.ts
