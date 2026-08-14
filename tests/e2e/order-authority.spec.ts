@@ -29,3 +29,12 @@ test("public order rejects a cross-tenant catalog selection", async ({ request }
   expect(response.status()).toBe(400);
   expect((await response.json()).code).toBe("INVALID_CAKE_SIZE");
 });
+
+test("public order rejects malformed customer phone server-side", async ({ request }) => {
+  const response = await request.post("/api/orders", {
+    data: { ...validBaseOrder, customerPhone: "123" },
+  });
+  expect(response.status()).toBe(400);
+  const body = await response.json();
+  expect(body.code).toBe("INVALID_CUSTOMER_PHONE");
+});
