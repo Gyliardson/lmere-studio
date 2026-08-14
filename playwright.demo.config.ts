@@ -24,6 +24,7 @@ export default defineConfig({
     locale: "pt-BR",
     timezoneId: "America/Sao_Paulo",
     colorScheme: "dark",
+    reducedMotion: "reduce",
     trace: "off",
     screenshot: "off",
     video: "off",
