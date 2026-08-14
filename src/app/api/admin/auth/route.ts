@@ -11,7 +11,8 @@ import {
 
 const UNAUTHORIZED = { error: "Credenciais inválidas" };
 const NO_STORE_HEADERS = { "Cache-Control": "no-store" };
-const LOGIN_RATE_LIMIT = { scope: "admin-login", limit: 8, windowMs: 15 * 60 * 1000 } as const;
+const LOGIN_SOURCE_RATE_LIMIT = { scope: "admin-login-source", limit: 24, windowMs: 15 * 60 * 1000 } as const;
+const LOGIN_TENANT_RATE_LIMIT = { limit: 8, windowMs: 15 * 60 * 1000 } as const;
 // Fixed non-production credential hash used only to keep unknown-tenant login
 // attempts on the same bcrypt verification path as known tenants.
 const DUMMY_PASSWORD_HASH = "$2b$10$vGcCuvAGtutf9QbLKDl2VOTxm/yNRchJO5qpcyDgqP5a5kZWo8dDa";
@@ -26,6 +27,13 @@ function jsonNoStore(body: unknown, init?: ResponseInit) {
   });
 }
 
+function rateLimitedResponse(rateLimit: Awaited<ReturnType<typeof consumeRateLimit>>) {
+  return jsonNoStore(
+    { code: "RATE_LIMITED", error: "Muitas tentativas. Tente novamente em instantes." },
+    { status: 429, headers: rateLimitHeaders(rateLimit) },
+  );
+}
+
 function clearSessionCookie(response: NextResponse) {
   response.cookies.set(ADMIN_SESSION_COOKIE, "", {
     ...adminSessionCookieOptions(),
@@ -36,19 +44,21 @@ function clearSessionCookie(response: NextResponse) {
 
 export async function POST(request: Request) {
   try {
-    const rateLimit = await consumeRateLimit(request, LOGIN_RATE_LIMIT);
-    if (!rateLimit.allowed) {
-      return jsonNoStore(
-        { code: "RATE_LIMITED", error: "Muitas tentativas. Tente novamente em instantes." },
-        { status: 429, headers: rateLimitHeaders(rateLimit) },
-      );
-    }
+    const sourceLimit = await consumeRateLimit(request, LOGIN_SOURCE_RATE_LIMIT);
+    if (!sourceLimit.allowed) return rateLimitedResponse(sourceLimit);
 
     const { slug, password } = await request.json();
 
     if (typeof slug !== "string" || typeof password !== "string" || !slug.trim() || !password) {
       return jsonNoStore({ error: "Credenciais ausentes" }, { status: 400 });
     }
+
+    const normalizedSlug = slug.trim().toLowerCase();
+    const tenantLimit = await consumeRateLimit(request, {
+      scope: `admin-login-tenant:${normalizedSlug}`,
+      ...LOGIN_TENANT_RATE_LIMIT,
+    });
+    if (!tenantLimit.allowed) return rateLimitedResponse(tenantLimit);
 
     const tenant = await prisma.tenant.findUnique({ where: { slug: slug.trim() } });
     const passwordValid = compareSync(password, tenant?.adminPasswordHash ?? DUMMY_PASSWORD_HASH);
