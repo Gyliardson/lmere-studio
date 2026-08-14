@@ -47,7 +47,7 @@ test.describe("deterministic storefront smoke", () => {
     await page.goto("/ci-tenant-missing");
 
     await expect(page.getByRole("heading", { name: "Ateliê não encontrado" })).toBeVisible();
-    await expect(page.getByRole("paragraph")).toHaveText("Ateliê não encontrado");
+    await expect(page.getByRole("alert")).toContainText("O ateliê solicitado não existe ou está indisponível.");
   });
 
   test("invalid browser phone prevents order submission", async ({ page }, testInfo) => {
