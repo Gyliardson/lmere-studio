@@ -226,12 +226,13 @@ Current CI on the professionalization branch verifies:
 - authenticated Tenant A/B isolation checks proving request-supplied tenant IDs cannot redirect tested reads/mutations across tenants;
 - cross-tenant mutation checks for menu resources, blocked dates, and orders;
 - admin browser session restoration and server-backed logout persistence across reloads on desktop and mobile;
-- an initial accessibility role/landmark smoke on desktop and mobile;
+- desktop/mobile accessibility and responsive regressions covering visible focus, reduced motion, semantic progress/selections, authenticated admin keyboard navigation, dialog/drawer focus trapping and restoration, custom combobox keyboard behavior, keyboard-reachable upload controls, and horizontal-overflow checks;
+- deterministic desktop/mobile visual-review screenshots for representative storefront and authenticated admin sections;
 - read-only Gitleaks secret scanning;
 - post-test migration status;
 - server diagnostics and Playwright trace/screenshot/video artifacts on relevant failures.
 
-The browser accessibility smoke is intentionally narrow and is not a claim of complete WCAG compliance. Deeper keyboard/focus/contrast/axe coverage and additional static security analysis remain later program work.
+The accessibility suite is risk-focused regression coverage, not a claim of complete WCAG certification. Manual inspection of deterministic visual evidence remains part of the UI issue Definition of Done, and automated axe coverage is not currently a CI gate.
 
 ---
 
