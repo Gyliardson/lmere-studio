@@ -43,7 +43,7 @@ test.describe("deterministic storefront smoke", () => {
     await expect(page.getByRole("paragraph")).toHaveText("Ateliê não encontrado");
   });
 
-  test("storefront persists the order before WhatsApp handoff and uses server pricing", async ({ page, context }) => {
+  test("storefront persists the order before WhatsApp handoff and exposes server pricing", async ({ page, context }) => {
     await context.route("https://wa.me/**", async (route) => route.fulfill({ status: 200, body: "ok" }));
     await reachSummary(page);
 
@@ -51,10 +51,14 @@ test.describe("deterministic storefront smoke", () => {
     const popupPromise = page.waitForEvent("popup");
     await page.locator("#btn-send-whatsapp").click();
 
+    await expect(page.locator("#order-submit-status")).toContainText("Confirmando disponibilidade e valores");
     const response = await responsePromise;
     expect(response.status()).toBe(201);
     const body = await response.json();
     expect(body.pricing).toEqual({ subtotal: 110, depositAmount: 55, depositMode: "50_percent" });
+
+    await expect(page.locator("#order-submit-status")).toContainText("Total confirmado pelo servidor: R$ 110,00");
+    await expect(page.locator("#order-submit-status")).toContainText(body.order.id);
 
     const popup = await popupPromise;
     await popup.waitForURL(/wa\.me/);
@@ -113,7 +117,7 @@ test.describe("deterministic storefront smoke", () => {
     expect(secondBody.idempotentReplay).toBe(false);
   });
 
-  test("structured server rejection is surfaced and aborts WhatsApp handoff", async ({ page, context }) => {
+  test("structured server rejection is surfaced inline and aborts WhatsApp handoff", async ({ page, context }) => {
     await reachSummary(page);
     await page.route("**/api/orders", async (route) => {
       await route.fulfill({
@@ -123,12 +127,13 @@ test.describe("deterministic storefront smoke", () => {
       });
     });
 
-    const dialogPromise = page.waitForEvent("dialog");
     await page.locator("#btn-send-whatsapp").click();
 
-    const dialog = await dialogPromise;
-    expect(dialog.message()).toBe("A data selecionada está indisponível");
-    await dialog.dismiss();
+    const status = page.locator("#order-submit-status");
+    await expect(status).toHaveAttribute("role", "alert");
+    await expect(status).toHaveAttribute("data-state", "error");
+    await expect(status).toHaveText("A data selecionada está indisponível");
+    await expect(page.locator("#btn-send-whatsapp")).toBeEnabled();
     await expect.poll(() => context.pages().filter((candidate) => candidate !== page && !candidate.isClosed()).length).toBe(0);
     expect(context.pages().some((candidate) => candidate.url().startsWith("https://wa.me/"))).toBe(false);
   });
