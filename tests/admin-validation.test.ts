@@ -86,6 +86,7 @@ test("flavor category is constrained to the supported contract", () => {
 test("partial catalog updates reject empty and invalid mutations", () => {
   expectInvalid(validateMenuUpdate({ id: "size-a", itemType: "size" }), "$");
   expectInvalid(validateMenuUpdate({ id: "size-a", itemType: "size", basePrice: "NaN" }), "basePrice");
+  expectInvalid(validateMenuUpdate({ id: "size-a", itemType: "size", basePrice: "12.50" }), "basePrice");
   expectInvalid(validateMenuUpdate({ id: "flavor-a", itemType: "flavor", category: "OTHER" }), "type");
 });
 
@@ -122,6 +123,7 @@ test("tenant settings normalize bounded values and phone", () => {
 
 test("tenant settings reject unsafe capacity, colors, phones and unknown fields", () => {
   expectInvalid(validateTenantSettingsUpdate({ maxOrdersPerDay: 0 }), "maxOrdersPerDay");
+  expectInvalid(validateTenantSettingsUpdate({ maxOrdersPerDay: "5" }), "maxOrdersPerDay");
   expectInvalid(validateTenantSettingsUpdate({ minLeadDays: 31 }), "minLeadDays");
   expectInvalid(validateTenantSettingsUpdate({ primaryColor: "red" }), "primaryColor");
   expectInvalid(validateTenantSettingsUpdate({ whatsapp: "123" }), "whatsapp");
@@ -177,5 +179,6 @@ test("work schedule requires a real weekday and boolean state", () => {
   assert.equal(validateWorkSchedule({ dayOfWeek: 0, isOpen: false }).ok, true);
   assert.equal(validateWorkSchedule({ dayOfWeek: 6, isOpen: true }).ok, true);
   expectInvalid(validateWorkSchedule({ dayOfWeek: 7, isOpen: true }), "dayOfWeek");
+  expectInvalid(validateWorkSchedule({ dayOfWeek: "1", isOpen: true }), "dayOfWeek");
   expectInvalid(validateWorkSchedule({ dayOfWeek: 1, isOpen: 1 }), "isOpen");
 });
