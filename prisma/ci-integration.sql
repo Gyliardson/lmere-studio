@@ -93,3 +93,23 @@ BEGIN
   END IF;
 END
 $$;
+
+-- Verify the database-level default itself produces the complete public feature contract.
+DO $$
+DECLARE
+  config JSONB;
+BEGIN
+  INSERT INTO "Tenant" ("id", "slug", "name", "createdAt", "updatedAt")
+  VALUES ('ci-default-contract', 'ci-default-contract', 'CI Default Contract', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+  SELECT "featuresConfig"::jsonb INTO config
+  FROM "Tenant"
+  WHERE "id" = 'ci-default-contract';
+
+  IF config <> '{"allow_photo_upload":true,"deposit_mode":"50_percent","enable_delivery_step":false,"custom_fields":[]}'::jsonb THEN
+    RAISE EXCEPTION 'Tenant featuresConfig database default does not match the authoritative contract';
+  END IF;
+
+  DELETE FROM "Tenant" WHERE "id" = 'ci-default-contract';
+END
+$$;
