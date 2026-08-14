@@ -31,7 +31,7 @@ test.describe("loading, empty and error states", () => {
     await page.locator("#admin-slug").fill("ci-tenant-a");
     await page.locator("#admin-password").fill("senha-incorreta");
     await page.locator("#admin-login-btn").click();
-    await expect(page.getByText(/credenciais|senha|autentica/i)).toBeVisible();
+    await expect(page.getByText("Credenciais inválidas", { exact: true })).toBeVisible();
 
     await page.route("**/api/admin/orders**", async (route) => {
       await route.fulfill({
