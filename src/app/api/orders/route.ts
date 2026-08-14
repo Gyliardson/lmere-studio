@@ -34,8 +34,15 @@ function parseIdempotencyKey(request: Request, body: Record<string, unknown>) {
 }
 
 function retryableTransactionError(error: unknown, hasIdempotencyKey: boolean) {
-  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return false;
-  return error.code === "P2034" || (hasIdempotencyKey && error.code === "P2002");
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    return error.code === "P2034" || (hasIdempotencyKey && error.code === "P2002");
+  }
+
+  // Prisma's pg driver adapter can surface PostgreSQL serialization failures
+  // through the adapter error message instead of a PrismaKnownRequestError code.
+  // Keep this fallback intentionally narrow: only the adapter's explicit
+  // transaction-conflict signal is retried.
+  return error instanceof Error && error.message.includes("TransactionWriteConflict");
 }
 
 function retryDelay(attempt: number) {
