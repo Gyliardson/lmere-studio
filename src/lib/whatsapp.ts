@@ -183,13 +183,14 @@ function renderSubmissionStatus(
   code?: string,
 ) {
   const button = submissionButton();
-  if (!button?.parentElement) return;
+  if (!button?.parentElement) return null;
 
   let status = document.querySelector<HTMLDivElement>("#order-submit-status");
   if (!status) {
     status = document.createElement("div");
     status.id = "order-submit-status";
     status.className = "glass-card p-3 mb-3 text-sm leading-relaxed";
+    status.tabIndex = -1;
     button.insertAdjacentElement("beforebegin", status);
   }
 
@@ -198,7 +199,17 @@ function renderSubmissionStatus(
   else delete status.dataset.code;
   status.setAttribute("role", state === "error" ? "alert" : "status");
   status.setAttribute("aria-live", state === "error" ? "assertive" : "polite");
+  status.setAttribute("aria-atomic", "true");
   status.textContent = message;
+  button.setAttribute("aria-describedby", status.id);
+  return status;
+}
+
+function setButtonSubmitting(button: HTMLButtonElement | null, submitting: boolean) {
+  if (!button) return;
+  button.disabled = submitting;
+  button.setAttribute("aria-busy", submitting ? "true" : "false");
+  button.dataset.submissionState = submitting ? "submitting" : "idle";
 }
 
 export function openWhatsApp(phone: string, submission: Promise<ConfirmedHandoff>): void {
@@ -209,7 +220,7 @@ export function openWhatsApp(phone: string, submission: Promise<ConfirmedHandoff
   if (handoffWindows.has(operation)) return;
 
   const button = submissionButton();
-  if (button) button.disabled = true;
+  setButtonSubmitting(button, true);
   renderSubmissionStatus(
     "submitting",
     "Confirmando disponibilidade e valores no servidor antes de abrir o WhatsApp. Os valores exibidos acima são uma estimativa até esta confirmação.",
@@ -239,10 +250,11 @@ export function openWhatsApp(phone: string, submission: Promise<ConfirmedHandoff
       popup?.close();
       const message = error instanceof Error ? error.message : "Não foi possível confirmar o pedido.";
       const code = error instanceof OrderSubmissionError ? error.code : "ORDER_CREATE_FAILED";
-      renderSubmissionStatus("error", message, code);
+      const status = renderSubmissionStatus("error", message, code);
+      status?.focus({ preventScroll: false });
     })
     .finally(() => {
-      if (button) button.disabled = false;
+      setButtonSubmitting(button, false);
       handoffWindows.delete(operation);
     });
 }
