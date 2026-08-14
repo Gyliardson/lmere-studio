@@ -122,25 +122,19 @@ function numberValue(
   issues: ValidationIssue[],
   options: { min: number; max: number; integer?: boolean },
 ): number | undefined {
-  const candidate = typeof value === "number"
-    ? value
-    : typeof value === "string" && value.trim() !== ""
-      ? Number(value)
-      : Number.NaN;
-
-  if (!Number.isFinite(candidate)) {
-    issue(issues, field, "deve ser um número finito");
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    issue(issues, field, "deve ser um número JSON finito");
     return undefined;
   }
-  if (options.integer && !Number.isInteger(candidate)) {
+  if (options.integer && !Number.isInteger(value)) {
     issue(issues, field, "deve ser um número inteiro");
     return undefined;
   }
-  if (candidate < options.min || candidate > options.max) {
+  if (value < options.min || value > options.max) {
     issue(issues, field, `deve estar entre ${options.min} e ${options.max}`);
     return undefined;
   }
-  return candidate;
+  return value;
 }
 
 function booleanValue(value: unknown, field: string, issues: ValidationIssue[]): boolean | undefined {
