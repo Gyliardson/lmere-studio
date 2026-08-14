@@ -1,11 +1,10 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { calendarLeadDays, normalizeBrazilianPhone } from "@/lib/order-validation";
 import { NextResponse } from "next/server";
 
-const DAY_MS = 86_400_000;
 const MAX_IDEMPOTENCY_KEY_LENGTH = 128;
 const MAX_TRANSACTION_RETRIES = 8;
-const BUSINESS_TIME_ZONE = "America/Sao_Paulo";
 const reject = (status: number, code: string, error: string) => NextResponse.json({ code, error }, { status });
 const cents = (value: number) => Math.round(value * 100);
 const money = (value: number) => Math.round(value) / 100;
@@ -32,23 +31,6 @@ function parseIdempotencyKey(request: Request, body: Record<string, unknown>) {
   if (typeof candidate !== "string") return { key: null, valid: false };
   const key = candidate.trim();
   return { key, valid: key.length > 0 && key.length <= MAX_IDEMPOTENCY_KEY_LENGTH };
-}
-
-function normalizeBrazilianPhone(value: string) {
-  const digits = value.replace(/\D/g, "");
-  const localDigits = digits.startsWith("55") && digits.length >= 12 ? digits.slice(2) : digits;
-  return /^\d{10,11}$/.test(localDigits) && /^[1-9]{2}/.test(localDigits) ? localDigits : null;
-}
-
-function businessDateOrdinal(now = new Date()) {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: BUSINESS_TIME_ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(now);
-  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  return Date.UTC(Number(values.year), Number(values.month) - 1, Number(values.day));
 }
 
 function retryableTransactionError(error: unknown, hasIdempotencyKey: boolean) {
@@ -133,8 +115,9 @@ export async function POST(request: Request) {
           const addons = addonIds.length ? await tx.addon.findMany({ where: { id: { in: addonIds }, tenantId, active: true } }) : [];
           if (addons.length !== addonIds.length) return reject(400, "INVALID_ADDON", "Um ou mais adicionais são inválidos ou indisponíveis");
 
-          const targetOrdinal = Date.UTC(event.getUTCFullYear(), event.getUTCMonth(), event.getUTCDate());
-          if (Math.floor((targetOrdinal - businessDateOrdinal()) / DAY_MS) < tenant.minLeadDays) {
+          const leadDays = calendarLeadDays(eventDate);
+          if (leadDays == null) return reject(400, "INVALID_EVENT_DATE", "Data do evento inválida");
+          if (leadDays < tenant.minLeadDays) {
             return reject(409, "LEAD_TIME_UNAVAILABLE", `A data exige antecedência mínima de ${tenant.minLeadDays} dias`);
           }
           if (await tx.blockedDate.findFirst({ where: { tenantId, date: eventDate } })) return reject(409, "DATE_BLOCKED", "A data selecionada está indisponível");
