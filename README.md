@@ -41,6 +41,18 @@ The normal browser gate remains separate:
 npm run test:e2e
 ```
 
+### Curated portfolio evidence
+
+The four images below are a compact selection from the deterministic capture pipeline. They use synthetic fixtures only and were manually reviewed for containment, hierarchy, spacing and obvious responsive regressions before publication.
+
+| Storefront — desktop summary | Admin — desktop orders |
+| --- | --- |
+| ![Desktop storefront summary showing a configured order and server-confirmed pricing flow](docs/media/portfolio/desktop-storefront-summary.webp) | ![Desktop admin orders workspace with operational order cards](docs/media/portfolio/desktop-admin-orders.webp) |
+
+| Storefront — mobile | Admin — mobile catalog |
+| --- | --- |
+| ![Mobile storefront calendar and tenant-branded ordering flow](docs/media/portfolio/mobile-storefront.webp) | ![Mobile admin catalog management interface](docs/media/portfolio/mobile-admin-menu.webp) |
+
 ## Key features
 
 ### Public order simulator (`/[slug]`)
