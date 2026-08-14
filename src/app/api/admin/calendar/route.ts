@@ -1,8 +1,27 @@
 import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-session";
+import {
+  validateBlockedDate,
+  validateWorkSchedule,
+  type ValidationIssue,
+} from "@/lib/admin-validation";
 import { prisma } from "@/lib/prisma";
 
 const unauthorized = () => NextResponse.json({ error: "Sessão inválida ou expirada" }, { status: 401 });
+const invalidJson = () => NextResponse.json({ code: "INVALID_JSON", error: "Corpo JSON inválido" }, { status: 400 });
+const validationError = (issues: ValidationIssue[]) => NextResponse.json({
+  code: "VALIDATION_ERROR",
+  error: "Dados inválidos",
+  issues,
+}, { status: 422 });
+
+async function jsonBody(request: Request) {
+  try {
+    return { ok: true as const, value: await request.json() as unknown };
+  } catch {
+    return { ok: false as const };
+  }
+}
 
 export async function GET(request: Request) {
   try {
@@ -10,14 +29,8 @@ export async function GET(request: Request) {
     if (!session) return unauthorized();
 
     const [blockedDates, workSchedule] = await Promise.all([
-      prisma.blockedDate.findMany({
-        where: { tenantId: session.tenantId },
-        orderBy: { date: "asc" },
-      }),
-      prisma.workSchedule.findMany({
-        where: { tenantId: session.tenantId },
-        orderBy: { dayOfWeek: "asc" },
-      }),
+      prisma.blockedDate.findMany({ where: { tenantId: session.tenantId }, orderBy: { date: "asc" } }),
+      prisma.workSchedule.findMany({ where: { tenantId: session.tenantId }, orderBy: { dayOfWeek: "asc" } }),
     ]);
 
     return NextResponse.json({ blockedDates, workSchedule });
@@ -32,18 +45,18 @@ export async function POST(request: Request) {
     const session = getAdminSession(request);
     if (!session) return unauthorized();
 
-    const body = await request.json();
-    const date = typeof body.date === "string" ? body.date : "";
-    const reason = typeof body.reason === "string" && body.reason.trim() ? body.reason.trim() : "Esgotado";
-    if (!date) return NextResponse.json({ error: "date obrigatório" }, { status: 400 });
+    const body = await jsonBody(request);
+    if (!body.ok) return invalidJson();
+    const parsed = validateBlockedDate(body.value);
+    if (!parsed.ok) return validationError(parsed.issues);
 
     const existing = await prisma.blockedDate.findFirst({
-      where: { tenantId: session.tenantId, date },
+      where: { tenantId: session.tenantId, date: parsed.value.date },
     });
     if (existing) return NextResponse.json({ error: "Data já bloqueada" }, { status: 409 });
 
     const blocked = await prisma.blockedDate.create({
-      data: { tenantId: session.tenantId, date, reason },
+      data: { tenantId: session.tenantId, ...parsed.value },
     });
     return NextResponse.json({ blocked }, { status: 201 });
   } catch (error) {
@@ -57,16 +70,15 @@ export async function PUT(request: Request) {
     const session = getAdminSession(request);
     if (!session) return unauthorized();
 
-    const body = await request.json();
-    const dayOfWeek = Number(body.dayOfWeek);
-    if (!Number.isInteger(dayOfWeek) || dayOfWeek < 0 || dayOfWeek > 6 || typeof body.isOpen !== "boolean") {
-      return NextResponse.json({ error: "dayOfWeek e isOpen válidos são obrigatórios" }, { status: 400 });
-    }
+    const body = await jsonBody(request);
+    if (!body.ok) return invalidJson();
+    const parsed = validateWorkSchedule(body.value);
+    if (!parsed.ok) return validationError(parsed.issues);
 
     const schedule = await prisma.workSchedule.upsert({
-      where: { tenantId_dayOfWeek: { tenantId: session.tenantId, dayOfWeek } },
-      update: { isOpen: body.isOpen },
-      create: { tenantId: session.tenantId, dayOfWeek, isOpen: body.isOpen },
+      where: { tenantId_dayOfWeek: { tenantId: session.tenantId, dayOfWeek: parsed.value.dayOfWeek } },
+      update: { isOpen: parsed.value.isOpen },
+      create: { tenantId: session.tenantId, ...parsed.value },
     });
     return NextResponse.json({ schedule });
   } catch (error) {
