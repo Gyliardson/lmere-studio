@@ -29,14 +29,18 @@ function firstForwardedAddress(value: string | null) {
 }
 
 export function requestRateLimitSource(request: Request) {
-  // Vercel documents x-vercel-forwarded-for as the deployment-controlled client
-  // address. Generic x-forwarded-for is trusted automatically only on Vercel or
-  // outside production; other reverse proxies must opt in explicitly.
-  const vercelAddress = firstForwardedAddress(request.headers.get("x-vercel-forwarded-for"));
-  if (vercelAddress) return vercelAddress;
+  // x-vercel-forwarded-for is trustworthy only when the application is actually
+  // running on Vercel. Outside Vercel a direct client could otherwise spoof that
+  // header and rotate rate-limit identities.
+  if (process.env.VERCEL === "1") {
+    const vercelAddress = firstForwardedAddress(request.headers.get("x-vercel-forwarded-for"));
+    if (vercelAddress) return vercelAddress;
+  }
 
-  const trustForwarded = process.env.VERCEL === "1"
-    || process.env.NODE_ENV !== "production"
+  // Generic X-Forwarded-For is convenient in local/tests, but production
+  // deployments outside Vercel must explicitly opt in only when their trusted
+  // reverse proxy overwrites the header.
+  const trustForwarded = process.env.NODE_ENV !== "production"
     || process.env.RATE_LIMIT_TRUST_X_FORWARDED_FOR === "true";
   if (trustForwarded) {
     const forwardedAddress = firstForwardedAddress(request.headers.get("x-forwarded-for"));
