@@ -11,7 +11,9 @@ function projectName(testInfo: TestInfo) {
 async function capture(page: Page, testInfo: TestInfo, name: string, fullPage = false) {
   await mkdir(outputDir, { recursive: true });
   await page.screenshot({
-    path: `${outputDir}/${projectName(testInfo)}-${name}.png`,
+    path: `${outputDir}/${projectName(testInfo)}-${name}.jpg`,
+    type: "jpeg",
+    quality: 82,
     fullPage,
     animations: "disabled",
   });
