@@ -83,7 +83,16 @@ jobs:
             echo "::endgroup::"
           done
 
-      - name: Upload Playwright evidence
+      - name: Upload deterministic visual review evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: ux-visual-evidence
+          path: visual-evidence
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Upload Playwright failure evidence
         if: failure()
         uses: actions/upload-artifact@v6
         with:
