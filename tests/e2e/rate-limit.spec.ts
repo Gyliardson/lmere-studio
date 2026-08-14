@@ -8,7 +8,7 @@ function source(testInfo: TestInfo, suffix: number) {
 }
 
 test.describe("sensitive endpoint throttling", () => {
-  test("admin login is bounded per source with predictable retry semantics", async ({ request }, testInfo) => {
+  test("admin login is bounded per source+tenant without blocking another tenant", async ({ request }, testInfo) => {
     const blockedSource = source(testInfo, 1);
 
     for (let attempt = 0; attempt < 8; attempt += 1) {
@@ -33,19 +33,25 @@ test.describe("sensitive endpoint throttling", () => {
     expect(limited.headers()["x-ratelimit-limit"]).toBe("8");
     expect(limited.headers()["x-ratelimit-remaining"]).toBe("0");
 
-    const independent = await request.post("/api/admin/auth", {
+    const otherTenant = await request.post("/api/admin/auth", {
+      headers: { "x-vercel-forwarded-for": blockedSource },
+      data: { slug: "ci-tenant-b", password: CI_PASSWORD },
+    });
+    expect(otherTenant.status()).toBe(200);
+
+    const independentSource = await request.post("/api/admin/auth", {
       headers: { "x-vercel-forwarded-for": source(testInfo, 2) },
       data: { slug: "ci-tenant-a", password: CI_PASSWORD },
     });
-    expect(independent.status()).toBe(200);
+    expect(independentSource.status()).toBe(200);
   });
 
-  test("public order limiter remains atomic under an abusive concurrent burst", async ({ request }, testInfo) => {
+  test("public order tenant limiter remains atomic under an abusive concurrent burst", async ({ request }, testInfo) => {
     const abusiveSource = source(testInfo, 3);
     const responses = await Promise.all(
       Array.from({ length: 40 }, () => request.post("/api/orders", {
         headers: { "x-vercel-forwarded-for": abusiveSource },
-        data: {},
+        data: { tenantId: "ci-tenant-a" },
       })),
     );
 
@@ -64,10 +70,16 @@ test.describe("sensitive endpoint throttling", () => {
     expect(limited!.headers()["x-ratelimit-limit"]).toBe("30");
     expect(limited!.headers()["x-ratelimit-remaining"]).toBe("0");
 
-    const independent = await request.post("/api/orders", {
-      headers: { "x-vercel-forwarded-for": source(testInfo, 4) },
-      data: {},
+    const otherTenant = await request.post("/api/orders", {
+      headers: { "x-vercel-forwarded-for": abusiveSource },
+      data: { tenantId: "ci-tenant-b" },
     });
-    expect(independent.status()).toBe(400);
+    expect(otherTenant.status()).toBe(400);
+
+    const independentSource = await request.post("/api/orders", {
+      headers: { "x-vercel-forwarded-for": source(testInfo, 4) },
+      data: { tenantId: "ci-tenant-a" },
+    });
+    expect(independentSource.status()).toBe(400);
   });
 });
