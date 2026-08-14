@@ -50,6 +50,10 @@ export default defineConfig({
     env: {
       ...process.env,
       ADMIN_SESSION_SECRET: testAdminSessionSecret,
+      // `next start` executes the production server build. Explicitly opt the
+      // disposable local E2E server into trusting the synthetic X-Forwarded-For
+      // values used by rate-limit tests; production remains opt-in separately.
+      RATE_LIMIT_TRUST_X_FORWARDED_FOR: "true",
     },
   },
 });

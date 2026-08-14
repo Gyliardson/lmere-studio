@@ -42,6 +42,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -67,8 +69,19 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Run Playwright E2E and accessibility smoke
-        run: npx playwright test
+      - name: Run isolated Playwright E2E and accessibility specs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t specs < <(find tests/e2e -maxdepth 1 -type f -name '*.spec.ts' -print | sort)
+          test "${#specs[@]}" -gt 0
+
+          for spec in "${specs[@]}"; do
+            echo "::group::Playwright ${spec}"
+            npx prisma db execute --file prisma/ci-reset-rate-limits.sql --config=prisma.config.ts
+            npx playwright test "${spec}"
+            echo "::endgroup::"
+          done
 
       - name: Upload Playwright evidence
         if: failure()
