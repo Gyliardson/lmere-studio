@@ -42,6 +42,8 @@ jobs:
           --health-retries 10
     env:
       POSTGRES_PRISMA_URL: postgresql://postgres:postgres@127.0.0.1:5432/lmere_media?sslmode=disable
+      ADMIN_SESSION_SECRET: ci-media-admin-session-secret-at-least-32-bytes
+      RATE_LIMIT_SECRET: ci-media-rate-limit-secret-at-least-32-bytes
       NODE_ENV: test
       CI: true
     steps:
