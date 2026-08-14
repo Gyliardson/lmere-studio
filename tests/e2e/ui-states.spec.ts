@@ -13,7 +13,7 @@ test.describe("loading, empty and error states", () => {
 
     await page.goto("/tenant-that-does-not-exist");
     await expect(page.getByRole("heading", { name: "Ateliê não encontrado" })).toBeVisible();
-    await expect(page.getByRole("paragraph", { name: "Ateliê não encontrado" })).toBeVisible();
+    await expect(page.locator("p", { hasText: "Ateliê não encontrado" })).toBeVisible();
   });
 
   test("admin exposes session loading, authentication error and empty orders", async ({ page }) => {
