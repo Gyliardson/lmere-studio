@@ -236,6 +236,7 @@ export function SimulatorClient({ slug }: { slug: string }) {
               onSelect={(d) => setState((s) => ({ ...s, eventDate: d }))}
               blockedDates={blockedDateStrings}
               closedDays={closedDays}
+              minLeadDays={tenant.minLeadDays}
             />
           )}
           {state.step === 2 && (
@@ -349,11 +350,13 @@ function StepCalendar({
   onSelect,
   blockedDates,
   closedDays,
+  minLeadDays,
 }: {
   selectedDate: string | null;
   onSelect: (date: string) => void;
   blockedDates: string[];
   closedDays: number[];
+  minLeadDays: number;
 }) {
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
@@ -379,7 +382,8 @@ function StepCalendar({
   };
 
   const minDate = new Date(today);
-  minDate.setDate(minDate.getDate() + 3);
+  minDate.setHours(0, 0, 0, 0);
+  minDate.setDate(minDate.getDate() + Math.max(0, minLeadDays));
 
   return (
     <div>
@@ -387,7 +391,8 @@ function StepCalendar({
         <Calendar className="w-5 h-5 text-brand-primary" />
         Quando sera sua festa?
       </h2>
-      <p className="text-white/50 text-sm mb-5">Selecione a data desejada para a entrega do bolo</p>
+      <p className="text-white/50 text-sm mb-1">Selecione a data desejada para a entrega do bolo</p>
+      <p className="text-white/40 text-xs mb-5">Antecedência mínima configurada: {minLeadDays} dia{minLeadDays === 1 ? "" : "s"}.</p>
 
       <div className="glass-card p-4">
         <div className="flex items-center justify-between mb-4">
@@ -1063,17 +1068,18 @@ function StepSummary({
             <span>{formatCurrency(state.cakeSize?.basePrice || 0)}</span>
           </div>
           <div className="flex justify-between font-bold text-lg mt-2">
-            <span>Total</span>
+            <span>Total estimado</span>
             <span className="text-gradient">{formatCurrency(total)}</span>
           </div>
           {tenant.featuresConfig.deposit_mode === "50_percent" && (
             <div className="flex justify-between text-sm mt-1 text-brand-secondary">
               <span className="flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5" /> Sinal (50%)
+                <ShieldCheck className="w-3.5 h-3.5" /> Sinal estimado (50%)
               </span>
               <span className="font-semibold">{formatCurrency(deposit)}</span>
             </div>
           )}
+          <p className="text-[11px] text-white/40 mt-2">Disponibilidade e valores finais são confirmados pelo servidor ao enviar o pedido.</p>
         </div>
       </div>
 
@@ -1102,7 +1108,7 @@ function StepSummary({
       {/* Send via WhatsApp */}
       <button
         onClick={onSendWhatsApp}
-        disabled={!state.customerName || !state.customerPhone}
+        disabled={!state.customerName.trim() || !isValidPhoneBR(state.customerPhone)}
         className="btn-primary w-full py-4 text-base"
         id="btn-send-whatsapp"
       >

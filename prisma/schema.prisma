@@ -125,11 +125,14 @@ model Order {
   depositAmount     Float
   depositMode       String   @default("50_percent")
   status            String   @default("pending")
+  idempotencyKey    String?
+  selectionSnapshot String   @default("{}")
   createdAt         DateTime @default(now())
 
   tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   cakeSize CakeSize @relation(fields: [cakeSizeId], references: [id])
 
+  @@unique([tenantId, idempotencyKey])
   @@index([tenantId])
   @@index([tenantId, status])
 }

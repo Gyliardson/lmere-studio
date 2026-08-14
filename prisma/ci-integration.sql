@@ -7,18 +7,26 @@ DECLARE
   tenant_b_sizes INTEGER;
   tenant_a_flavors INTEGER;
   tenant_b_flavors INTEGER;
+  tenant_a_addons INTEGER;
+  tenant_b_addons INTEGER;
 BEGIN
   SELECT COUNT(*) INTO tenant_a_sizes FROM "CakeSize" WHERE "tenantId" = 'ci-tenant-a';
   SELECT COUNT(*) INTO tenant_b_sizes FROM "CakeSize" WHERE "tenantId" = 'ci-tenant-b';
   SELECT COUNT(*) INTO tenant_a_flavors FROM "CakeFlavor" WHERE "tenantId" = 'ci-tenant-a';
   SELECT COUNT(*) INTO tenant_b_flavors FROM "CakeFlavor" WHERE "tenantId" = 'ci-tenant-b';
+  SELECT COUNT(*) INTO tenant_a_addons FROM "Addon" WHERE "tenantId" = 'ci-tenant-a';
+  SELECT COUNT(*) INTO tenant_b_addons FROM "Addon" WHERE "tenantId" = 'ci-tenant-b';
 
-  IF tenant_a_sizes <> 1 OR tenant_b_sizes <> 1 THEN
-    RAISE EXCEPTION 'Fixture isolation failed: expected one size per tenant';
+  IF tenant_a_sizes <> 2 OR tenant_b_sizes <> 1 THEN
+    RAISE EXCEPTION 'Fixture isolation failed: unexpected tenant size counts';
   END IF;
 
-  IF tenant_a_flavors <> 2 OR tenant_b_flavors <> 2 THEN
-    RAISE EXCEPTION 'Fixture isolation failed: expected two flavors/fillings per tenant';
+  IF tenant_a_flavors <> 4 OR tenant_b_flavors <> 2 THEN
+    RAISE EXCEPTION 'Fixture isolation failed: unexpected tenant flavor/filling counts';
+  END IF;
+
+  IF tenant_a_addons <> 1 OR tenant_b_addons <> 1 THEN
+    RAISE EXCEPTION 'Fixture isolation failed: unexpected tenant addon counts';
   END IF;
 
   IF EXISTS (
@@ -28,6 +36,24 @@ BEGIN
     WHERE a."tenantId" = 'ci-tenant-a' AND b."tenantId" = 'ci-tenant-b'
   ) THEN
     RAISE EXCEPTION 'Fixture isolation failed: resource IDs overlap across tenants';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM "CakeFlavor" a
+    JOIN "CakeFlavor" b ON a."id" = b."id"
+    WHERE a."tenantId" = 'ci-tenant-a' AND b."tenantId" = 'ci-tenant-b'
+  ) THEN
+    RAISE EXCEPTION 'Fixture isolation failed: flavor IDs overlap across tenants';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM "Addon" a
+    JOIN "Addon" b ON a."id" = b."id"
+    WHERE a."tenantId" = 'ci-tenant-a' AND b."tenantId" = 'ci-tenant-b'
+  ) THEN
+    RAISE EXCEPTION 'Fixture isolation failed: addon IDs overlap across tenants';
   END IF;
 END
 $$;

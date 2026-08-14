@@ -12,7 +12,7 @@
 
 L'Mere Studio is a white-label, multi-tenant web application for artisan bakeries, cake designers, and confectioneries. It combines a five-step public cake-order flow with a self-service admin dashboard for catalog, schedule, branding, and order management.
 
-> **Professionalization in progress:** the `portfolio/revamp-2026` program is actively hardening server-side business rules, security, accessibility, documentation, and reproducibility. The current README describes only behavior and infrastructure that exist in the repository; release-grade certification is intentionally deferred until the corresponding gates are complete.
+> **Professionalization in progress:** the `portfolio/revamp-2026` program is actively hardening security, accessibility, documentation, UX, and release reproducibility. The current README describes only behavior and infrastructure that exist in the repository; release-grade certification is intentionally deferred until the remaining program gates are complete.
 
 ---
 
@@ -47,11 +47,11 @@ L'Mere Studio is a white-label, multi-tenant web application for artisan bakerie
 ## Key Features
 
 ### Public Order Simulator (`/[slug]`)
-- **Step 1: Event Calendar**: date selection backed by tenant schedule, blocked dates, lead-time, and capacity configuration.
+- **Step 1: Event Calendar**: date selection backed by tenant schedule, blocked dates, and tenant-configured minimum lead time.
 - **Step 2: Portion & Size Selection**: tenant-defined sizes, portions, weight, base price, and filling limits.
 - **Step 3: Flavors & Add-ons Builder**: doughs, fillings, special-price options, and tenant-defined add-ons.
 - **Step 4: Customization Details**: plaque message, customer notes, and optional reference-photo URL.
-- **Step 5: Summary & Checkout Handoff**: price/deposit summary, PIX information, and formatted WhatsApp handoff.
+- **Step 5: Server-Confirmed Checkout Handoff**: browser totals are explicitly estimates; the server revalidates catalog/date/capacity rules, recalculates subtotal/deposit, persists the order, and only then exposes the confirmed order ID and financial values for WhatsApp handoff.
 
 ### Self-Service Admin CMS Panel (`/admin`)
 - **Order Management**: Kanban-style order status tracking.
@@ -108,6 +108,16 @@ flowchart TD
 - Mutations that target existing tenant resources verify ownership before changing or deleting them.
 - The `/admin` client restores an existing valid session before deciding whether to show the login form, and its logout controls revoke the server cookie before clearing local authenticated state.
 - CI exercises unauthenticated negative paths, authenticated Tenant A != Tenant B isolation, refresh restoration, and server-backed logout persistence against disposable PostgreSQL.
+
+### Public order integrity boundary
+
+- The storefront never treats client-supplied subtotal, deposit, availability, or catalog relationships as authoritative.
+- `/api/orders` resolves active size, dough, fillings, and add-ons inside the submitted tenant before calculating prices.
+- Event-date rules are rechecked server-side: valid calendar date, `America/Sao_Paulo` business-day lead time, blocked dates, closed weekdays, and tenant daily capacity.
+- Brazilian phone shape is validated on both client and server; the server returns stable structured 4xx codes for invalid input.
+- Order creation uses a serializable PostgreSQL transaction with bounded retry/backoff for retryable conflicts.
+- Tenant-scoped idempotency protects a single in-flight submit/retry window from duplicate persistence while allowing a later intentional identical order to create a new order.
+- The storefront exposes accessible submitting/confirmed/error feedback, prevents duplicate handoff while pending, and only labels values as confirmed after the server response.
 
 ---
 
@@ -200,7 +210,7 @@ Current CI on the professionalization branch verifies:
 - Prisma Client generation;
 - ESLint with a retained machine-readable report;
 - TypeScript typecheck;
-- risk-focused pricing/deposit and admin-session unit tests;
+- risk-focused pricing/deposit, admin-session, phone, and business-calendar unit tests;
 - Prisma schema validation;
 - production build;
 - PostgreSQL 16 startup;
@@ -209,6 +219,8 @@ Current CI on the professionalization branch verifies:
 - database-level relational/constraint negative paths;
 - application build/start against disposable PostgreSQL;
 - public tenant API smoke for Tenant A, non-exposure of the admin password hash, absence of Tenant B fixture leakage, and 404 behavior for an unknown tenant;
+- server-authoritative public-order negative paths for manipulated client pricing, cross-tenant/stale catalog IDs, catalog activity/limits, deposit modes, blocked/closed/lead-time/capacity rules, invalid phone, idempotency, and concurrency;
+- storefront Playwright checks for POST-before-handoff, server-confirmed financial values/order ID, one-request/one-handoff double-submit behavior, later intentional identical submissions, invalid-phone blocking, structured recoverable errors, and a real server rejection of stale/cross-tenant catalog data;
 - deterministic Playwright smoke on desktop and mobile for storefront loading, Tenant B fixture non-leakage, and the missing-tenant state;
 - unauthenticated negative-path checks for protected admin routes;
 - authenticated Tenant A/B isolation checks proving request-supplied tenant IDs cannot redirect tested reads/mutations across tenants;
@@ -219,7 +231,7 @@ Current CI on the professionalization branch verifies:
 - post-test migration status;
 - server diagnostics and Playwright trace/screenshot/video artifacts on relevant failures.
 
-The browser accessibility smoke is intentionally narrow and is not a claim of complete WCAG compliance. The admin session and tenant-isolation boundary has automated unit/API/browser evidence, while deeper keyboard/focus/contrast/axe coverage and additional static security analysis remain later program work.
+The browser accessibility smoke is intentionally narrow and is not a claim of complete WCAG compliance. Deeper keyboard/focus/contrast/axe coverage and additional static security analysis remain later program work.
 
 ---
 
@@ -228,14 +240,14 @@ The browser accessibility smoke is intentionally narrow and is not a claim of co
 | Endpoint | Method | Description | Access intent |
 | --- | --- | --- | --- |
 | `/api/tenants/[slug]` | `GET` | Tenant public branding, menu, and schedule | Public |
-| `/api/orders` | `POST` | Order submission | Public |
+| `/api/orders` | `POST` | Server-authoritative order validation, pricing, persistence, and idempotency | Public |
 | `/api/admin/auth` | `POST`, `GET`, `DELETE` | Authenticate, validate current session, and clear session cookie | Admin |
 | `/api/admin/orders` | `GET`, `PUT` | Tenant-scoped order listing/status updates | Admin session |
 | `/api/admin/menu` | `GET`, `POST`, `PUT`, `DELETE` | Tenant-scoped menu CRUD with ownership checks | Admin session |
 | `/api/admin/calendar` | `GET`, `POST`, `PUT`, `DELETE` | Tenant-scoped schedule and blocked-date management | Admin session |
 | `/api/admin/settings` | `GET`, `PUT` | Tenant-scoped branding/configuration | Admin session |
 
-> The administrative API routes above enforce the validated session tenant and have automated Tenant A/B negative-path coverage, including browser refresh/logout lifecycle checks. This is not a final project security certification: public order submission is still undergoing separate server-authority hardening in #3.
+> The admin and public-order boundaries above have automated PostgreSQL/API/browser evidence, but this is not a final project security or release certification. Abuse controls, deeper configuration invariants, UX/accessibility work, reproducible portfolio media, clean-room validation, reference-image bounds, and architecture cleanup remain tracked in the program backlog.
 
 ---
 
