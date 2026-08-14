@@ -1,9 +1,9 @@
 import { createHmac } from "node:crypto";
-import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export interface RateLimitPolicy {
   scope: string;
+  subject?: string;
   limit: number;
   windowMs: number;
 }
@@ -48,7 +48,7 @@ export function requestRateLimitSource(request: Request) {
 
 function bucketKey(policy: RateLimitPolicy, source: string, windowStartMs: number) {
   return createHmac("sha256", rateLimitSecret())
-    .update(`lmere-rate-limit-v1\0${policy.scope}\0${source}\0${windowStartMs}`)
+    .update(`lmere-rate-limit-v1\0${policy.scope}\0${policy.subject ?? ""}\0${source}\0${windowStartMs}`)
     .digest("hex");
 }
 
@@ -84,35 +84,19 @@ export async function consumeRateLimit(
   }
 
   const key = bucketKey(policy, source, windowStartMs);
+  const bucket = await prisma.rateLimitBucket.upsert({
+    where: { key },
+    create: { key, scope: policy.scope, count: 1, expiresAt: resetAt },
+    update: { count: { increment: 1 } },
+    select: { count: true },
+  });
 
-  let count: number;
-  try {
-    const created = await prisma.rateLimitBucket.create({
-      data: { key, scope: policy.scope, count: 1, expiresAt: resetAt },
-      select: { count: true },
-    });
-    count = created.count;
-    await cleanupExpiredBuckets(new Date(nowMs));
-  } catch (error) {
-    if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") throw error;
-
-    const incremented = await prisma.rateLimitBucket.updateMany({
-      where: { key, count: { lt: policy.limit } },
-      data: { count: { increment: 1 } },
-    });
-
-    if (incremented.count === 0) {
-      return { allowed: false, limit: policy.limit, remaining: 0, retryAfterSeconds, resetAt };
-    }
-
-    const bucket = await prisma.rateLimitBucket.findUnique({ where: { key }, select: { count: true } });
-    count = bucket?.count ?? policy.limit;
-  }
+  if (bucket.count === 1) await cleanupExpiredBuckets(new Date(nowMs));
 
   return {
-    allowed: count <= policy.limit,
+    allowed: bucket.count <= policy.limit,
     limit: policy.limit,
-    remaining: Math.max(0, policy.limit - count),
+    remaining: Math.max(0, policy.limit - bucket.count),
     retryAfterSeconds,
     resetAt,
   };
