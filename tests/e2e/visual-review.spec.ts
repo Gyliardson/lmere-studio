@@ -19,9 +19,9 @@ async function saveEvidence(page: Page, testInfo: TestInfo, name: string) {
 async function reachStorefrontSummary(page: Page) {
   await page.goto("/ci-tenant-a");
 
-  // February 2032 is deterministic, well beyond the configured lead time, and
-  // the CI fixture keeps Tuesdays available.
-  const target = { year: 2032, month: 1, day: 10 };
+  // February 2032 is deterministic and well beyond the configured lead time.
+  // CI tenant A is open on Mondays (dayOfWeek=1), so use Monday 09/02/2032.
+  const target = { year: 2032, month: 1, day: 9 };
   const now = await page.evaluate(() => ({ year: new Date().getFullYear(), month: new Date().getMonth() }));
   const monthsForward = (target.year - now.year) * 12 + (target.month - now.month);
   for (let index = 0; index < monthsForward; index += 1) await page.locator("#cal-next").click();
