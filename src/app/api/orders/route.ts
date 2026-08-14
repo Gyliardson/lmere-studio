@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { normalizePersistedFeaturesConfig } from "@/lib/features-config";
 import { prisma } from "@/lib/prisma";
 import { calendarLeadDays, normalizeBrazilianPhone } from "@/lib/order-validation";
 import { consumeRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
@@ -21,14 +22,13 @@ function rateLimitedResponse(rateLimit: Awaited<ReturnType<typeof consumeRateLim
   );
 }
 
-function depositMode(config: string): "50_percent" | "100_percent" | "quote_only" {
+function depositMode(config: string): "50_percent" | "100_percent" | "quote_only" | null {
   try {
-    const mode = (JSON.parse(config) as { deposit_mode?: unknown }).deposit_mode;
-    if (mode === "100_percent" || mode === "quote_only") return mode;
+    const parsed = normalizePersistedFeaturesConfig(JSON.parse(config) as unknown);
+    return parsed.ok ? parsed.value.deposit_mode : null;
   } catch {
-    // Legacy/malformed configuration falls back to the historical 50% behavior.
+    return null;
   }
-  return "50_percent";
 }
 
 function parseIds(value: unknown) {
@@ -132,6 +132,9 @@ export async function POST(request: Request) {
             }
           }
 
+          const mode = depositMode(tenant.featuresConfig);
+          if (!mode) return reject(500, "INVALID_TENANT_CONFIG", "Configuração financeira do ateliê inválida");
+
           const size = await tx.cakeSize.findFirst({ where: { id: cakeSizeId, tenantId, active: true } });
           if (!size) return reject(400, "INVALID_CAKE_SIZE", "Tamanho inválido ou indisponível");
 
@@ -160,7 +163,6 @@ export async function POST(request: Request) {
             + fillings.reduce((sum, item) => sum + cents(item.additionalPrice), 0)
             + addons.reduce((sum, item) => sum + cents(item.price), 0);
           const subtotal = money(totalCents);
-          const mode = depositMode(tenant.featuresConfig);
           const depositAmount = mode === "quote_only" ? 0 : mode === "100_percent" ? subtotal : money(Math.round(totalCents / 2));
           const selectionSnapshot = JSON.stringify({
             version: 1,
