@@ -15,9 +15,13 @@ node_modules/
 # Production
 /build
 
-# Environment
-.env
-.env*.local
+# Environment and local secrets
+.env*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
 
 # Debug
 npm-debug.log*
@@ -25,7 +29,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# Database & Temporary DB files
+# Database & temporary DB files
 *.db
 *.db-journal
 *.db-shm
@@ -53,7 +57,7 @@ next-env.d.ts
 # Vercel
 .vercel
 
-# Testing & Agent Tasks
+# Testing & agent tasks
 /coverage
 /test-results
 /playwright-report
@@ -62,6 +66,3 @@ next-env.d.ts
 task.md
 implementation_plan.md
 walkthrough.md
-
-.vercel
-.env*
