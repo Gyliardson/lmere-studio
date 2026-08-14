@@ -141,6 +141,7 @@ test.describe("deterministic storefront smoke", () => {
     const status = page.locator("#order-submit-status");
     await expect(status).toHaveAttribute("role", "alert");
     await expect(status).toHaveAttribute("data-state", "error");
+    await expect(status).toHaveAttribute("data-code", "DATE_BLOCKED");
     await expect(status).toHaveText("A data selecionada está indisponível");
     await expect(page.locator("#btn-send-whatsapp")).toBeEnabled();
     await expect.poll(() => context.pages().filter((candidate) => candidate !== page && !candidate.isClosed()).length).toBe(0);
@@ -163,6 +164,7 @@ test.describe("deterministic storefront smoke", () => {
     expect(response.status()).toBe(400);
     expect((await response.json()).code).toBe("INVALID_CAKE_SIZE");
     await expect(page.locator("#order-submit-status")).toHaveAttribute("data-state", "error");
+    await expect(page.locator("#order-submit-status")).toHaveAttribute("data-code", "INVALID_CAKE_SIZE");
     await expect(page.locator("#order-submit-status")).toContainText("Tamanho inválido ou indisponível");
     await expect.poll(() => context.pages().filter((candidate) => candidate !== page && !candidate.isClosed()).length).toBe(0);
   });
