@@ -71,6 +71,24 @@
   box-shadow: 0 0 0 3px rgba(124, 109, 242, 0.18);
 }
 
+.admin-shell .input-field::placeholder {
+  color: rgba(247, 248, 250, 0.5);
+}
+
+/* Several legacy utility opacities were designed for the expressive storefront
+ * and are too faint on dense B2B screens. Raise only the admin equivalents. */
+.admin-shell .text-white\/30 {
+  color: rgba(247, 248, 250, 0.58) !important;
+}
+
+.admin-shell .text-white\/40 {
+  color: rgba(247, 248, 250, 0.64) !important;
+}
+
+.admin-shell .text-white\/50 {
+  color: rgba(247, 248, 250, 0.7) !important;
+}
+
 .admin-shell .checkbox-styled {
   background: #1b1f27;
   border-color: #343a46;
