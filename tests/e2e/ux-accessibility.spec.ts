@@ -36,6 +36,11 @@ async function reachSummary(page: Page, testInfo: TestInfo) {
 test.describe("UX accessibility foundation", () => {
   test("storefront exposes a visible keyboard focus treatment", async ({ page }) => {
     await page.goto("/ci-tenant-a");
+
+    // Wait for the async tenant storefront to finish replacing its loading state
+    // before starting keyboard traversal. Pressing Tab during that replacement can
+    // legitimately lose focus when the loading DOM is unmounted.
+    await expect(page.getByRole("button", { name: "Mês anterior" })).toBeVisible();
     await page.keyboard.press("Tab");
 
     const focused = page.locator(":focus");

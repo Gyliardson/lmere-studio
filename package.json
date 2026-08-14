@@ -11,6 +11,7 @@
     "test:unit": "tsc -p tsconfig.tests.json && node --test .tmp-tests/tests/*.test.js",
     "test:integration:db": "prisma db execute --file prisma/ci-integration.sql --config=prisma.config.ts",
     "test:e2e": "playwright test",
+    "demo:capture": "playwright test --config=playwright.demo.config.ts",
     "quality": "npm run lint && npm run typecheck && npm run test:unit && npm run db:validate && npm run build",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate --config=prisma.config.ts",

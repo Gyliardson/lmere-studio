@@ -1,188 +1,138 @@
-# L'Mere Studio - マルチテナント ケーキ注文シミュレーター & CMS
+# L'Mere Studio — マルチテナント注文シミュレーター & CMS
 
-[![バージョン](https://img.shields.io/badge/%E3%83%90%E3%83%BC%E3%82%B8%E3%83%A7%E3%83%B3-1.2.0-purple.svg)](CHANGELOG.md)
-[![Next.js](https://img.shields.io/badge/Next.js-16.2.12-black.svg)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19.0.0-blue.svg)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
-[![Prisma](https://img.shields.io/badge/Prisma-7.3.0-darkblue.svg)](https://www.prisma.io/)
-[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.0-38bdf8.svg)](https://tailwindcss.com/)
+[![Version](https://img.shields.io/badge/version-1.2.0-purple.svg)](CHANGELOG.md)
+[![Next.js](https://img.shields.io/badge/Next.js-16.3.0-black.svg)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.2.4-blue.svg)](https://react.dev/)
+[![Prisma](https://img.shields.io/badge/Prisma-7.9.1-darkblue.svg)](https://www.prisma.io/)
 [![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
 
 [English](README.md) | [Português](README.pt-BR.md) | [日本語](README.ja.md) | [Español](README.es.md)
 
-L'Mere Studioは、洋菓子店やオーダーメイドケーキデザイナー向けに開発されたホワイトレーベル型マルチテナントWebアプリケーションです。顧客向けの直感的な5ステップ注文シミュレーターと、店舗オーナー向けのセルフサービスCMS管理画面を提供します。
+L'Mere Studio は、洋菓子店やケーキデザイナー向けのホワイトラベル型マルチテナント Web アプリケーションです。5 ステップの公開注文シミュレーターと、注文・商品・営業日・ブランド・テナント設定を管理する認証済み管理画面を提供します。
 
----
+> **ポートフォリオ品質改善中:** `portfolio/revamp-2026` は改善プログラムの統合ブランチです。この README は現在実装・検証されている内容だけを記載し、最終リリース認証は別の gate として扱います。
 
-## デモンストレーション
+## 課題 → 解決策
 
-### 顧客向け注文シミュレーター (モバイル版)
-<video src="./assets/lmere-studio-mobile-demo.mp4" controls="controls" muted="muted" width="100%"></video>
+カスタム注文では、空き状況、商品構成、価格ルール、顧客連絡を一貫して扱う必要があります。L'Mere はこれらをテナント単位で管理し、重要な価格・在庫/日程・永続化ルールはサーバー側を権威とします。
 
-### 店舗向けCMS管理画面 (デスクトップ版)
-<video src="./assets/lmere-studio-desktop-demo.mp4" controls="controls" muted="muted" width="100%"></video>
+技術的な主題は以下です。
 
-## スクリーンショット
+- テナントごとの商品・営業日・ブランド・管理データ分離
+- サーバー側での価格/日程/容量再検証
+- HMAC 署名付き管理セッションと ownership 検証
+- PostgreSQL のバージョン管理 migration と決定的な 2 テナント fixture
+- unit / integration / Playwright によるリスク重視の回帰テスト
+- 再現可能な desktop/mobile ドキュメント画像生成
 
-<details>
-<summary>ギャラリーを見る（クリックで展開）</summary>
-<br>
+## 再現可能なデモメディア
 
-**顧客フロー (モバイル)**
-| カレンダー & 店舗 | サイズ & 人数 | カスタマイズ詳細 |
-| :---: | :---: | :---: |
-| <img src="assets/01-mobile-storefront.png" width="250"> | <img src="assets/03-mobile-size-selected.png" width="250"> | <img src="assets/04-mobile-flavors-selected.png" width="250"> |
+README は、事前録画動画、疑似カーソル、ナレーション、字幕、BGM、ffmpeg 後処理には依存しません。ドキュメント用スクリーンショットは、合成 PostgreSQL fixture を使い、E2E とは別の Playwright コマンドで生成します。
 
-**管理画面 (デスクトップ)**
-| 注文カンバン | メニュー管理 | ブランドカラー設定 |
-| :---: | :---: | :---: |
-| <img src="assets/08-desktop-admin-orders-kanban.png" width="250"> | <img src="assets/09-desktop-admin-menu.png" width="250"> | <img src="assets/11-desktop-admin-branding.png" width="250"> |
+```bash
+npm run demo:capture
+```
 
-</details>
+クリーンな準備手順、前提条件、`docs/media/generated/` の出力については [`docs/MEDIA.md`](docs/MEDIA.md) を参照してください。
 
----
+通常の動作検証は別コマンドです。
+
+```bash
+npm run test:e2e
+```
 
 ## 主な機能
 
-### 顧客向け注文シミュレーター (`/[slug]`)
-- **ステップ 1: イベントカレンダー**: 定休日・予約不可日の自動検証機能を備えたインタラクティブな日付選択。
-- **ステップ 2: サイズ & 人数選択**: 人数に応じた最適サイズ（ミニ、S、M、L）と基本料金の自動計算。
-- **ステップ 3: スポンジ・フィリング・トッピング**: スポンジ生地、クリーム・フィリング、特別料金トッピングの自由な組み合わせ。
-- **ステップ 4: カスタマイズ詳細**: メッセージプレート入力、特別リクエスト、参考画像のURLアップロード。
-- **ステップ 5: 注文確認 & 決済受付**: リアルタイムの見積もり計算、内金計算（50% / 100% / 見積りのみ）、PIXキーコピー機能、WhatsApp連携メッセージ生成。
+### 公開注文シミュレーター (`/[slug]`)
 
-### 店舗向けCMS管理画面 (`/admin`)
-- **注文管理**: カンバン形式でのステータス管理（保留中、確認済み、完了、キャンセル）。
-- **メニュー管理**: ケーキサイズ、生地、クリーム、追加オプションのCRUD操作。
-- **スケジュール管理**: カレンダーの日付ブロック/解除設定。
-- **ブランド & デザインカスタマイズ**: ロゴ、バナー、プライマリ・セカンダリカラー、背景テーマのリアルタイム設定。
-- **機能設定 (Feature Flags)**: 画像アップロード、配送オプション、内金モードの切り替え。
+1. テナントの週間営業日、休業日、最小 lead time に基づくカレンダー
+2. 人数、重量、基本価格、フィリング上限を持つサイズ選択
+3. 生地、フィリング、特別価格、追加オプション
+4. メッセージ、備考、任意の参考画像
+5. サーバー確認済み finalization: 商品/日付/容量を再検証し、subtotal/deposit を再計算、注文を保存してから WhatsApp handoff 用の確定値を返します
 
----
+### 認証済み管理画面 (`/admin`)
 
-## システム構成図
+- 注文ステータス管理
+- サイズ・味/フィリング・追加商品の CRUD
+- 週間営業日とブロック日管理
+- テナントごとのブランド/連絡先設定
+- deposit、capacity、lead time などの機能設定
+- desktop/mobile のレスポンシブ操作とキーボード/フォーカス回帰テスト
+
+## アーキテクチャ
 
 ```mermaid
 flowchart TD
-    Customer(["顧客"])
-    Owner(["店舗管理者"])
-
-    subgraph Frontend["フロントエンド層 (Next.js 16 App Router)"]
-        direction TD
-        Simulator["注文シミュレーター"]
-        CMS["CMS管理画面"]
-        
-        S1["1. カレンダー"]
-        S2["2. サイズ・分量"]
-        S3["3. 味・トッピング"]
-        S4["4. 詳細設定"]
-        S5["5. 確認 & WhatsApp"]
-
-        M1["注文カンバン"]
-        M2["メニュー管理"]
-        M3["スケジュール管理"]
-        M4["ブランド・カラー設定"]
-        M5["機能フラグ"]
-
-        Simulator --> S1
-        Simulator --> S2
-        Simulator --> S3
-        Simulator --> S4
-        Simulator --> S5
-
-        CMS --> M1
-        CMS --> M2
-        CMS --> M3
-        CMS --> M4
-        CMS --> M5
-    end
-
-    subgraph Backend["バックエンド & データ層"]
-        direction TD
-        APIPub["公開APIルート"]
-        APIAdm["管理APIルート"]
-        ORM["Prisma 7 ORM"]
-        DB[("SQLite データベース")]
-
-        APIPub ~~~ APIAdm
-        APIPub --> ORM
-        APIAdm --> ORM
-        ORM --> DB
-    end
-
-    Customer -->|"アクセス /[slug]"| Simulator
-    Owner -->|"アクセス /admin"| CMS
-
-    Simulator --> APIPub
-    CMS --> APIAdm
-
-    classDef actor fill:#1e293b,stroke:#475569,color:#ffffff;
-    classDef fe fill:#4f46e5,stroke:#3730a3,color:#ffffff;
-    classDef be fill:#0f766e,stroke:#115e59,color:#ffffff;
-    classDef db fill:#0369a1,stroke:#075985,color:#ffffff;
-
-    class Customer,Owner actor;
-    class Simulator,CMS,S1,S2,S3,S4,S5,M1,M2,M3,M4,M5 fe;
-    class APIPub,APIAdm,ORM be;
-    class DB db;
+    Customer[Customer] --> Storefront[Next.js storefront]
+    Admin[Admin] --> Dashboard[Next.js admin]
+    Storefront --> PublicAPI[Public API]
+    Dashboard --> AdminAPI[Authenticated admin API]
+    PublicAPI --> Prisma[Prisma 7]
+    AdminAPI --> Prisma
+    Prisma --> PG[(PostgreSQL / Neon compatible)]
 ```
 
----
+- Prisma provider: **PostgreSQL**
+- 接続変数: `POSTGRES_PRISMA_URL`
+- runtime adapter: `@prisma/adapter-pg`
+- 本番は Neon を利用可能、local/CI は通常の PostgreSQL TCP
+- 空 DB は `prisma migrate deploy` の commit 済み migration で初期化
+- CI は disposable PostgreSQL 16 と Tenant A/Tenant B fixture を使用
+
+## セキュリティモデル
+
+- 管理セッションは期限付き HMAC-SHA256、HttpOnly + `SameSite=Strict` cookie。本番は `Secure`。
+- `ADMIN_SESSION_SECRET` は最低 32 bytes の一意な秘密情報が必要です。
+- 管理 API は request の tenantId を信用せず、検証済みセッションから tenant を決定します。
+- 既存リソース更新/削除では ownership を検証します。
+- `/api/orders` は browser の subtotal、deposit、availability、関連 ID を権威として扱いません。
+- サーバーは active catalog、日程/容量、価格を再評価し、serializable PostgreSQL transaction と限定 retry を使います。
+- 公開 login/order には永続 rate limiting があります。
 
 ## 技術スタック
 
 | 領域 | 技術 |
 | --- | --- |
-| フレームワーク | Next.js 16 (App Router, Turbopack) |
-| UI & スタイル | React 19, Tailwind CSS v4, グラスモフィズムデザイン |
-| アイコン | Lucide React (絵文字完全非使用) |
-| データベース | Prisma 7 ORM (`@prisma/adapter-better-sqlite3`) |
-| セキュリティ | Bcrypt パスワードハッシュ化 |
-| 言語 | TypeScript 5 (Strict Mode) |
+| Framework | Next.js 16.3.0 App Router |
+| UI | React 19.2.4, Tailwind CSS v4, Lucide React |
+| Language | TypeScript 5 |
+| Database | PostgreSQL, Prisma 7.9.1, `@prisma/adapter-pg` |
+| Password hashing | bcryptjs |
+| Browser test | Playwright |
 
----
+## セットアップ
 
-## セットアップ手順
+前提: Node.js **22+**、対応 npm、PostgreSQL または Neon。
 
-### 前提条件
-- Node.js 20.x 以上
-- npm 10.x 以上
+```bash
+git clone https://github.com/Gyliardson/lmere-studio.git
+cd lmere-studio
+npm ci
+cp .env.example .env
+npm run db:generate
+npm run db:migrate
+npm run db:seed   # development/demo のみ任意
+npm run dev
+```
 
-### インストール
+`POSTGRES_PRISMA_URL` を開発 DB に設定し、`ADMIN_SESSION_SECRET` の placeholder を一意な秘密情報に置き換えてください。実際の credential を commit しないでください。
 
-1. リポジトリのクローン:
-   ```bash
-   git clone https://github.com/user/lmere-studio.git
-   cd lmere-studio
-   ```
+### 品質確認
 
-2. 依存関係のインストール:
-   ```bash
-   npm install
-   ```
+```bash
+npm run quality
+npm run test:e2e
+```
 
-3. 環境変数の設定:
-   ```bash
-   cp .env.example .env
-   ```
+CI/PostgreSQL の詳細は [`docs/QUALITY.md`](docs/QUALITY.md)、メディア生成は [`docs/MEDIA.md`](docs/MEDIA.md) を参照してください。
 
-4. データベースのセットアップとシードデータの投入:
-   ```bash
-   npx prisma db push --config=prisma.config.ts
-   npm run db:seed
-   ```
+## 品質証拠と制約
 
-5. 開発サーバーの起動:
-   ```bash
-   npm run dev
-   ```
+現在の基盤は lint、typecheck、build、dependency audit、secret scan、unit test、空 PostgreSQL migration、Tenant A/B 分離、注文 negative path、idempotency/concurrency、管理セッション lifecycle、desktop/mobile Playwright、keyboard/focus/dialog/combobox 回帰、および手動確認される決定的 visual artifact を含みます。
 
-6. ブラウザでアクセス:
-   - **注文シミュレーター**: `http://localhost:3000/doce-arte`
-   - **管理画面**: `http://localhost:3000/admin` (ログイン情報: 店舗ID: `doce-arte`, パスワード: `admin123`)
-
----
+これはリスク重視の回帰証拠であり、完全な WCAG 認証や最終 release certification を意味しません。Clean-room/deploy と branch protection は後続 gate で再検証します。
 
 ## ライセンス
 
-本ソフトウェアは**商用・商標権所有ライセンス (All Rights Reserved)** の下で提供されています。無断での商用利用、再配布、SaaS形式での提供、およびコードの複製は禁止されています。詳細は [LICENSE](LICENSE) を参照してください。
+**Proprietary License (All Rights Reserved)**。商用利用、再配布、SaaS hosting、コード複製には明示的な許可が必要です。詳細は [LICENSE](LICENSE) を参照してください。

@@ -1,188 +1,129 @@
-# L'Mere Studio - Simulador de Pedidos de Pasteles & CMS Multi-Tenant
+# L'Mere Studio — Simulador de Pedidos & CMS Multi-Tenant
 
 [![Versión](https://img.shields.io/badge/versi%C3%B3n-1.2.0-purple.svg)](CHANGELOG.md)
-[![Next.js](https://img.shields.io/badge/Next.js-16.2.12-black.svg)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19.0.0-blue.svg)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
-[![Prisma](https://img.shields.io/badge/Prisma-7.3.0-darkblue.svg)](https://www.prisma.io/)
-[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.0-38bdf8.svg)](https://tailwindcss.com/)
+[![Next.js](https://img.shields.io/badge/Next.js-16.3.0-black.svg)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.2.4-blue.svg)](https://react.dev/)
+[![Prisma](https://img.shields.io/badge/Prisma-7.9.1-darkblue.svg)](https://www.prisma.io/)
 [![Licencia](https://img.shields.io/badge/Licencia-Propietaria-red.svg)](LICENSE)
 
 [English](README.md) | [Português](README.pt-BR.md) | [日本語](README.ja.md) | [Español](README.es.md)
 
-L'Mere Studio es una aplicación Web Multi-Tenant Marca Blanca diseñada para pastelerías artesanales, reposterías y diseñadores de pasteles. Proporciona un Simulador de Pedidos interactivo en 5 pasos para clientes y un Panel de Administración CMS autoservicio para los propietarios.
+L'Mere Studio es una aplicación white-label y multi-tenant para pastelerías artesanales y diseñadores de tartas. Combina un simulador público de pedidos en cinco pasos con un panel administrativo autenticado para pedidos, catálogo, agenda, marca y configuración del tenant.
 
----
+> **Profesionalización en curso:** `portfolio/revamp-2026` es la rama de integración del programa. La documentación solo describe comportamiento actualmente implementado y probado; la certificación final de release es un gate separado.
 
-## Demostración
+## Problema → solución
 
-### Simulador Público de Pedidos (Flujo Móvil)
-<video src="./assets/lmere-studio-mobile-demo.mp4" controls="controls" muted="muted" width="100%"></video>
+Los pedidos personalizados requieren coordinar disponibilidad, catálogo configurable, precios y comunicación con el cliente. L'Mere centraliza esas reglas manteniendo precio, disponibilidad y persistencia críticos bajo autoridad del servidor.
 
-### Panel de Administración CMS (Flujo de Escritorio)
-<video src="./assets/lmere-studio-desktop-demo.mp4" controls="controls" muted="muted" width="100%"></video>
+El caso técnico demuestra aislamiento multi-tenant, pricing server-side, sesiones admin HMAC, ownership, PostgreSQL con migraciones versionadas, fixtures deterministas Tenant A/B y cobertura de regresión con Playwright.
 
-## Capturas de Pantalla
+## Media de demostración reproducible
 
-<details>
-<summary>Haz clic para ver la Galería</summary>
-<br>
+La documentación ya no depende de videos pregrabados, cursor falso, narración, subtítulos, música ni postproducción con ffmpeg. Las capturas se generan con datos PostgreSQL sintéticos mediante un comando Playwright separado de los tests E2E:
 
-**Flujo del Cliente (Móvil)**
-| Calendario y Tienda | Tamaño y Porciones | Sabores y Detalles |
-| :---: | :---: | :---: |
-| <img src="assets/01-mobile-storefront.png" width="250"> | <img src="assets/03-mobile-size-selected.png" width="250"> | <img src="assets/04-mobile-flavors-selected.png" width="250"> |
+```bash
+npm run demo:capture
+```
 
-**Panel de Administración (Escritorio)**
-| Kanban de Pedidos | Editor de Menú | Personalización de Marca |
-| :---: | :---: | :---: |
-| <img src="assets/08-desktop-admin-orders-kanban.png" width="250"> | <img src="assets/09-desktop-admin-menu.png" width="250"> | <img src="assets/11-desktop-admin-branding.png" width="250"> |
+Consulta [`docs/MEDIA.md`](docs/MEDIA.md) para el bootstrap limpio, requisitos y salidas en `docs/media/generated/`.
 
-</details>
+Los tests de comportamiento siguen separados:
 
----
+```bash
+npm run test:e2e
+```
 
-## Funcionalidades Principales
+## Funciones principales
 
-### Simulador Público de Pedidos (`/[slug]`)
-- **Paso 1: Calendario del Evento**: Selección interactiva de fecha con validación automática de días bloqueados y tiempo mínimo de anticipación.
-- **Paso 2: Tamaño y Porciones**: Recomendación de peso y porciones (Mini, Pequeño, Mediano, Grande) con precio base.
-- **Paso 3: Masas, Rellenos y Adicionales**: Selección modular de masa, rellenos (únicos o múltiples), recargos por sabores especiales y complementos opcionales (toppers, empaques).
-- **Paso 4: Detalles de Personalización**: Mensaje para la placa del pastel, instrucciones especiales y enlace de foto de referencia.
-- **Paso 5: Resumen y Finalización**: Desglose de precios en tiempo real, cálculo automático de depósito (50%, 100% o solo cotización), copia de clave PIX en 1 clic y envío directo a WhatsApp.
+### Simulador público (`/[slug]`)
 
-### Panel de Administración CMS (`/admin`)
-- **Gestión de Pedidos**: Control de estado tipo Kanban (Pendiente, Confirmado, Completado, Cancelado).
-- **Gestión del Menú**: CRUD completo para tamaños de pasteles, masas, rellenos, adicionales y precios.
-- **Control de Agenda**: Bloqueo y desbloqueo de fechas específicas en el calendario.
-- **Personalización de Marca**: Configuración visual en tiempo real de logos, banners, colores principales y temas de fondo.
-- **Configuraciones (Feature Flags)**: Interruptores para subir fotos, opciones de entrega y modos de pago de depósito.
+1. Calendario basado en horario semanal, fechas bloqueadas y lead time del tenant.
+2. Tamaños con porciones, peso, precio base y límite de rellenos.
+3. Masas, rellenos, sabores especiales y extras activos.
+4. Mensaje, observaciones e imagen de referencia opcional.
+5. Finalización confirmada: el servidor vuelve a validar catálogo/fecha/capacidad, recalcula subtotal/depósito, persiste el pedido y solo entonces expone valores confirmados para WhatsApp.
 
----
+### Admin autenticado (`/admin`)
 
-## Arquitectura del Sistema
+- gestión de estados de pedidos;
+- CRUD de tamaños, sabores/rellenos y extras;
+- horario semanal y fechas bloqueadas;
+- branding/contacto por tenant;
+- configuración de depósito, capacidad y lead time;
+- navegación responsive con regresiones de teclado/foco.
+
+## Arquitectura
 
 ```mermaid
 flowchart TD
-    Customer(["Cliente"])
-    Owner(["Repostero / Admin"])
-
-    subgraph Frontend["Capa Frontend (Next.js 16 App Router)"]
-        direction TD
-        Simulator["Simulador Público de Pedidos"]
-        CMS["Panel CMS Administrativo"]
-        
-        S1["1. Calendario"]
-        S2["2. Tamaño y Porciones"]
-        S3["3. Sabores y Extras"]
-        S4["4. Detalles y Personalización"]
-        S5["5. Resumen y WhatsApp"]
-
-        M1["Kanban de Pedidos"]
-        M2["Gestión de Menú"]
-        M3["Control de Agenda"]
-        M4["Personalizador de Marca"]
-        M5["Configuraciones (Flags)"]
-
-        Simulator --> S1
-        Simulator --> S2
-        Simulator --> S3
-        Simulator --> S4
-        Simulator --> S5
-
-        CMS --> M1
-        CMS --> M2
-        CMS --> M3
-        CMS --> M4
-        CMS --> M5
-    end
-
-    subgraph Backend["Capa Backend y Datos"]
-        direction TD
-        APIPub["Rutas API Públicas"]
-        APIAdm["Rutas API Admin"]
-        ORM["Prisma 7 ORM"]
-        DB[("Base de Datos SQLite")]
-
-        APIPub ~~~ APIAdm
-        APIPub --> ORM
-        APIAdm --> ORM
-        ORM --> DB
-    end
-
-    Customer -->|"Accede a /[slug]"| Simulator
-    Owner -->|"Accede a /admin"| CMS
-
-    Simulator --> APIPub
-    CMS --> APIAdm
-
-    classDef actor fill:#1e293b,stroke:#475569,color:#ffffff;
-    classDef fe fill:#4f46e5,stroke:#3730a3,color:#ffffff;
-    classDef be fill:#0f766e,stroke:#115e59,color:#ffffff;
-    classDef db fill:#0369a1,stroke:#075985,color:#ffffff;
-
-    class Customer,Owner actor;
-    class Simulator,CMS,S1,S2,S3,S4,S5,M1,M2,M3,M4,M5 fe;
-    class APIPub,APIAdm,ORM be;
-    class DB db;
+    Cliente[Cliente] --> Tienda[Storefront Next.js]
+    Admin[Admin] --> Panel[Panel Admin Next.js]
+    Tienda --> API1[APIs públicas]
+    Panel --> API2[APIs admin autenticadas]
+    API1 --> Prisma[Prisma 7]
+    API2 --> Prisma
+    Prisma --> PG[(PostgreSQL / compatible con Neon)]
 ```
 
----
+- Provider Prisma: **PostgreSQL**.
+- Variable canónica: `POSTGRES_PRISMA_URL`.
+- Adapter runtime: `@prisma/adapter-pg`.
+- CI usa PostgreSQL 16 descartable y migraciones versionadas.
+- Fixtures deterministas crean Tenant A y Tenant B.
 
-## Tecnologías Utilizadas
+## Seguridad
 
-| Dominio | Tecnología |
+- Sesiones admin HMAC-SHA256 con expiración en cookie HttpOnly, `SameSite=Strict` y `Secure` en producción.
+- `ADMIN_SESSION_SECRET` requiere al menos 32 bytes de material secreto único.
+- APIs admin derivan el tenant de la sesión verificada y validan ownership.
+- `/api/orders` no confía en subtotal, depósito, disponibilidad ni IDs enviados por el navegador.
+- El servidor resuelve catálogo activo, calendario/capacidad y pricing dentro de transacciones PostgreSQL serializables con retry limitado.
+- Login y pedidos públicos tienen rate limiting persistente.
+
+## Stack
+
+| Área | Tecnología |
 | --- | --- |
-| Framework | Next.js 16 (App Router, Turbopack) |
-| Interfaz y Estilos | React 19, Tailwind CSS v4, Diseño Glassmorphism |
-| Iconos | Lucide React (Sin emojis en toda la app) |
-| Base de Datos | Prisma 7 ORM con `@prisma/adapter-better-sqlite3` |
-| Seguridad | Encriptación Bcrypt |
-| Lenguaje | TypeScript 5 (Modo Estricto) |
+| Framework | Next.js 16.3.0 App Router |
+| UI | React 19.2.4, Tailwind CSS v4, Lucide React |
+| Lenguaje | TypeScript 5 |
+| Base de datos | PostgreSQL, Prisma 7.9.1, `@prisma/adapter-pg` |
+| Password hashing | bcryptjs |
+| Browser tests | Playwright |
 
----
+## Instalación
 
-## Instalación y Configuración
+Requisitos: Node.js **22+**, npm compatible y PostgreSQL/Neon.
 
-### Requisitos previos
-- Node.js 20.x o superior
-- npm 10.x o superior
+```bash
+git clone https://github.com/Gyliardson/lmere-studio.git
+cd lmere-studio
+npm ci
+cp .env.example .env
+npm run db:generate
+npm run db:migrate
+npm run db:seed   # opcional para desarrollo/demo
+npm run dev
+```
 
-### Pasos de Instalación
+Configura `POSTGRES_PRISMA_URL` y reemplaza el placeholder de `ADMIN_SESSION_SECRET` por un secreto único. No versionar credenciales reales.
 
-1. Clonar el repositorio:
-   ```bash
-   git clone https://github.com/usuario/lmere-studio.git
-   cd lmere-studio
-   ```
+### Calidad
 
-2. Instalar dependencias:
-   ```bash
-   npm install
-   ```
+```bash
+npm run quality
+npm run test:e2e
+```
 
-3. Configurar variables de entorno:
-   ```bash
-   cp .env.example .env
-   ```
+Consulta [`docs/QUALITY.md`](docs/QUALITY.md) para el contrato completo de CI y [`docs/MEDIA.md`](docs/MEDIA.md) para capturas.
 
-4. Ejecutar la base de datos y el script de carga inicial:
-   ```bash
-   npx prisma db push --config=prisma.config.ts
-   npm run db:seed
-   ```
+## Evidencia y limitaciones
 
-5. Iniciar el servidor de desarrollo:
-   ```bash
-   npm run dev
-   ```
+La fundación actual cubre lint, typecheck, build, dependency audit, secret scan, tests unitarios, migraciones sobre PostgreSQL vacío, aislamiento Tenant A/B, reglas negativas de pedidos, idempotencia/concurrencia, lifecycle de sesión, Playwright desktop/mobile y regresiones de teclado/foco/dialog/combobox con artifacts visuales deterministas inspeccionados manualmente.
 
-6. Abrir en el navegador:
-   - **Simulador Público**: `http://localhost:3000/doce-arte`
-   - **Panel de Admin**: `http://localhost:3000/admin` (Credenciales: Identificador: `doce-arte`, Contraseña: `admin123`)
-
----
+Esto es cobertura orientada a riesgo, no certificación WCAG completa ni certificación final de release. Clean-room/deploy y protección de branches se validan en fases posteriores.
 
 ## Licencia
 
-Este software está protegido por una **Licencia Propietaria (Todos los Derechos Reservados)**. El uso comercial, redistribución o copia de código sin autorización previa está estrictamente prohibido. Consulte el archivo [LICENSE](LICENSE) para más información.
+Software bajo **Licencia Propietaria (Todos los Derechos Reservados)**. Uso comercial, redistribución, hosting SaaS o copia de código requiere autorización explícita. Consulta [LICENSE](LICENSE).
