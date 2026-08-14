@@ -64,23 +64,53 @@ test.describe("deterministic storefront smoke", () => {
     expect(message).toContain(body.order.id);
   });
 
-  test("double submit while pending produces one order request", async ({ page, context }) => {
+  test("double submit while pending produces one order request and one handoff", async ({ page, context }) => {
     await context.route("https://wa.me/**", async (route) => route.fulfill({ status: 200, body: "ok" }));
     await reachSummary(page);
 
     let orderRequests = 0;
+    let popupCount = 0;
     page.on("request", (request) => {
       if (request.url().endsWith("/api/orders") && request.method() === "POST") orderRequests += 1;
     });
+    page.on("popup", () => { popupCount += 1; });
 
+    const responsePromise = page.waitForResponse((response) => response.url().endsWith("/api/orders") && response.request().method() === "POST");
     await page.evaluate(() => {
       const button = document.querySelector<HTMLButtonElement>("#btn-send-whatsapp");
       button?.click();
       button?.click();
     });
 
-    await page.waitForResponse((response) => response.url().endsWith("/api/orders") && response.request().method() === "POST");
+    await responsePromise;
     await expect.poll(() => orderRequests).toBe(1);
+    await expect.poll(() => popupCount).toBe(1);
+  });
+
+  test("a later intentional identical submit gets a fresh order attempt", async ({ page, context }) => {
+    await context.route("https://wa.me/**", async (route) => route.fulfill({ status: 200, body: "ok" }));
+    await reachSummary(page);
+
+    const firstResponsePromise = page.waitForResponse((response) => response.url().endsWith("/api/orders") && response.request().method() === "POST");
+    const firstPopupPromise = page.waitForEvent("popup");
+    await page.locator("#btn-send-whatsapp").click();
+    const firstResponse = await firstResponsePromise;
+    const firstBody = await firstResponse.json();
+    const firstPopup = await firstPopupPromise;
+    await firstPopup.close();
+
+    const secondResponsePromise = page.waitForResponse((response) => response.url().endsWith("/api/orders") && response.request().method() === "POST");
+    const secondPopupPromise = page.waitForEvent("popup");
+    await page.locator("#btn-send-whatsapp").click();
+    const secondResponse = await secondResponsePromise;
+    const secondBody = await secondResponse.json();
+    const secondPopup = await secondPopupPromise;
+    await secondPopup.close();
+
+    expect(firstResponse.status()).toBe(201);
+    expect(secondResponse.status()).toBe(201);
+    expect(secondBody.order.id).not.toBe(firstBody.order.id);
+    expect(secondBody.idempotentReplay).toBe(false);
   });
 
   test("structured server rejection is surfaced and aborts WhatsApp handoff", async ({ page, context }) => {
@@ -93,17 +123,13 @@ test.describe("deterministic storefront smoke", () => {
       });
     });
 
-    const popupPromise = page.waitForEvent("popup");
     const dialogPromise = page.waitForEvent("dialog");
     await page.locator("#btn-send-whatsapp").click();
 
-    const popup = await popupPromise;
     const dialog = await dialogPromise;
     expect(dialog.message()).toBe("A data selecionada está indisponível");
     await dialog.dismiss();
-    await expect.poll(() => popup.isClosed()).toBe(true);
-
-    const pages = context.pages();
-    expect(pages.some((candidate) => candidate.url().startsWith("https://wa.me/"))).toBe(false);
+    await expect.poll(() => context.pages().filter((candidate) => candidate !== page && !candidate.isClosed()).length).toBe(0);
+    expect(context.pages().some((candidate) => candidate.url().startsWith("https://wa.me/"))).toBe(false);
   });
 });
