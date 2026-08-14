@@ -66,7 +66,7 @@ async function openAdminSection(page: Page, testInfo: TestInfo, label: string, h
 test.describe("portfolio documentation capture", () => {
   test("captures storefront states", async ({ page }, testInfo) => {
     await page.goto("/ci-tenant-a");
-    await expect(page.getByRole("heading", { name: "CI Tenant A" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "L'Mere Atelier" })).toBeVisible();
     await capture(page, testInfo, "storefront", true);
 
     await reachSummary(page);
