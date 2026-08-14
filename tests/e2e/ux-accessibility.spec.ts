@@ -9,14 +9,19 @@ function storefrontDate(testInfo: TestInfo, slot: number) {
   return { year: date.getUTCFullYear(), month: date.getUTCMonth(), day: date.getUTCDate() };
 }
 
-async function reachSummary(page: Page, testInfo: TestInfo) {
-  await page.goto("/ci-tenant-a");
-  const target = storefrontDate(testInfo, 0);
+async function selectDate(page: Page, testInfo: TestInfo, slot = 0) {
+  const target = storefrontDate(testInfo, slot);
   const now = await page.evaluate(() => ({ year: new Date().getFullYear(), month: new Date().getMonth() }));
   const monthsForward = (target.year - now.year) * 12 + (target.month - now.month);
   for (let index = 0; index < monthsForward; index += 1) await page.locator("#cal-next").click();
+  const day = page.locator(`#cal-day-${target.day}`);
+  await day.click();
+  return day;
+}
 
-  await page.locator(`#cal-day-${target.day}`).click();
+async function reachSummary(page: Page, testInfo: TestInfo) {
+  await page.goto("/ci-tenant-a");
+  await selectDate(page, testInfo);
   await page.locator("#btn-next").click();
   await page.locator("#size-ci-size-a").click();
   await page.locator("#btn-next").click();
@@ -49,6 +54,48 @@ test.describe("UX accessibility foundation", () => {
 
     const duration = await page.locator("#btn-next").evaluate((element) => getComputedStyle(element).transitionDuration);
     expect(duration === "0s" || duration === "0.00001s").toBeTruthy();
+  });
+
+  test("stepper, calendar and catalog selections expose semantic state", async ({ page }, testInfo) => {
+    await page.goto("/ci-tenant-a");
+
+    const progress = page.getByRole("progressbar", { name: "" });
+    await expect(progress).toHaveAttribute("aria-valuenow", "1");
+    await expect(page.getByRole("button", { name: "Mês anterior" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Próximo mês" })).toBeVisible();
+
+    const day = await selectDate(page, testInfo, 1);
+    await expect(day).toHaveAttribute("aria-pressed", "true");
+    await page.locator("#btn-next").click();
+    await expect(progress).toHaveAttribute("aria-valuenow", "2");
+
+    const size = page.locator("#size-ci-size-a");
+    await size.click();
+    await expect(size).toHaveAttribute("aria-pressed", "true");
+    await page.locator("#btn-next").click();
+
+    const dough = page.locator("#dough-ci-flavor-a");
+    const filling = page.locator("#filling-ci-filling-a");
+    await dough.click();
+    await filling.click();
+    await expect(dough).toHaveAttribute("aria-pressed", "true");
+    await expect(filling).toHaveAttribute("aria-pressed", "true");
+  });
+
+  test("reference upload trigger is reachable from the keyboard", async ({ page }, testInfo) => {
+    await page.goto("/ci-tenant-a");
+    await selectDate(page, testInfo, 2);
+    await page.locator("#btn-next").click();
+    await page.locator("#size-ci-size-a").click();
+    await page.locator("#btn-next").click();
+    await page.locator("#dough-ci-flavor-a").click();
+    await page.locator("#filling-ci-filling-a").click();
+    await page.locator("#btn-next").click();
+
+    const trigger = page.locator("#dropzone-photo");
+    await trigger.focus();
+    await expect(trigger).toBeFocused();
+    await expect(trigger).toHaveAttribute("role", "button");
   });
 
   test("order submission exposes busy state and focuses recoverable errors", async ({ page }, testInfo) => {
