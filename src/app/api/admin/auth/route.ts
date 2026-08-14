@@ -12,7 +12,7 @@ import {
 const UNAUTHORIZED = { error: "Credenciais inválidas" };
 const NO_STORE_HEADERS = { "Cache-Control": "no-store" };
 const LOGIN_SOURCE_RATE_LIMIT = { scope: "admin-login-source", limit: 24, windowMs: 15 * 60 * 1000 } as const;
-const LOGIN_TENANT_RATE_LIMIT = { limit: 8, windowMs: 15 * 60 * 1000 } as const;
+const LOGIN_TENANT_RATE_LIMIT = { scope: "admin-login-tenant", limit: 8, windowMs: 15 * 60 * 1000 } as const;
 // Fixed non-production credential hash used only to keep unknown-tenant login
 // attempts on the same bcrypt verification path as known tenants.
 const DUMMY_PASSWORD_HASH = "$2b$10$vGcCuvAGtutf9QbLKDl2VOTxm/yNRchJO5qpcyDgqP5a5kZWo8dDa";
@@ -55,8 +55,8 @@ export async function POST(request: Request) {
 
     const normalizedSlug = slug.trim().toLowerCase();
     const tenantLimit = await consumeRateLimit(request, {
-      scope: `admin-login-tenant:${normalizedSlug}`,
       ...LOGIN_TENANT_RATE_LIMIT,
+      subject: normalizedSlug,
     });
     if (!tenantLimit.allowed) return rateLimitedResponse(tenantLimit);
 
