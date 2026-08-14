@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 const DAY_MS = 86_400_000;
 const MAX_IDEMPOTENCY_KEY_LENGTH = 128;
 const MAX_TRANSACTION_RETRIES = 8;
+const BUSINESS_TIME_ZONE = "America/Sao_Paulo";
 const reject = (status: number, code: string, error: string) => NextResponse.json({ code, error }, { status });
 const cents = (value: number) => Math.round(value * 100);
 const money = (value: number) => Math.round(value) / 100;
@@ -33,6 +34,23 @@ function parseIdempotencyKey(request: Request, body: Record<string, unknown>) {
   return { key, valid: key.length > 0 && key.length <= MAX_IDEMPOTENCY_KEY_LENGTH };
 }
 
+function normalizeBrazilianPhone(value: string) {
+  const digits = value.replace(/\D/g, "");
+  const localDigits = digits.startsWith("55") && digits.length >= 12 ? digits.slice(2) : digits;
+  return /^\d{10,11}$/.test(localDigits) && /^[1-9]{2}/.test(localDigits) ? localDigits : null;
+}
+
+function businessDateOrdinal(now = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: BUSINESS_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return Date.UTC(Number(values.year), Number(values.month) - 1, Number(values.day));
+}
+
 function retryableTransactionError(error: unknown, hasIdempotencyKey: boolean) {
   if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return false;
   return error.code === "P2034" || (hasIdempotencyKey && error.code === "P2002");
@@ -57,7 +75,8 @@ export async function POST(request: Request) {
 
     const tenantId = typeof body.tenantId === "string" ? body.tenantId.trim() : "";
     const customerName = typeof body.customerName === "string" ? body.customerName.trim() : "";
-    const customerPhone = typeof body.customerPhone === "string" ? body.customerPhone.trim() : "";
+    const customerPhoneRaw = typeof body.customerPhone === "string" ? body.customerPhone.trim() : "";
+    const customerPhone = normalizeBrazilianPhone(customerPhoneRaw);
     const eventDate = typeof body.eventDate === "string" ? body.eventDate.trim() : "";
     const cakeSizeId = typeof body.cakeSizeId === "string" ? body.cakeSizeId.trim() : "";
     const flavorId = typeof body.flavorId === "string" ? body.flavorId.trim() : "";
@@ -68,8 +87,11 @@ export async function POST(request: Request) {
     if (!idempotency.valid) {
       return reject(400, "INVALID_IDEMPOTENCY_KEY", `A chave de idempotência deve ter entre 1 e ${MAX_IDEMPOTENCY_KEY_LENGTH} caracteres`);
     }
-    if (!tenantId || !customerName || !customerPhone || !eventDate || !cakeSizeId || !flavorId || !fillingIds || !addonIds) {
+    if (!tenantId || !customerName || !eventDate || !cakeSizeId || !flavorId || !fillingIds || !addonIds) {
       return reject(400, "INVALID_REQUEST", "Campos obrigatórios ausentes ou inválidos");
+    }
+    if (!customerPhone) {
+      return reject(400, "INVALID_CUSTOMER_PHONE", "Informe um telefone/WhatsApp válido com DDD");
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(eventDate)) return reject(400, "INVALID_EVENT_DATE", "Data do evento inválida");
     const event = new Date(`${eventDate}T12:00:00.000Z`);
@@ -111,10 +133,8 @@ export async function POST(request: Request) {
           const addons = addonIds.length ? await tx.addon.findMany({ where: { id: { in: addonIds }, tenantId, active: true } }) : [];
           if (addons.length !== addonIds.length) return reject(400, "INVALID_ADDON", "Um ou mais adicionais são inválidos ou indisponíveis");
 
-          const now = new Date();
-          const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-          const targetUtc = Date.UTC(event.getUTCFullYear(), event.getUTCMonth(), event.getUTCDate());
-          if (Math.floor((targetUtc - todayUtc) / DAY_MS) < tenant.minLeadDays) {
+          const targetOrdinal = Date.UTC(event.getUTCFullYear(), event.getUTCMonth(), event.getUTCDate());
+          if (Math.floor((targetOrdinal - businessDateOrdinal()) / DAY_MS) < tenant.minLeadDays) {
             return reject(409, "LEAD_TIME_UNAVAILABLE", `A data exige antecedência mínima de ${tenant.minLeadDays} dias`);
           }
           if (await tx.blockedDate.findFirst({ where: { tenantId, date: eventDate } })) return reject(409, "DATE_BLOCKED", "A data selecionada está indisponível");
