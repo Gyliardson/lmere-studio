@@ -33,4 +33,14 @@ test.describe("admin security boundaries", () => {
     });
     expect(settingsUpdate.status()).toBe(401);
   });
+
+  test("admin document blocks automatic external image requests", async ({ request }) => {
+    const adminResponse = await request.get("/admin");
+    expect(adminResponse.status()).toBe(200);
+    expect(adminResponse.headers()["content-security-policy"]).toBe("img-src 'self' data:;");
+
+    const storefrontResponse = await request.get("/ci-tenant-a");
+    expect(storefrontResponse.status()).toBe(200);
+    expect(storefrontResponse.headers()["content-security-policy"]).toBeUndefined();
+  });
 });
