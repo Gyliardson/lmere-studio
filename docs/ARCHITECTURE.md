@@ -32,7 +32,7 @@ Feature modules own their local UI state and calls to the already-protected admi
 - `orders/AdminOrdersSection.tsx` — order list/filtering, detail dialog and status workflow;
 - `menu/AdminMenuSection.tsx` — size, flavor and add-on CRUD/forms;
 - `calendar/AdminCalendarSection.tsx` — weekly schedule and blocked dates;
-- `settings/AdminSettingsSections.tsx` — branding plus feature/deposit/capacity/lead-time settings;
+- `settings/AdminSettingsSections.tsx` — branding, feature/deposit/capacity/lead-time settings and tenant custom-field configuration;
 - `components/AdminControls.tsx` — complex interaction primitives reused by multiple admin modules: modal focus management, confirmation dialog, currency/select controls and bounded image input.
 
 These modules are UI boundaries, not security boundaries. They do not replace server-side session verification, tenant scoping, ownership checks, validation or database constraints.
@@ -47,7 +47,7 @@ A heavier abstraction should only be reconsidered if future features create demo
 
 Protected admin routes derive tenant identity from the verified admin session. Request-provided tenant IDs are not trusted as authorization.
 
-Public order creation resolves active tenant/catalog resources server-side, validates business dates and capacity, recalculates financial values, and persists inside the established PostgreSQL transaction/idempotency contract.
+Public order creation resolves active tenant/catalog resources server-side, validates canonical tenant custom-field answers, business dates and capacity, recalculates financial values, and persists inside the established PostgreSQL transaction/idempotency contract. Historical order meaning is preserved through server-created snapshots rather than reconstructed from mutable current catalog/custom-field configuration.
 
 Database migrations and deterministic two-tenant fixtures are part of the reproducibility boundary. CI must continue to prove empty-database migration, fixture bootstrap, integration assertions, application smoke and browser regressions after architecture-only refactors.
 
@@ -56,11 +56,11 @@ Database migrations and deterministic two-tenant fixtures are part of the reprod
 Moving code between modules is considered behavior-preserving only when the existing risk-focused gates remain green. In particular:
 
 - lint, typecheck, unit tests, Prisma validation and production build;
-- dependency audit and secret scan;
+- production dependency audit, full-history secret scan and CodeQL JavaScript/TypeScript SAST with auditable SARIF;
 - disposable PostgreSQL migration/seed/integration/application smoke;
 - authenticated Tenant A/Tenant B isolation and CRUD/invariant regressions;
-- admin session restore/logout behavior;
-- Playwright desktop/mobile, keyboard, focus, dialog and combobox regressions;
+- admin session restore/logout/revocation behavior;
+- Playwright desktop/mobile, representative axe scans, keyboard, focus, dialog and combobox regressions;
 - clean-room installation/build/start/health/test sequence.
 
 Architecture refactors must not weaken these gates to accommodate file movement.
