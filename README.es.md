@@ -103,11 +103,14 @@ npm ci
 cp .env.example .env
 npm run db:generate
 npm run db:migrate
-npm run db:seed   # opcional para desarrollo/demo
+# Seed sintético destructivo opcional, solo para una base local/desechable:
+LMERE_ALLOW_DEMO_SEED=true npm run db:seed
 npm run dev
 ```
 
 Configura `POSTGRES_PRISMA_URL` y reemplaza el placeholder de `ADMIN_SESSION_SECRET` por un secreto único. No versionar credenciales reales.
+
+`npm run db:seed` **no** es un paso de producción/bootstrap. Reemplaza deliberadamente el tenant sintético `doce-arte`, se rechaza con `NODE_ENV=production` y exige `LMERE_ALLOW_DEMO_SEED=true`. El bootstrap de producción usa únicamente `npm run db:migrate`.
 
 ### Calidad
 
@@ -120,7 +123,7 @@ Consulta [`docs/QUALITY.md`](docs/QUALITY.md) para el contrato completo de CI y 
 
 ## Evidencia y limitaciones
 
-Los gates del repositorio cubren lint, typecheck, build, dependency audit, secret scan del historial alcanzable, tests unitarios, migraciones sobre PostgreSQL vacío, aislamiento Tenant A/B, reglas negativas de pedidos, idempotencia/concurrencia, lifecycle de sesión, Playwright desktop/mobile y regresiones de teclado/foco/dialog/combobox con artifacts visuales deterministas inspeccionados manualmente.
+Los gates del repositorio cubren lint, typecheck, build, dependency audit, secret scan del historial alcanzable, CodeQL JavaScript/TypeScript con SARIF auditable, tests unitarios, migraciones sobre PostgreSQL vacío, aislamiento Tenant A/B, reglas negativas de pedidos, idempotencia/concurrencia, lifecycle de sesión, Playwright desktop/mobile, axe representativo y regresiones de teclado/foco/dialog/combobox con artifacts visuales deterministas inspeccionados manualmente.
 
 Esto es cobertura orientada a riesgo, no certificación WCAG completa. La promoción a la rama por defecto es intencionalmente manual y sigue el checklist de [`docs/RELEASE.md`](docs/RELEASE.md); la protección/rulesets de branches es una configuración de gobernanza que se revalida en el release.
 
