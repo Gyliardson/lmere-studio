@@ -41,13 +41,9 @@ test("demo seed preflight permits an opted-in non-production database", () => {
     NODE_ENV: "development",
     LMERE_ALLOW_DEMO_SEED: "true",
     POSTGRES_PRISMA_URL: "postgres://postgres:postgres@127.0.0.1:5432/lmere_demo?sslmode=disable",
-    LMERE_DEMO_ADMIN_PASSWORD: "local-only-password",
   });
 
-  assert.deepEqual(preflight, {
-    targetDatabase: "127.0.0.1:5432/lmere_demo",
-    adminPassword: "local-only-password",
-  });
+  assert.deepEqual(preflight, { targetDatabase: "127.0.0.1:5432/lmere_demo" });
 });
 
 test("demo seed rejects non-PostgreSQL targets and missing database names", () => {
