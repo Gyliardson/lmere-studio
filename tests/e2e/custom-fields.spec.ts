@@ -41,6 +41,28 @@ test.describe("tenant custom fields", () => {
     expect(bodyB.customFields.map((field: { id: string }) => field.id)).toEqual(["ci-custom-note-b"]);
   });
 
+  test("admin definition limits are enforced before normalization", async ({ request }) => {
+    const headers = authHeaders("ci-custom-a");
+    const before = await request.get("/api/admin/custom-fields", { headers });
+    expect(before.status()).toBe(200);
+    const beforeCount = (await before.json()).customFields.length as number;
+
+    const cases = [
+      { label: `${" ".repeat(CUSTOM_FIELD_LIMITS.label)}x`, type: "text", required: false, options: [] },
+      { label: "Opção bruta", type: "select", required: false, options: [`${" ".repeat(CUSTOM_FIELD_LIMITS.option)}A`] },
+    ];
+
+    for (const data of cases) {
+      const response = await request.post("/api/admin/custom-fields", { headers, data });
+      expect(response.status()).toBe(422);
+      expect((await response.json()).code).toBe("VALIDATION_ERROR");
+    }
+
+    const after = await request.get("/api/admin/custom-fields", { headers });
+    expect(after.status()).toBe(200);
+    expect((await after.json()).customFields).toHaveLength(beforeCount);
+  });
+
   test("missing, forged, invalid and oversized answers are rejected before persistence", async ({ request }, testInfo) => {
     const before = await request.get("/api/admin/orders", { headers: authHeaders("ci-custom-a") });
     expect(before.status()).toBe(200);
