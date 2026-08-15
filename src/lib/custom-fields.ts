@@ -111,14 +111,22 @@ export function validateCustomFieldAnswers(definitions: CustomFieldData[], input
       issue(issues, `customFieldAnswers.${definition.id}`, "resposta deve ser texto");
       continue;
     }
+    if (typeof rawValue === "string") {
+      const rawLimit = definition.type === "text"
+        ? CUSTOM_FIELD_LIMITS.textAnswer
+        : definition.type === "number"
+          ? CUSTOM_FIELD_LIMITS.numberAnswer
+          : CUSTOM_FIELD_LIMITS.option;
+      if (rawValue.length > rawLimit) {
+        issue(issues, `customFieldAnswers.${definition.id}`, `máximo de ${rawLimit} caracteres`);
+        continue;
+      }
+    }
     const value = typeof rawValue === "string" ? rawValue.trim() : "";
     if (definition.required && !value) issue(issues, `customFieldAnswers.${definition.id}`, "campo obrigatório");
     if (!value) continue;
 
-    if (definition.type === "text" && value.length > CUSTOM_FIELD_LIMITS.textAnswer) issue(issues, `customFieldAnswers.${definition.id}`, `máximo de ${CUSTOM_FIELD_LIMITS.textAnswer} caracteres`);
-    if (definition.type === "number") {
-      if (value.length > CUSTOM_FIELD_LIMITS.numberAnswer || !Number.isFinite(Number(value))) issue(issues, `customFieldAnswers.${definition.id}`, "número inválido");
-    }
+    if (definition.type === "number" && !Number.isFinite(Number(value))) issue(issues, `customFieldAnswers.${definition.id}`, "número inválido");
     if (definition.type === "select" && !definition.options.includes(value)) issue(issues, `customFieldAnswers.${definition.id}`, "opção inválida");
     snapshot.push({ id: definition.id, label: definition.label, type: definition.type, value });
   }
