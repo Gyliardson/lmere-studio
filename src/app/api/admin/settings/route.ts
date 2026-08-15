@@ -2,7 +2,7 @@ import {
   validateTenantSettingsUpdate,
   type ValidationIssue,
 } from "@/lib/admin-validation";
-import { getAdminSession } from "@/lib/admin-session";
+import { getVerifiedAdminSession } from "@/lib/admin-session";
 import { normalizePersistedFeaturesConfig } from "@/lib/features-config";
 import { validateImageReference } from "@/lib/image-reference";
 import { prisma } from "@/lib/prisma";
@@ -45,12 +45,12 @@ function imageIssues(updates: { logoUrl?: string; bannerUrl?: string }): Validat
 
 export async function GET(request: Request) {
   try {
-    const session = getAdminSession(request);
+    const session = await getVerifiedAdminSession(request);
     if (!session) return unauthorized();
 
     const tenant = await prisma.tenant.findUnique({
       where: { id: session.tenantId },
-      omit: { adminPasswordHash: true },
+      omit: { adminPasswordHash: true, adminSessionVersion: true },
     });
     if (!tenant) return unauthorized();
 
@@ -63,7 +63,7 @@ export async function GET(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const session = getAdminSession(request);
+    const session = await getVerifiedAdminSession(request);
     if (!session) return unauthorized();
 
     let rawUpdates: unknown;
@@ -81,7 +81,7 @@ export async function PUT(request: Request) {
     const tenant = await prisma.tenant.update({
       where: { id: session.tenantId },
       data: parsed.value,
-      omit: { adminPasswordHash: true },
+      omit: { adminPasswordHash: true, adminSessionVersion: true },
     });
 
     return NextResponse.json({ settings: serializeSettings(tenant) });

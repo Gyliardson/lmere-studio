@@ -7,6 +7,7 @@ import {
   adminSessionCookieOptions,
   createAdminSessionToken,
   getAdminSession,
+  getVerifiedAdminSession,
 } from "@/lib/admin-session";
 
 const UNAUTHORIZED = { error: "Credenciais inválidas" };
@@ -66,7 +67,7 @@ export async function POST(request: Request) {
       return jsonNoStore(UNAUTHORIZED, { status: 401 });
     }
 
-    const token = createAdminSessionToken(tenant.id);
+    const token = createAdminSessionToken(tenant.id, Date.now(), tenant.adminSessionVersion);
     const response = jsonNoStore({
       tenant: {
         id: tenant.id,
@@ -84,7 +85,7 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   try {
-    const session = getAdminSession(request);
+    const session = await getVerifiedAdminSession(request);
     if (!session) {
       return clearSessionCookie(jsonNoStore({ error: "Sessão inválida ou expirada" }, { status: 401 }));
     }
@@ -104,6 +105,21 @@ export async function GET(request: Request) {
   }
 }
 
-export async function DELETE() {
-  return clearSessionCookie(jsonNoStore({ success: true }));
+export async function DELETE(request: Request) {
+  try {
+    const session = getAdminSession(request);
+    if (session) {
+      await prisma.tenant.updateMany({
+        where: {
+          id: session.tenantId,
+          adminSessionVersion: session.sessionVersion,
+        },
+        data: { adminSessionVersion: { increment: 1 } },
+      });
+    }
+    return clearSessionCookie(jsonNoStore({ success: true }));
+  } catch (error) {
+    console.error("[ERROR] Admin logout failed", error instanceof Error ? error.message : "unknown error");
+    return clearSessionCookie(jsonNoStore({ error: "Erro ao encerrar sessão" }, { status: 500 }));
+  }
 }

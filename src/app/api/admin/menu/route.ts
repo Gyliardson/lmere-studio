@@ -1,4 +1,4 @@
-import { getAdminSession } from "@/lib/admin-session";
+import { getVerifiedAdminSession } from "@/lib/admin-session";
 import { validateMenuCreate, validateMenuUpdate, type ValidationIssue } from "@/lib/admin-validation";
 import { validateImageReference } from "@/lib/image-reference";
 import { prisma } from "@/lib/prisma";
@@ -32,7 +32,7 @@ function boundedImage(value: string | undefined): { ok: true; value?: string } |
 
 export async function GET(request: Request) {
   try {
-    const session = getAdminSession(request);
+    const session = await getVerifiedAdminSession(request);
     if (!session) return unauthorized();
 
     const [sizes, flavors, addons] = await Promise.all([
@@ -50,7 +50,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const session = getAdminSession(request);
+    const session = await getVerifiedAdminSession(request);
     if (!session) return unauthorized();
 
     const body = await jsonBody(request);
@@ -86,7 +86,7 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const session = getAdminSession(request);
+    const session = await getVerifiedAdminSession(request);
     if (!session) return unauthorized();
 
     const body = await jsonBody(request);
@@ -135,7 +135,7 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const session = getAdminSession(request);
+    const session = await getVerifiedAdminSession(request);
     if (!session) return unauthorized();
 
     const { searchParams } = new URL(request.url);

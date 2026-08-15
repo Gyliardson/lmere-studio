@@ -1,0 +1,2 @@
+ALTER TABLE "Tenant"
+ADD COLUMN "adminSessionVersion" INTEGER NOT NULL DEFAULT 0;

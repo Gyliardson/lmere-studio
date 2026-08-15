@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { getAdminSession } from "@/lib/admin-session";
+import { getVerifiedAdminSession } from "@/lib/admin-session";
 import { prisma } from "@/lib/prisma";
 
 const unauthorized = () => NextResponse.json({ error: "Sessão inválida ou expirada" }, { status: 401 });
 
 export async function GET(request: Request) {
   try {
-    const session = getAdminSession(request);
+    const session = await getVerifiedAdminSession(request);
     if (!session) return unauthorized();
 
     const status = new URL(request.url).searchParams.get("status");
@@ -27,7 +27,7 @@ export async function GET(request: Request) {
 
 async function updateOrderStatus(request: Request) {
   try {
-    const session = getAdminSession(request);
+    const session = await getVerifiedAdminSession(request);
     if (!session) return unauthorized();
 
     const body = await request.json();
