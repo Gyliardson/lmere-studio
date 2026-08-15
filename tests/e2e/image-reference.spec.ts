@@ -1,5 +1,6 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
 import { ADMIN_SESSION_COOKIE, createAdminSessionToken } from "../../src/lib/admin-session";
+import { IMAGE_REFERENCE_LIMITS } from "../../src/lib/image-reference";
 
 const validOrder = {
   tenantId: "ci-tenant-a",
@@ -18,6 +19,10 @@ function sourceFor(projectName: string) {
 
 function adminHeaders() {
   return { cookie: `${ADMIN_SESSION_COOKIE}=${createAdminSessionToken("ci-tenant-a")}` };
+}
+
+function oversizedPngDataUrl() {
+  return `data:image/png;base64,${Buffer.alloc(IMAGE_REFERENCE_LIMITS.maxBytes + 1, 0x41).toString("base64")}`;
 }
 
 async function expectOrderAbsent(request: APIRequestContext, customerName: string) {
@@ -39,6 +44,21 @@ test("public order rejects unsupported embedded image data before persistence", 
       customerName,
       referenceImageUrl: "data:image/gif;base64,R0lGODlhAQABAIAAAAUEBA==",
     },
+  });
+
+  expect(response.status()).toBe(400);
+  await expect(response.json()).resolves.toMatchObject({ code: "INVALID_REFERENCE_IMAGE" });
+  await expectOrderAbsent(request, customerName);
+});
+
+test("public order rejects an embedded image above the decoded byte limit", async ({ request }, testInfo) => {
+  const customerName = `Rejected oversized ${testInfo.project.name}`;
+  const response = await request.post("/api/orders", {
+    headers: {
+      "x-forwarded-for": sourceFor(testInfo.project.name),
+      "idempotency-key": `image-oversized-${testInfo.project.name}`,
+    },
+    data: { ...validOrder, customerName, referenceImageUrl: oversizedPngDataUrl() },
   });
 
   expect(response.status()).toBe(400);
