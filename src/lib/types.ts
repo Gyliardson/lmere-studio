@@ -20,15 +20,22 @@ export interface TenantData {
 export interface FeaturesConfig {
   allow_photo_upload: boolean;
   deposit_mode: "50_percent" | "100_percent" | "quote_only";
-  enable_delivery_step: boolean;
   custom_fields: CustomFieldDef[];
 }
 
 export interface CustomFieldDef {
+  id: string;
   label: string;
   type: "text" | "select" | "number";
   required: boolean;
   options?: string[];
+}
+
+export interface CustomFieldSnapshot {
+  id: string;
+  label: string;
+  type: CustomFieldDef["type"];
+  value: string;
 }
 
 export interface CakeSizeData {
@@ -91,6 +98,7 @@ export interface OrderData {
   depositAmount: number;
   depositMode: string;
   status: string;
+  selectionSnapshot?: string;
   createdAt: string;
 }
 
@@ -106,6 +114,7 @@ export interface SimulatorState {
   details: string;
   customerName: string;
   customerPhone: string;
+  customFieldAnswers: Record<string, string>;
 }
 
 export interface TenantFullData {
