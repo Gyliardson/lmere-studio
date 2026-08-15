@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAdminSession } from "@/lib/admin-session";
+import { getVerifiedAdminSession } from "@/lib/admin-session";
 import {
   validateBlockedDate,
   validateWorkSchedule,
@@ -25,7 +25,7 @@ async function jsonBody(request: Request) {
 
 export async function GET(request: Request) {
   try {
-    const session = getAdminSession(request);
+    const session = await getVerifiedAdminSession(request);
     if (!session) return unauthorized();
 
     const [blockedDates, workSchedule] = await Promise.all([
@@ -42,7 +42,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const session = getAdminSession(request);
+    const session = await getVerifiedAdminSession(request);
     if (!session) return unauthorized();
 
     const body = await jsonBody(request);
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const session = getAdminSession(request);
+    const session = await getVerifiedAdminSession(request);
     if (!session) return unauthorized();
 
     const body = await jsonBody(request);
@@ -89,7 +89,7 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const session = getAdminSession(request);
+    const session = await getVerifiedAdminSession(request);
     if (!session) return unauthorized();
 
     const id = new URL(request.url).searchParams.get("id");
