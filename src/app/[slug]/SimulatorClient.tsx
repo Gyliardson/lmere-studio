@@ -227,7 +227,6 @@ export function SimulatorClient({ slug }: { slug: string }) {
         <div
           className="h-1 bg-white/5 rounded-full overflow-hidden"
           role="progressbar"
-          aria-label="Progresso da encomenda"
           aria-valuemin={1}
           aria-valuemax={TOTAL_STEPS}
           aria-valuenow={state.step}
@@ -432,7 +431,7 @@ function StepCalendar({
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-1" role="group" aria-label={`${monthNames[viewMonth]} de ${viewYear}`}>
+        <div className="grid grid-cols-7 gap-1" role="grid" aria-label={`${monthNames[viewMonth]} de ${viewYear}`}>
           {Array.from({ length: firstDay }).map((_, i) => (
             <div key={`empty-${i}`} aria-hidden="true" />
           ))}
@@ -512,22 +511,66 @@ function StepCalendar({
   );
 }
 
-function StepSize({ sizes, selected, onSelect }: { sizes: CakeSizeData[]; selected: CakeSizeData | null; onSelect: (size: CakeSizeData) => void }) {
+function StepSize({
+  sizes,
+  selected,
+  onSelect,
+}: {
+  sizes: CakeSizeData[];
+  selected: CakeSizeData | null;
+  onSelect: (size: CakeSizeData) => void;
+}) {
   return (
     <div>
-      <h2 className="text-lg font-bold mb-1 flex items-center gap-2"><Cake className="w-5 h-5 text-brand-primary" aria-hidden="true" />Qual o tamanho ideal?</h2>
+      <h2 className="text-lg font-bold mb-1 flex items-center gap-2">
+        <Cake className="w-5 h-5 text-brand-primary" aria-hidden="true" />
+        Qual o tamanho ideal?
+      </h2>
       <p className="text-white/50 text-sm mb-5">Escolha o tamanho do bolo baseado no número de convidados</p>
+
       <div className="space-y-3">
         {sizes.map((size) => {
           const isSelected = selected?.id === size.id;
           return (
-            <button key={size.id} onClick={() => onSelect(size)} className={cn("selection-card w-full text-left", isSelected && "selected")} id={`size-${size.id}`} aria-pressed={isSelected}>
+            <button
+              key={size.id}
+              onClick={() => onSelect(size)}
+              className={cn("selection-card w-full text-left", isSelected && "selected")}
+              id={`size-${size.id}`}
+              aria-pressed={isSelected}
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", isSelected ? "bg-brand-primary/20" : "bg-white/5")} aria-hidden="true"><Cake className={cn("w-6 h-6", isSelected ? "text-brand-primary" : "text-white/40")} /></div>
-                  <div><p className="font-semibold text-sm">{size.name}</p><div className="flex items-center gap-3 text-xs text-white/50 mt-0.5"><span className="flex items-center gap-1"><Users className="w-3 h-3" aria-hidden="true" />{size.servings}</span><span className="flex items-center gap-1"><Weight className="w-3 h-3" aria-hidden="true" />{size.weightKg}kg</span></div></div>
+                  <div className={cn(
+                    "w-12 h-12 rounded-xl flex items-center justify-center",
+                    isSelected ? "bg-brand-primary/20" : "bg-white/5"
+                  )} aria-hidden="true">
+                    <Cake className={cn("w-6 h-6", isSelected ? "text-brand-primary" : "text-white/40")} />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">{size.name}</p>
+                    <div className="flex items-center gap-3 text-xs text-white/50 mt-0.5">
+                      <span className="flex items-center gap-1">
+                        <Users className="w-3 h-3" aria-hidden="true" />
+                        {size.servings}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Weight className="w-3 h-3" aria-hidden="true" />
+                        {size.weightKg}kg
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-right"><p className={cn("font-bold", isSelected ? "text-brand-primary" : "text-white/80")}>{formatCurrency(size.basePrice)}</p>{isSelected && <div className="mt-1" aria-hidden="true"><Check className="w-4 h-4 text-brand-primary ml-auto" /></div>}</div>
+                <div className="text-right">
+                  <p className={cn("font-bold", isSelected ? "text-brand-primary" : "text-white/80")}>
+                    {formatCurrency(size.basePrice)}
+                  </p>
+                  {isSelected && (
+                    <div className="mt-1" aria-hidden="true">
+                      <Check className="w-4 h-4 text-brand-primary ml-auto" />
+                    </div>
+                  )}
+                </div>
               </div>
             </button>
           );
@@ -537,19 +580,200 @@ function StepSize({ sizes, selected, onSelect }: { sizes: CakeSizeData[]; select
   );
 }
 
-function StepFlavors({ doughs, fillings, addons, selectedDough, selectedFillings, selectedAddons, maxFillings = 2, onSelectDough, onToggleFilling, onToggleAddon, showToast }: { doughs: CakeFlavorData[]; fillings: CakeFlavorData[]; addons: AddonData[]; selectedDough: CakeFlavorData | null; selectedFillings: CakeFlavorData[]; selectedAddons: AddonData[]; maxFillings?: number; onSelectDough: (dough: CakeFlavorData) => void; onToggleFilling: (filling: CakeFlavorData) => void; onToggleAddon: (addon: AddonData) => void; showToast: (msg: string) => void }) {
+function StepFlavors({
+  doughs,
+  fillings,
+  addons,
+  selectedDough,
+  selectedFillings,
+  selectedAddons,
+  maxFillings = 2,
+  onSelectDough,
+  onToggleFilling,
+  onToggleAddon,
+  showToast,
+}: {
+  doughs: CakeFlavorData[];
+  fillings: CakeFlavorData[];
+  addons: AddonData[];
+  selectedDough: CakeFlavorData | null;
+  selectedFillings: CakeFlavorData[];
+  selectedAddons: AddonData[];
+  maxFillings?: number;
+  onSelectDough: (dough: CakeFlavorData) => void;
+  onToggleFilling: (filling: CakeFlavorData) => void;
+  onToggleAddon: (addon: AddonData) => void;
+  showToast: (msg: string) => void;
+}) {
   const handleFillingClick = (filling: CakeFlavorData) => {
     const isSelected = selectedFillings.some((f) => f.id === filling.id);
-    if (!isSelected && selectedFillings.length >= maxFillings) { showToast(`Este tamanho permite no máximo ${maxFillings} recheio${maxFillings > 1 ? "s" : ""}.`); return; }
+    if (!isSelected && selectedFillings.length >= maxFillings) {
+      showToast(`Este tamanho permite no máximo ${maxFillings} recheio${maxFillings > 1 ? "s" : ""}.`);
+      return;
+    }
     onToggleFilling(filling);
   };
   return (
     <div className="space-y-8">
-      <div><h2 className="text-lg font-bold mb-1 flex items-center gap-2"><Layers className="w-5 h-5 text-brand-primary" aria-hidden="true" />Escolha a Massa</h2><p className="text-white/50 text-sm mb-4">Selecione uma opção de massa</p>
-        <div className="grid grid-cols-2 gap-3 items-stretch">{doughs.map((dough) => { const isSelected = selectedDough?.id === dough.id; return <button key={dough.id} onClick={() => onSelectDough(dough)} className={cn("selection-card text-center flex flex-col justify-between items-center h-full p-3.5", isSelected && "selected")} id={`dough-${dough.id}`} aria-pressed={isSelected}>{dough.imageUrl ? <div className="w-full h-24 overflow-hidden rounded-lg mb-2 flex-shrink-0"><img src={dough.imageUrl} alt={dough.name} className="w-full h-full object-cover" /></div> : <div className="w-full h-24 bg-white/5 rounded-lg mb-2 flex items-center justify-center flex-shrink-0" aria-hidden="true"><Cake className="w-8 h-8 text-white/20" /></div>}<div className="flex-1 flex flex-col items-center justify-center space-y-1 w-full min-h-[3rem]"><p className="font-medium text-sm text-center leading-tight">{dough.name}</p>{dough.isSpecial && <span className="badge badge-special text-[10px]"><Star className="w-2.5 h-2.5" aria-hidden="true" /> Especial</span>}{dough.additionalPrice > 0 && <p className="text-xs text-brand-secondary">+{formatCurrency(dough.additionalPrice)}</p>}</div></button>; })}</div>
+      <div>
+        <h2 className="text-lg font-bold mb-1 flex items-center gap-2">
+          <Layers className="w-5 h-5 text-brand-primary" aria-hidden="true" />
+          Escolha a Massa
+        </h2>
+        <p className="text-white/50 text-sm mb-4">Selecione uma opção de massa</p>
+
+        <div className="grid grid-cols-2 gap-3 items-stretch">
+          {doughs.map((dough) => {
+            const isSelected = selectedDough?.id === dough.id;
+            return (
+              <button
+                key={dough.id}
+                onClick={() => onSelectDough(dough)}
+                className={cn(
+                  "selection-card text-center flex flex-col justify-between items-center h-full p-3.5",
+                  isSelected && "selected"
+                )}
+                id={`dough-${dough.id}`}
+                aria-pressed={isSelected}
+              >
+                {dough.imageUrl ? (
+                  <div className="w-full h-24 overflow-hidden rounded-lg mb-2 flex-shrink-0">
+                    <img
+                      src={dough.imageUrl}
+                      alt={dough.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-full h-24 bg-white/5 rounded-lg mb-2 flex items-center justify-center flex-shrink-0" aria-hidden="true">
+                    <Cake className="w-8 h-8 text-white/20" />
+                  </div>
+                )}
+                <div className="flex-1 flex flex-col items-center justify-center space-y-1 w-full min-h-[3rem]">
+                  <p className="font-medium text-sm text-center leading-tight">{dough.name}</p>
+                  {dough.isSpecial && (
+                    <span className="badge badge-special text-[10px]">
+                      <Star className="w-2.5 h-2.5" aria-hidden="true" /> Especial
+                    </span>
+                  )}
+                  {dough.additionalPrice > 0 && (
+                    <p className="text-xs text-brand-secondary">+{formatCurrency(dough.additionalPrice)}</p>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
-      <div><h2 className="text-lg font-bold mb-1 flex items-center gap-2"><Palette className="w-5 h-5 text-brand-primary" aria-hidden="true" />Escolha os Recheios</h2><p className="text-white/50 text-sm mb-4">Selecione ate {maxFillings} recheio{maxFillings > 1 ? "s" : ""} ({selectedFillings.length}/{maxFillings} selecionado{selectedFillings.length !== 1 ? "s" : ""})</p><div className="space-y-2">{fillings.map((filling) => { const isSelected = selectedFillings.some((f) => f.id === filling.id); return <button key={filling.id} onClick={() => handleFillingClick(filling)} className={cn("selection-card w-full text-left", isSelected && "selected")} id={`filling-${filling.id}`} aria-pressed={isSelected}><div className="flex items-center gap-3">{filling.imageUrl && <img src={filling.imageUrl} alt={filling.name} className="w-12 h-12 rounded-lg object-cover" />}<div className="flex-1 min-w-0"><div className="flex items-center gap-2"><p className="font-medium text-sm">{filling.name}</p>{filling.isSpecial && <span className="badge badge-special text-[10px]"><Star className="w-2.5 h-2.5" aria-hidden="true" /> Especial</span>}</div>{filling.additionalPrice > 0 && <p className="text-xs text-brand-secondary mt-0.5">+{formatCurrency(filling.additionalPrice)}</p>}</div><div className={cn("w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all", isSelected ? "bg-brand-primary border-brand-primary" : "border-white/20")} aria-hidden="true">{isSelected && <Check className="w-3.5 h-3.5 text-white" />}</div></div></button>; })}</div></div>
-      {addons.length > 0 && <div><h2 className="text-lg font-bold mb-1 flex items-center gap-2"><Sparkles className="w-5 h-5 text-brand-primary" aria-hidden="true" />Adicionais</h2><p className="text-white/50 text-sm mb-4">Itens opcionais para complementar sua encomenda</p><div className="space-y-2">{addons.map((addon) => { const isSelected = selectedAddons.some((a) => a.id === addon.id); return <button key={addon.id} onClick={() => onToggleAddon(addon)} className={cn("selection-card w-full text-left", isSelected && "selected")} id={`addon-${addon.id}`} aria-pressed={isSelected}><div className="flex items-center gap-3">{addon.imageUrl ? <img src={addon.imageUrl} alt="" className="w-11 h-11 rounded-lg object-cover flex-shrink-0" /> : <div className={cn("w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors", isSelected ? "bg-brand-primary/20 text-brand-primary" : "bg-white/5 text-white/40")} aria-hidden="true"><Sparkles className="w-5 h-5" /></div>}<div className="flex-1 min-w-0"><p className="font-medium text-sm text-white">{addon.name}</p>{addon.description && <p className="text-xs text-white/40 mt-0.5 truncate">{addon.description}</p>}</div><div className="flex items-center gap-2.5 flex-shrink-0"><span className={cn("font-bold text-xs sm:text-sm", isSelected ? "text-brand-primary" : "text-white/70")}>+{formatCurrency(addon.price)}</span><div className={cn("w-6 h-6 rounded-full flex items-center justify-center border transition-all", isSelected ? "bg-brand-primary border-brand-primary text-white shadow-sm" : "border-white/20 text-white/30")} aria-hidden="true">{isSelected ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}</div></div></div></button>; })}</div></div>}
+
+      <div>
+        <h2 className="text-lg font-bold mb-1 flex items-center gap-2">
+          <Palette className="w-5 h-5 text-brand-primary" aria-hidden="true" />
+          Escolha os Recheios
+        </h2>
+        <p className="text-white/50 text-sm mb-4">
+          Selecione ate {maxFillings} recheio{maxFillings > 1 ? "s" : ""} ({selectedFillings.length}/{maxFillings} selecionado{selectedFillings.length !== 1 ? "s" : ""})
+        </p>
+
+        <div className="space-y-2">
+          {fillings.map((filling) => {
+            const isSelected = selectedFillings.some((f) => f.id === filling.id);
+            return (
+              <button
+                key={filling.id}
+                onClick={() => handleFillingClick(filling)}
+                className={cn("selection-card w-full text-left", isSelected && "selected")}
+                id={`filling-${filling.id}`}
+                aria-pressed={isSelected}
+              >
+                <div className="flex items-center gap-3">
+                  {filling.imageUrl && (
+                    <img
+                      src={filling.imageUrl}
+                      alt={filling.name}
+                      className="w-12 h-12 rounded-lg object-cover"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-sm">{filling.name}</p>
+                      {filling.isSpecial && (
+                        <span className="badge badge-special text-[10px]">
+                          <Star className="w-2.5 h-2.5" aria-hidden="true" /> Especial
+                        </span>
+                      )}
+                    </div>
+                    {filling.additionalPrice > 0 && (
+                      <p className="text-xs text-brand-secondary mt-0.5">+{formatCurrency(filling.additionalPrice)}</p>
+                    )}
+                  </div>
+                  <div className={cn(
+                    "w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all",
+                    isSelected ? "bg-brand-primary border-brand-primary" : "border-white/20"
+                  )} aria-hidden="true">
+                    {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {addons.length > 0 && (
+        <div>
+          <h2 className="text-lg font-bold mb-1 flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-brand-primary" aria-hidden="true" />
+            Adicionais
+          </h2>
+          <p className="text-white/50 text-sm mb-4">Itens opcionais para complementar sua encomenda</p>
+
+          <div className="space-y-2">
+            {addons.map((addon) => {
+              const isSelected = selectedAddons.some((a) => a.id === addon.id);
+              return (
+                <button
+                  key={addon.id}
+                  onClick={() => onToggleAddon(addon)}
+                  className={cn("selection-card w-full text-left", isSelected && "selected")}
+                  id={`addon-${addon.id}`}
+                  aria-pressed={isSelected}
+                >
+                  <div className="flex items-center gap-3">
+                    {addon.imageUrl ? (
+                      <img src={addon.imageUrl} alt="" className="w-11 h-11 rounded-lg object-cover flex-shrink-0" />
+                    ) : (
+                      <div className={cn(
+                        "w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors",
+                        isSelected ? "bg-brand-primary/20 text-brand-primary" : "bg-white/5 text-white/40"
+                      )} aria-hidden="true">
+                        <Sparkles className="w-5 h-5" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm text-white">{addon.name}</p>
+                      {addon.description && (
+                        <p className="text-xs text-white/40 mt-0.5 truncate">{addon.description}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2.5 flex-shrink-0">
+                      <span className={cn("font-bold text-xs sm:text-sm", isSelected ? "text-brand-primary" : "text-white/70")}>
+                        +{formatCurrency(addon.price)}
+                      </span>
+                      <div className={cn(
+                        "w-6 h-6 rounded-full flex items-center justify-center border transition-all",
+                        isSelected ? "bg-brand-primary border-brand-primary text-white shadow-sm" : "border-white/20 text-white/30"
+                      )} aria-hidden="true">
+                        {isSelected ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -558,24 +782,487 @@ function CustomFieldsForm({ fields, state, onChange }: { fields: CustomFieldData
   if (fields.length === 0) return null;
   const answers = state.customFieldAnswers ?? {};
   const updateAnswer = (id: string, value: string) => onChange({ customFieldAnswers: { ...answers, [id]: value } });
-  return <fieldset className="glass-card p-4 space-y-4"><legend className="px-1 text-sm font-semibold text-white/90">Informações do seu evento</legend><p className="text-xs text-white/50">Estes campos são configurados pelo ateliê para esta encomenda.</p>{fields.map((field) => { const inputId = `custom-field-${field.id}`; const value = answers[field.id] ?? ""; return <div key={field.id}><label htmlFor={inputId} className="block text-sm font-medium mb-2 text-white/80">{field.label}{field.required ? <span className="text-brand-secondary"> *</span> : null}</label>{field.type === "select" ? <select id={inputId} required={field.required} value={value} onChange={(event) => updateAnswer(field.id, event.target.value)} className="input-field"><option value="">Selecione uma opção</option>{field.options.map((option) => <option key={option} value={option}>{option}</option>)}</select> : <input id={inputId} type={field.type === "number" ? "number" : "text"} inputMode={field.type === "number" ? "decimal" : undefined} required={field.required} maxLength={field.type === "text" ? CUSTOM_TEXT_MAX : undefined} value={value} onChange={(event) => updateAnswer(field.id, event.target.value)} className="input-field" aria-describedby={field.type === "text" ? `${inputId}-help` : undefined} />}{field.type === "text" && <p id={`${inputId}-help`} className="text-[11px] text-white/40 mt-1.5">Até {CUSTOM_TEXT_MAX} caracteres · {value.length}/{CUSTOM_TEXT_MAX}</p>}</div>; })}<p className="text-[11px] text-white/40">* Campos obrigatórios. O servidor valida estas respostas antes de confirmar o pedido.</p></fieldset>;
+
+  return (
+    <fieldset className="glass-card p-4 space-y-4">
+      <legend className="px-1 text-sm font-semibold text-white/90">Informações do seu evento</legend>
+      <p className="text-xs text-white/50">Estes campos são configurados pelo ateliê para esta encomenda.</p>
+      {fields.map((field) => {
+        const inputId = `custom-field-${field.id}`;
+        const value = answers[field.id] ?? "";
+        return (
+          <div key={field.id}>
+            <label htmlFor={inputId} className="block text-sm font-medium mb-2 text-white/80">
+              {field.label}{field.required ? <span className="text-brand-secondary"> *</span> : null}
+            </label>
+            {field.type === "select" ? (
+              <select id={inputId} required={field.required} value={value} onChange={(event) => updateAnswer(field.id, event.target.value)} className="input-field">
+                <option value="">Selecione uma opção</option>
+                {field.options.map((option) => <option key={option} value={option}>{option}</option>)}
+              </select>
+            ) : (
+              <input
+                id={inputId}
+                type={field.type === "number" ? "number" : "text"}
+                inputMode={field.type === "number" ? "decimal" : undefined}
+                required={field.required}
+                maxLength={field.type === "text" ? CUSTOM_TEXT_MAX : undefined}
+                value={value}
+                onChange={(event) => updateAnswer(field.id, event.target.value)}
+                className="input-field"
+                aria-describedby={field.type === "text" ? `${inputId}-help` : undefined}
+              />
+            )}
+            {field.type === "text" && <p id={`${inputId}-help`} className="text-[11px] text-white/40 mt-1.5">Até {CUSTOM_TEXT_MAX} caracteres · {value.length}/{CUSTOM_TEXT_MAX}</p>}
+          </div>
+        );
+      })}
+      <p className="text-[11px] text-white/40">* Campos obrigatórios. O servidor valida estas respostas antes de confirmar o pedido.</p>
+    </fieldset>
+  );
 }
 
-function StepDetails({ state, customFields, onChange, allowUpload }: { state: SimulatorState; customFields: CustomFieldData[]; onChange: (updates: Partial<SimulatorState>) => void; allowUpload: boolean }) {
+function StepDetails({
+  state,
+  customFields,
+  onChange,
+  allowUpload,
+}: {
+  state: SimulatorState;
+  customFields: CustomFieldData[];
+  onChange: (updates: Partial<SimulatorState>) => void;
+  allowUpload: boolean;
+}) {
   const [isDragging, setIsDragging] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
-  const [urlDraft, setUrlDraft] = useState(() => state.referenceImage && !state.referenceImage.startsWith("data:") ? state.referenceImage : "");
-  const handleFileProcess = (file: File) => { const validation = validateImageFileMetadata(file); if (!validation.ok) { setImageError(validation.message); return; } setImageError(null); const reader = new FileReader(); reader.onload = (e) => { if (e.target?.result) { setUrlDraft(""); onChange({ referenceImage: e.target.result as string }); } }; reader.readAsDataURL(file); };
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => { const file = e.target.files?.[0]; if (file) handleFileProcess(file); e.target.value = ""; };
-  const handleDrop = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); const file = e.dataTransfer.files?.[0]; if (file) handleFileProcess(file); };
-  const validateUrlDraft = () => { if (!urlDraft.trim()) { setImageError(null); onChange({ referenceImage: null }); return; } const validation = validateImageReference(urlDraft); if (!validation.ok || validation.kind !== "url") { setImageError(validation.ok ? "Use uma URL HTTPS válida." : validation.message); return; } setImageError(null); setUrlDraft(validation.value); onChange({ referenceImage: validation.value }); };
-  return <div className="space-y-6"><h2 className="text-lg font-bold mb-1 flex items-center gap-2"><FileText className="w-5 h-5 text-brand-primary" aria-hidden="true" />Detalhes do Pedido</h2><p className="text-white/50 text-sm mb-5">Informações adicionais para personalizar seu bolo</p><CustomFieldsForm fields={customFields} state={state} onChange={onChange} /><div><label htmlFor="input-cake-message" className="block text-sm font-medium mb-2 text-white/80">Mensagem / Placa do Bolo</label><input type="text" value={state.cakeMessage} onChange={(e) => onChange({ cakeMessage: e.target.value })} placeholder='Ex: "Parabéns Maria - 30 anos"' className="input-field" id="input-cake-message" maxLength={ORDER_TEXT_LIMITS.cakeMessage} aria-describedby="input-cake-message-help" /><p id="input-cake-message-help" className="text-[11px] text-white/40 mt-1.5">Até {ORDER_TEXT_LIMITS.cakeMessage} caracteres · {state.cakeMessage.length}/{ORDER_TEXT_LIMITS.cakeMessage}</p></div><div><label htmlFor="input-details" className="block text-sm font-medium mb-2 text-white/80">Observações adicionais</label><textarea value={state.details} onChange={(e) => onChange({ details: e.target.value })} placeholder="Descreva detalhes da decoração, tema, alergias, etc." rows={3} className="input-field resize-none" id="input-details" maxLength={ORDER_TEXT_LIMITS.details} aria-describedby="input-details-help" /><p id="input-details-help" className="text-[11px] text-white/40 mt-1.5">Até {ORDER_TEXT_LIMITS.details} caracteres · {state.details.length}/{ORDER_TEXT_LIMITS.details}</p></div>{allowUpload && <div><p className="block text-sm font-medium mb-2 text-white/80" id="photo-reference-label">Foto de Referência (opcional)</p>{state.referenceImage ? <div className="glass-card p-4 flex items-center justify-between gap-4" aria-labelledby="photo-reference-label"><div className="flex items-center gap-3 min-w-0"><img src={state.referenceImage} alt="Foto de referência" referrerPolicy="no-referrer" className="w-16 h-16 rounded-lg object-cover border border-white/10 flex-shrink-0" /><div className="min-w-0"><p className="text-sm font-medium text-white/90">Foto de referência enviada</p><p className="text-xs text-success flex items-center gap-1 mt-0.5"><Check className="w-3.5 h-3.5" aria-hidden="true" /> Pronta para o pedido</p></div></div><button type="button" onClick={() => { setImageError(null); setUrlDraft(""); onChange({ referenceImage: null }); }} className="p-2 rounded-lg bg-error/15 text-error hover:bg-error/25 transition-colors text-xs flex items-center gap-1 flex-shrink-0" id="btn-remove-photo"><X className="w-4 h-4" aria-hidden="true" />Remover</button></div> : <div className="space-y-3"><label onDrop={handleDrop} onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }} onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }} className={cn("glass-card p-6 text-center border-2 border-dashed transition-all cursor-pointer block", isDragging ? "border-brand-primary bg-brand-primary/10 scale-[1.01]" : "border-white/10 hover:border-brand-primary/40 hover:bg-white/5")} id="dropzone-photo" tabIndex={0} role="button" aria-labelledby="photo-reference-label" aria-describedby="photo-reference-help photo-reference-error" onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); document.getElementById("input-file-photo")?.click(); } }}><input type="file" accept={SUPPORTED_IMAGE_MIME_TYPES.join(",")} onChange={handleFileSelect} className="hidden" id="input-file-photo" tabIndex={-1} /><Upload className="w-8 h-8 text-white/40 mx-auto mb-2" aria-hidden="true" /><p className="text-sm font-medium text-white/80">Clique aqui ou arraste uma foto para enviar</p><p className="text-xs text-white/40 mt-1" id="photo-reference-help">{imageUploadHelpText()}</p></label><div className="relative flex items-center justify-center my-2" aria-hidden="true"><div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5" /></div><span className="relative px-3 text-[11px] text-white/30 bg-surface-900">ou insira o link</span></div><label htmlFor="input-reference-url" className="sr-only">URL da imagem de referência</label><input type="url" value={urlDraft} onChange={(e) => { setUrlDraft(e.target.value); setImageError(null); if (!e.target.value) onChange({ referenceImage: null }); }} onBlur={validateUrlDraft} placeholder="Cole a URL da imagem de referência (ex: https://...)" className={cn("input-field text-xs", imageError && "border-error/60 focus:border-error")} id="input-reference-url" aria-invalid={imageError ? true : undefined} aria-describedby="photo-reference-help photo-reference-error" />{imageError && <p id="photo-reference-error" className="text-xs text-error mt-1.5" role="alert">{imageError}</p>}</div>}</div>}</div>;
+  const [urlDraft, setUrlDraft] = useState(() =>
+    state.referenceImage && !state.referenceImage.startsWith("data:") ? state.referenceImage : ""
+  );
+
+  const handleFileProcess = (file: File) => {
+    const validation = validateImageFileMetadata(file);
+    if (!validation.ok) {
+      setImageError(validation.message);
+      return;
+    }
+
+    setImageError(null);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        setUrlDraft("");
+        onChange({ referenceImage: e.target.result as string });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFileProcess(file);
+    e.target.value = "";
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFileProcess(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const validateUrlDraft = () => {
+    if (!urlDraft.trim()) {
+      setImageError(null);
+      onChange({ referenceImage: null });
+      return;
+    }
+
+    const validation = validateImageReference(urlDraft);
+    if (!validation.ok || validation.kind !== "url") {
+      setImageError(validation.ok ? "Use uma URL HTTPS válida." : validation.message);
+      return;
+    }
+
+    setImageError(null);
+    setUrlDraft(validation.value);
+    onChange({ referenceImage: validation.value });
+  };
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-lg font-bold mb-1 flex items-center gap-2">
+        <FileText className="w-5 h-5 text-brand-primary" aria-hidden="true" />
+        Detalhes do Pedido
+      </h2>
+      <p className="text-white/50 text-sm mb-5">Informações adicionais para personalizar seu bolo</p>
+
+      <CustomFieldsForm fields={customFields} state={state} onChange={onChange} />
+
+      <div>
+        <label htmlFor="input-cake-message" className="block text-sm font-medium mb-2 text-white/80">
+          Mensagem / Placa do Bolo
+        </label>
+        <input
+          type="text"
+          value={state.cakeMessage}
+          onChange={(e) => onChange({ cakeMessage: e.target.value })}
+          placeholder='Ex: "Parabéns Maria - 30 anos"'
+          className="input-field"
+          id="input-cake-message"
+          maxLength={ORDER_TEXT_LIMITS.cakeMessage}
+          aria-describedby="input-cake-message-help"
+        />
+        <p id="input-cake-message-help" className="text-[11px] text-white/40 mt-1.5">
+          Até {ORDER_TEXT_LIMITS.cakeMessage} caracteres · {state.cakeMessage.length}/{ORDER_TEXT_LIMITS.cakeMessage}
+        </p>
+      </div>
+
+      <div>
+        <label htmlFor="input-details" className="block text-sm font-medium mb-2 text-white/80">
+          Observações adicionais
+        </label>
+        <textarea
+          value={state.details}
+          onChange={(e) => onChange({ details: e.target.value })}
+          placeholder="Descreva detalhes da decoração, tema, alergias, etc."
+          rows={3}
+          className="input-field resize-none"
+          id="input-details"
+          maxLength={ORDER_TEXT_LIMITS.details}
+          aria-describedby="input-details-help"
+        />
+        <p id="input-details-help" className="text-[11px] text-white/40 mt-1.5">
+          Até {ORDER_TEXT_LIMITS.details} caracteres · {state.details.length}/{ORDER_TEXT_LIMITS.details}
+        </p>
+      </div>
+
+      {allowUpload && (
+        <div>
+          <p className="block text-sm font-medium mb-2 text-white/80" id="photo-reference-label">
+            Foto de Referência (opcional)
+          </p>
+
+          {state.referenceImage ? (
+            <div className="glass-card p-4 flex items-center justify-between gap-4" aria-labelledby="photo-reference-label">
+              <div className="flex items-center gap-3 min-w-0">
+                <img
+                  src={state.referenceImage}
+                  alt="Foto de referência"
+                  referrerPolicy="no-referrer"
+                  className="w-16 h-16 rounded-lg object-cover border border-white/10 flex-shrink-0"
+                />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-white/90">Foto de referência enviada</p>
+                  <p className="text-xs text-success flex items-center gap-1 mt-0.5">
+                    <Check className="w-3.5 h-3.5" aria-hidden="true" /> Pronta para o pedido
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setImageError(null);
+                  setUrlDraft("");
+                  onChange({ referenceImage: null });
+                }}
+                className="p-2 rounded-lg bg-error/15 text-error hover:bg-error/25 transition-colors text-xs flex items-center gap-1 flex-shrink-0"
+                id="btn-remove-photo"
+              >
+                <X className="w-4 h-4" aria-hidden="true" />
+                Remover
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <label
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                className={cn(
+                  "glass-card p-6 text-center border-2 border-dashed transition-all cursor-pointer block",
+                  isDragging
+                    ? "border-brand-primary bg-brand-primary/10 scale-[1.01]"
+                    : "border-white/10 hover:border-brand-primary/40 hover:bg-white/5"
+                )}
+                id="dropzone-photo"
+                tabIndex={0}
+                role="button"
+                aria-labelledby="photo-reference-label"
+                aria-describedby="photo-reference-help photo-reference-error"
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    document.getElementById("input-file-photo")?.click();
+                  }
+                }}
+              >
+                <input
+                  type="file"
+                  accept={SUPPORTED_IMAGE_MIME_TYPES.join(",")}
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  id="input-file-photo"
+                  tabIndex={-1}
+                />
+                <Upload className="w-8 h-8 text-white/40 mx-auto mb-2" aria-hidden="true" />
+                <p className="text-sm font-medium text-white/80">
+                  Clique aqui ou arraste uma foto para enviar
+                </p>
+                <p className="text-xs text-white/40 mt-1" id="photo-reference-help">{imageUploadHelpText()}</p>
+              </label>
+
+              <div className="relative flex items-center justify-center my-2" aria-hidden="true">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5" /></div>
+                <span className="relative px-3 text-[11px] text-white/30 bg-surface-900">ou insira o link</span>
+              </div>
+
+              <label htmlFor="input-reference-url" className="sr-only">URL da imagem de referência</label>
+              <input
+                type="url"
+                value={urlDraft}
+                onChange={(e) => {
+                  setUrlDraft(e.target.value);
+                  setImageError(null);
+                  if (!e.target.value) onChange({ referenceImage: null });
+                }}
+                onBlur={validateUrlDraft}
+                placeholder="Cole a URL da imagem de referência (ex: https://...)"
+                className={cn("input-field text-xs", imageError && "border-error/60 focus:border-error")}
+                id="input-reference-url"
+                aria-invalid={imageError ? true : undefined}
+                aria-describedby="photo-reference-help photo-reference-error"
+              />
+              {imageError && (
+                <p id="photo-reference-error" className="text-xs text-error mt-1.5" role="alert">
+                  {imageError}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
-function StepSummary({ state, tenant, customFields, total, deposit, copied, onCopyPix, onSendWhatsApp, onChange }: { state: SimulatorState; tenant: TenantFullData["tenant"]; customFields: CustomFieldData[]; total: number; deposit: number; copied: boolean; onCopyPix: () => void; onSendWhatsApp: () => void; onChange: (updates: Partial<SimulatorState>) => void }) {
+function StepSummary({
+  state,
+  tenant,
+  customFields,
+  total,
+  deposit,
+  copied,
+  onCopyPix,
+  onSendWhatsApp,
+  onChange,
+}: {
+  state: SimulatorState;
+  tenant: TenantFullData["tenant"];
+  customFields: CustomFieldData[];
+  total: number;
+  deposit: number;
+  copied: boolean;
+  onCopyPix: () => void;
+  onSendWhatsApp: () => void;
+  onChange: (updates: Partial<SimulatorState>) => void;
+}) {
   const phoneInvalid = Boolean(state.customerPhone) && !isValidPhoneBR(state.customerPhone);
   const nameInvalid = state.customerName.trim().length > ORDER_TEXT_LIMITS.customerName;
   const answers = state.customFieldAnswers ?? {};
   const customFieldsComplete = customFields.every((field) => !field.required || Boolean(answers[field.id]?.trim()));
-  return <div className="space-y-6"><h2 className="text-lg font-bold mb-1 flex items-center gap-2"><ClipboardCheck className="w-5 h-5 text-brand-primary" aria-hidden="true" />Resumo do Pedido</h2><p className="text-white/50 text-sm">Confira os detalhes antes de enviar</p><div className="space-y-3"><div><label htmlFor="input-name" className="block text-sm font-medium mb-2 text-white/80 flex items-center gap-1.5"><User className="w-3.5 h-3.5" aria-hidden="true" /> Seu Nome</label><input type="text" value={state.customerName} onChange={(e) => onChange({ customerName: e.target.value })} placeholder="Nome completo" className={cn("input-field", nameInvalid && "border-error/60 focus:border-error")} id="input-name" maxLength={ORDER_TEXT_LIMITS.customerName} aria-invalid={nameInvalid || undefined} aria-describedby="input-name-help" /><p id="input-name-help" className="text-[11px] text-white/40 mt-1.5">Até {ORDER_TEXT_LIMITS.customerName} caracteres · {state.customerName.length}/{ORDER_TEXT_LIMITS.customerName}</p></div><div><label htmlFor="input-phone" className="block text-sm font-medium mb-2 text-white/80 flex items-center gap-1.5"><Phone className="w-3.5 h-3.5" aria-hidden="true" /> Seu WhatsApp</label><input type="tel" value={state.customerPhone} onChange={(e) => onChange({ customerPhone: formatPhoneBR(e.target.value) })} placeholder="(11) 99999-9999" className={cn("input-field", phoneInvalid && "border-error/60 focus:border-error")} id="input-phone" aria-invalid={phoneInvalid || undefined} aria-describedby={phoneInvalid ? "input-phone-error" : undefined} />{phoneInvalid && <p id="input-phone-error" className="text-xs text-error mt-1.5 flex items-center gap-1" role="alert">Informe um telefone/WhatsApp válido com DDD (ex: (11) 99999-9999)</p>}</div></div><div className="glass-card p-4 space-y-3"><h3 className="font-semibold text-sm text-white/80 mb-3">Detalhamento</h3><div className="flex justify-between text-sm"><span className="text-white/50">Data do evento</span><span>{state.eventDate ? new Date(state.eventDate + "T12:00:00").toLocaleDateString("pt-BR") : "-"}</span></div><div className="flex justify-between text-sm"><span className="text-white/50">Tamanho</span><span>{state.cakeSize?.name} ({state.cakeSize?.servings})</span></div><div className="flex justify-between text-sm"><span className="text-white/50">Massa</span><span>{state.dough?.name}{state.dough && state.dough.additionalPrice > 0 && <span className="text-brand-secondary ml-1">+{formatCurrency(state.dough.additionalPrice)}</span>}</span></div>{state.fillings.length > 0 && <div><span className="text-sm text-white/50 block mb-1">Recheios</span>{state.fillings.map((f) => <div key={f.id} className="flex justify-between text-sm pl-3"><span>{f.name}</span>{f.additionalPrice > 0 && <span className="text-brand-secondary">+{formatCurrency(f.additionalPrice)}</span>}</div>)}</div>}{state.addons.length > 0 && <div><span className="text-sm text-white/50 block mb-1">Adicionais</span>{state.addons.map((a) => <div key={a.id} className="flex justify-between text-sm pl-3"><span>{a.name}</span><span className="text-brand-secondary">+{formatCurrency(a.price)}</span></div>)}</div>}{customFields.some((field) => answers[field.id]?.trim()) && <div><span className="text-sm text-white/50 block mb-1">Informações personalizadas</span>{customFields.filter((field) => answers[field.id]?.trim()).map((field) => <div key={field.id} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] gap-3 text-sm pl-3"><span className="text-white/50 break-words">{field.label}</span><span className="text-right break-words">{answers[field.id]}</span></div>)}</div>}{state.cakeMessage && <div className="flex justify-between text-sm"><span className="text-white/50">Placa</span><span className="text-right max-w-[60%] truncate">&quot;{state.cakeMessage}&quot;</span></div>}<div className="border-t border-white/10 pt-3 mt-3"><div className="flex justify-between text-sm"><span className="text-white/50">Base ({state.cakeSize?.name})</span><span>{formatCurrency(state.cakeSize?.basePrice || 0)}</span></div><div className="flex justify-between font-bold text-lg mt-2"><span>Total estimado</span><span className="text-gradient">{formatCurrency(total)}</span></div>{tenant.featuresConfig.deposit_mode === "50_percent" && <div className="flex justify-between text-sm mt-1 text-brand-secondary"><span className="flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" /> Sinal estimado (50%)</span><span className="font-semibold">{formatCurrency(deposit)}</span></div>}<p className="text-[11px] text-white/40 mt-2">Disponibilidade e valores finais são confirmados pelo servidor ao enviar o pedido.</p></div></div>{tenant.pixKey && deposit > 0 && <div className="glass-card p-4"><p className="text-sm font-medium mb-2 text-white/80" id="pix-key-label">Chave PIX para pagamento</p><div className="flex items-center gap-2"><code className="flex-1 bg-white/5 px-3 py-2 rounded-lg text-sm text-white/70 truncate" id="pix-key-value">{tenant.pixKey}</code><button onClick={onCopyPix} className={cn("p-2.5 rounded-lg transition-all flex-shrink-0", copied ? "bg-success text-white" : "bg-white/10 hover:bg-white/20 text-white/60")} id="btn-copy-pix" aria-label={copied ? "Chave PIX copiada" : "Copiar chave PIX"} aria-describedby="pix-key-value pix-copy-status">{copied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}</button></div><span id="pix-copy-status" className="sr-only" aria-live="polite">{copied ? "Chave PIX copiada para a área de transferência" : ""}</span></div>}<button onClick={onSendWhatsApp} disabled={!state.customerName.trim() || nameInvalid || !isValidPhoneBR(state.customerPhone) || !customFieldsComplete} className="btn-primary w-full py-4 text-base" id="btn-send-whatsapp"><MessageCircle className="w-5 h-5" aria-hidden="true" />Enviar Pedido no WhatsApp</button></div>;
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-lg font-bold mb-1 flex items-center gap-2">
+        <ClipboardCheck className="w-5 h-5 text-brand-primary" aria-hidden="true" />
+        Resumo do Pedido
+      </h2>
+      <p className="text-white/50 text-sm">Confira os detalhes antes de enviar</p>
+
+      <div className="space-y-3">
+        <div>
+          <label htmlFor="input-name" className="block text-sm font-medium mb-2 text-white/80 flex items-center gap-1.5">
+            <User className="w-3.5 h-3.5" aria-hidden="true" /> Seu Nome
+          </label>
+          <input
+            type="text"
+            value={state.customerName}
+            onChange={(e) => onChange({ customerName: e.target.value })}
+            placeholder="Nome completo"
+            className={cn("input-field", nameInvalid && "border-error/60 focus:border-error")}
+            id="input-name"
+            maxLength={ORDER_TEXT_LIMITS.customerName}
+            aria-invalid={nameInvalid || undefined}
+            aria-describedby="input-name-help"
+          />
+          <p id="input-name-help" className="text-[11px] text-white/40 mt-1.5">
+            Até {ORDER_TEXT_LIMITS.customerName} caracteres · {state.customerName.length}/{ORDER_TEXT_LIMITS.customerName}
+          </p>
+        </div>
+        <div>
+          <label htmlFor="input-phone" className="block text-sm font-medium mb-2 text-white/80 flex items-center gap-1.5">
+            <Phone className="w-3.5 h-3.5" aria-hidden="true" /> Seu WhatsApp
+          </label>
+          <input
+            type="tel"
+            value={state.customerPhone}
+            onChange={(e) => {
+              const formatted = formatPhoneBR(e.target.value);
+              onChange({ customerPhone: formatted });
+            }}
+            placeholder="(11) 99999-9999"
+            className={cn(
+              "input-field",
+              phoneInvalid && "border-error/60 focus:border-error"
+            )}
+            id="input-phone"
+            aria-invalid={phoneInvalid || undefined}
+            aria-describedby={phoneInvalid ? "input-phone-error" : undefined}
+          />
+          {phoneInvalid && (
+            <p id="input-phone-error" className="text-xs text-error mt-1.5 flex items-center gap-1" role="alert">
+              Informe um telefone/WhatsApp válido com DDD (ex: (11) 99999-9999)
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="glass-card p-4 space-y-3">
+        <h3 className="font-semibold text-sm text-white/80 mb-3">Detalhamento</h3>
+
+        <div className="flex justify-between text-sm">
+          <span className="text-white/50">Data do evento</span>
+          <span>
+            {state.eventDate
+              ? new Date(state.eventDate + "T12:00:00").toLocaleDateString("pt-BR")
+              : "-"}
+          </span>
+        </div>
+
+        <div className="flex justify-between text-sm">
+          <span className="text-white/50">Tamanho</span>
+          <span>{state.cakeSize?.name} ({state.cakeSize?.servings})</span>
+        </div>
+
+        <div className="flex justify-between text-sm">
+          <span className="text-white/50">Massa</span>
+          <span>
+            {state.dough?.name}
+            {state.dough && state.dough.additionalPrice > 0 && (
+              <span className="text-brand-secondary ml-1">+{formatCurrency(state.dough.additionalPrice)}</span>
+            )}
+          </span>
+        </div>
+
+        {state.fillings.length > 0 && (
+          <div>
+            <span className="text-sm text-white/50 block mb-1">Recheios</span>
+            {state.fillings.map((f) => (
+              <div key={f.id} className="flex justify-between text-sm pl-3">
+                <span>{f.name}</span>
+                {f.additionalPrice > 0 && (
+                  <span className="text-brand-secondary">+{formatCurrency(f.additionalPrice)}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {state.addons.length > 0 && (
+          <div>
+            <span className="text-sm text-white/50 block mb-1">Adicionais</span>
+            {state.addons.map((a) => (
+              <div key={a.id} className="flex justify-between text-sm pl-3">
+                <span>{a.name}</span>
+                <span className="text-brand-secondary">+{formatCurrency(a.price)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {customFields.some((field) => answers[field.id]?.trim()) && (
+          <div>
+            <span className="text-sm text-white/50 block mb-1">Informações personalizadas</span>
+            {customFields.filter((field) => answers[field.id]?.trim()).map((field) => (
+              <div key={field.id} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] gap-3 text-sm pl-3">
+                <span className="text-white/50 break-words">{field.label}</span>
+                <span className="text-right break-words">{answers[field.id]}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {state.cakeMessage && (
+          <div className="flex justify-between text-sm">
+            <span className="text-white/50">Placa</span>
+            <span className="text-right max-w-[60%] truncate">&quot;{state.cakeMessage}&quot;</span>
+          </div>
+        )}
+
+        <div className="border-t border-white/10 pt-3 mt-3">
+          <div className="flex justify-between text-sm">
+            <span className="text-white/50">Base ({state.cakeSize?.name})</span>
+            <span>{formatCurrency(state.cakeSize?.basePrice || 0)}</span>
+          </div>
+          <div className="flex justify-between font-bold text-lg mt-2">
+            <span>Total estimado</span>
+            <span className="text-gradient">{formatCurrency(total)}</span>
+          </div>
+          {tenant.featuresConfig.deposit_mode === "50_percent" && (
+            <div className="flex justify-between text-sm mt-1 text-brand-secondary">
+              <span className="flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" /> Sinal estimado (50%)
+              </span>
+              <span className="font-semibold">{formatCurrency(deposit)}</span>
+            </div>
+          )}
+          <p className="text-[11px] text-white/40 mt-2">Disponibilidade e valores finais são confirmados pelo servidor ao enviar o pedido.</p>
+        </div>
+      </div>
+
+      {tenant.pixKey && deposit > 0 && (
+        <div className="glass-card p-4">
+          <p className="text-sm font-medium mb-2 text-white/80" id="pix-key-label">Chave PIX para pagamento</p>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 bg-white/5 px-3 py-2 rounded-lg text-sm text-white/70 truncate" id="pix-key-value">
+              {tenant.pixKey}
+            </code>
+            <button
+              onClick={onCopyPix}
+              className={cn(
+                "p-2.5 rounded-lg transition-all flex-shrink-0",
+                copied ? "bg-success text-white" : "bg-white/10 hover:bg-white/20 text-white/60"
+              )}
+              id="btn-copy-pix"
+              aria-label={copied ? "Chave PIX copiada" : "Copiar chave PIX"}
+              aria-describedby="pix-key-value pix-copy-status"
+            >
+              {copied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}
+            </button>
+          </div>
+          <span id="pix-copy-status" className="sr-only" aria-live="polite">{copied ? "Chave PIX copiada para a área de transferência" : ""}</span>
+        </div>
+      )}
+
+      <button
+        onClick={onSendWhatsApp}
+        disabled={!state.customerName.trim() || nameInvalid || !isValidPhoneBR(state.customerPhone) || !customFieldsComplete}
+        className="btn-primary w-full py-4 text-base"
+        id="btn-send-whatsapp"
+      >
+        <MessageCircle className="w-5 h-5" aria-hidden="true" />
+        Enviar Pedido no WhatsApp
+      </button>
+    </div>
+  );
 }
