@@ -2,7 +2,12 @@ import { Prisma } from "@prisma/client";
 import { normalizePersistedFeaturesConfig } from "@/lib/features-config";
 import { validateImageReference } from "@/lib/image-reference";
 import { prisma } from "@/lib/prisma";
-import { calendarLeadDays, normalizeBrazilianPhone } from "@/lib/order-validation";
+import {
+  ORDER_TEXT_LIMITS,
+  calendarLeadDays,
+  normalizeBrazilianPhone,
+  orderTextWithinLimit,
+} from "@/lib/order-validation";
 import { consumeRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
 
@@ -88,6 +93,8 @@ export async function POST(request: Request) {
     }
 
     const customerName = typeof body.customerName === "string" ? body.customerName.trim() : "";
+    const cakeMessage = typeof body.cakeMessage === "string" ? body.cakeMessage.trim() : "";
+    const details = typeof body.details === "string" ? body.details.trim() : "";
     const customerPhoneRaw = typeof body.customerPhone === "string" ? body.customerPhone.trim() : "";
     const customerPhone = normalizeBrazilianPhone(customerPhoneRaw);
     const eventDate = typeof body.eventDate === "string" ? body.eventDate.trim() : "";
@@ -106,6 +113,15 @@ export async function POST(request: Request) {
     }
     if (!tenantId || !customerName || !eventDate || !cakeSizeId || !flavorId || !fillingIds || !addonIds) {
       return reject(400, "INVALID_REQUEST", "Campos obrigatórios ausentes ou inválidos");
+    }
+    if (!orderTextWithinLimit(customerName, ORDER_TEXT_LIMITS.customerName)) {
+      return reject(422, "CUSTOMER_NAME_TOO_LONG", `O nome do cliente deve ter no máximo ${ORDER_TEXT_LIMITS.customerName} caracteres`);
+    }
+    if (!orderTextWithinLimit(cakeMessage, ORDER_TEXT_LIMITS.cakeMessage)) {
+      return reject(422, "CAKE_MESSAGE_TOO_LONG", `A mensagem do bolo deve ter no máximo ${ORDER_TEXT_LIMITS.cakeMessage} caracteres`);
+    }
+    if (!orderTextWithinLimit(details, ORDER_TEXT_LIMITS.details)) {
+      return reject(422, "ORDER_DETAILS_TOO_LONG", `As observações devem ter no máximo ${ORDER_TEXT_LIMITS.details} caracteres`);
     }
     if (!customerPhone) {
       return reject(400, "INVALID_CUSTOMER_PHONE", "Informe um telefone/WhatsApp válido com DDD");
@@ -194,8 +210,8 @@ export async function POST(request: Request) {
             fillingIds: JSON.stringify(fillingIds),
             addonIds: JSON.stringify(addonIds),
             referenceImageUrl: referenceImage.value,
-            cakeMessage: typeof body.cakeMessage === "string" ? body.cakeMessage.trim() : "",
-            details: typeof body.details === "string" ? body.details.trim() : "",
+            cakeMessage,
+            details,
             subtotal,
             depositAmount,
             depositMode: mode,
