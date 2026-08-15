@@ -1,19 +1,27 @@
-import 'dotenv/config';
-import { prisma } from '../src/lib/prisma';
-import bcryptjs from 'bcryptjs';
-import crypto from 'crypto';
+import "dotenv/config";
+import bcryptjs from "bcryptjs";
+import crypto from "crypto";
+
+import { getBusinessQuickDate } from "../src/lib/business-calendar";
+import { assertDemoSeedAllowed } from "../src/lib/demo-seed-guard";
+import { prisma } from "../src/lib/prisma";
 
 function uuid() {
   return crypto.randomUUID();
 }
 
 async function main() {
+  const preflight = assertDemoSeedAllowed();
+  console.log(`[DEMO SEED] Explicit opt-in accepted for target ${preflight.targetDatabase}`);
+  console.log("[DEMO SEED] Replacing only the synthetic tenant slug 'doce-arte'.");
+
   await prisma.tenant.deleteMany({
-    where: { slug: 'doce-arte' }
+    where: { slug: "doce-arte" },
   });
 
   const tenantId = uuid();
-  const adminHash = bcryptjs.hashSync("admin123", 10);
+  const demoAdminPassword = process.env.LMERE_DEMO_ADMIN_PASSWORD || "admin123";
+  const adminHash = bcryptjs.hashSync(demoAdminPassword, 10);
 
   await prisma.tenant.create({
     data: {
@@ -27,7 +35,7 @@ async function main() {
       primaryColor: "#8B5CF6",
       secondaryColor: "#EC4899",
       backgroundColor: "#0F0A1A",
-      buttonColor: "#8B5CF6",
+      buttonColor: "#7C3AED",
       textColor: "#FFFFFF",
       adminPasswordHash: adminHash,
       maxOrdersPerDay: 5,
@@ -36,8 +44,8 @@ async function main() {
         deposit_mode: "50_percent",
         enable_delivery_step: false,
         custom_fields: [],
-      })
-    }
+      }),
+    },
   });
 
   const sizes = [
@@ -48,21 +56,21 @@ async function main() {
   ];
 
   const sizeIds: Record<string, string> = {};
-  for (const s of sizes) {
+  for (const size of sizes) {
     const id = uuid();
-    sizeIds[s.name] = id;
+    sizeIds[size.name] = id;
     await prisma.cakeSize.create({
       data: {
         id,
         tenantId,
-        name: s.name,
-        servings: s.servings,
-        weightKg: s.weightKg,
-        basePrice: s.basePrice,
-        maxFillings: s.maxFillings,
-        sortOrder: s.sortOrder,
+        name: size.name,
+        servings: size.servings,
+        weightKg: size.weightKg,
+        basePrice: size.basePrice,
+        maxFillings: size.maxFillings,
+        sortOrder: size.sortOrder,
         active: true,
-      }
+      },
     });
   }
 
@@ -82,21 +90,21 @@ async function main() {
   ];
 
   const flavorIds: Record<string, string> = {};
-  for (const f of flavors) {
+  for (const flavor of flavors) {
     const id = uuid();
-    flavorIds[f.name] = id;
+    flavorIds[flavor.name] = id;
     await prisma.cakeFlavor.create({
       data: {
         id,
         tenantId,
-        name: f.name,
-        type: f.type,
-        additionalPrice: f.additionalPrice,
-        isSpecial: f.isSpecial,
-        imageUrl: f.imageUrl,
-        sortOrder: f.sortOrder,
+        name: flavor.name,
+        type: flavor.type,
+        additionalPrice: flavor.additionalPrice,
+        isSpecial: flavor.isSpecial,
+        imageUrl: flavor.imageUrl,
+        sortOrder: flavor.sortOrder,
         active: true,
-      }
+      },
     });
   }
 
@@ -109,165 +117,74 @@ async function main() {
     { name: "Velas Personalizadas", description: "Kit de velas com número da idade", price: 15, imageUrl: "https://images.unsplash.com/photo-1558636508-e0db3814bd1d?w=300&h=300&fit=crop", sortOrder: 5 },
   ];
 
-  for (const a of addons) {
+  for (const addon of addons) {
     await prisma.addon.create({
       data: {
         id: uuid(),
         tenantId,
-        name: a.name,
-        description: a.description,
-        price: a.price,
-        imageUrl: a.imageUrl,
-        sortOrder: a.sortOrder,
+        name: addon.name,
+        description: addon.description,
+        price: addon.price,
+        imageUrl: addon.imageUrl,
+        sortOrder: addon.sortOrder,
         active: true,
-      }
+      },
     });
   }
 
-  const weekdays = [
-    { dayOfWeek: 0, isOpen: false },
-    { dayOfWeek: 1, isOpen: true },
-    { dayOfWeek: 2, isOpen: true },
-    { dayOfWeek: 3, isOpen: true },
-    { dayOfWeek: 4, isOpen: true },
-    { dayOfWeek: 5, isOpen: true },
-    { dayOfWeek: 6, isOpen: true },
-  ];
-
-  for (const w of weekdays) {
+  for (const [dayOfWeek, isOpen] of [false, true, true, true, true, true, true].entries()) {
     await prisma.workSchedule.create({
-      data: {
-        id: uuid(),
-        tenantId,
-        dayOfWeek: w.dayOfWeek,
-        isOpen: w.isOpen,
-      }
+      data: { id: uuid(), tenantId, dayOfWeek, isOpen },
     });
   }
 
-  const today = new Date();
-  const dateStr = (offsetDays: number) => {
-    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + offsetDays);
-    return d.toISOString().split("T")[0];
-  };
-
-  const blockedDates = [dateStr(3), dateStr(7), dateStr(14)];
-  for (const d of blockedDates) {
+  const dateStr = (offsetDays: number) => getBusinessQuickDate(offsetDays);
+  for (const date of [dateStr(3), dateStr(7), dateStr(14)]) {
     await prisma.blockedDate.create({
-      data: {
-        id: uuid(),
-        tenantId,
-        date: d,
-        reason: "Agenda Lotada",
-      }
+      data: { id: uuid(), tenantId, date, reason: "Agenda Lotada" },
     });
   }
 
   const mockOrders = [
-    {
-      name: "Juliana Costa",
-      phone: "11988776655",
-      eventDate: dateStr(2),
-      sizeId: sizeIds["Médio"],
-      flavorId: flavorIds["Red Velvet"],
-      fillings: [flavorIds["Ninho com Nutella"]],
-      addons: [],
-      msg: "Parabéns Ju 30 Anos",
-      details: "Bolo com acabamento espatulado floral",
-      subtotal: 234.90,
-      deposit: 117.45,
-      status: "PENDING",
-    },
-    {
-      name: "Mariana Silva",
-      phone: "11998877665",
-      eventDate: dateStr(4),
-      sizeId: sizeIds["Pequeno"],
-      flavorId: flavorIds["Baunilha"],
-      fillings: [flavorIds["Brigadeiro"]],
-      addons: [],
-      msg: "Festa da Mari",
-      details: "Laço rosa de fita na embalagem",
-      subtotal: 139.90,
-      deposit: 69.95,
-      status: "APPROVED",
-    },
-    {
-      name: "Lucas Andrade",
-      phone: "11977665544",
-      eventDate: dateStr(5),
-      sizeId: sizeIds["Grande"],
-      flavorId: flavorIds["Chocolate"],
-      fillings: [flavorIds["Frutas Vermelhas"]],
-      addons: [],
-      msg: "Festa de 1 Aninho",
-      details: "Decoração temática safari",
-      subtotal: 304.90,
-      deposit: 152.45,
-      status: "IN_PRODUCTION",
-    },
-    {
-      name: "Camila Rodrigues",
-      phone: "11966554433",
-      eventDate: dateStr(1),
-      sizeId: sizeIds["Mini Bolo"],
-      flavorId: flavorIds["Baunilha"],
-      fillings: [flavorIds["Doce de Leite"]],
-      addons: [],
-      msg: "Com Carinho",
-      details: "Entregar até às 14h",
-      subtotal: 89.90,
-      deposit: 44.95,
-      status: "READY",
-    },
-    {
-      name: "Fernanda Oliveira",
-      phone: "11955443322",
-      eventDate: dateStr(-1),
-      sizeId: sizeIds["Médio"],
-      flavorId: flavorIds["Red Velvet"],
-      fillings: [flavorIds["Pistache"]],
-      addons: [],
-      msg: "Casamento Fernanda & Thiago",
-      details: "Bolo de 2 andares decorado",
-      subtotal: 269.90,
-      deposit: 134.95,
-      status: "DELIVERED",
-    },
+    { name: "Juliana Costa", phone: "11988776655", eventDate: dateStr(2), sizeId: sizeIds["Médio"], flavorId: flavorIds["Red Velvet"], fillings: [flavorIds["Ninho com Nutella"]], msg: "Parabéns Ju 30 Anos", details: "Bolo com acabamento espatulado floral", subtotal: 234.90, deposit: 117.45, status: "pending" },
+    { name: "Mariana Silva", phone: "11998877665", eventDate: dateStr(4), sizeId: sizeIds["Pequeno"], flavorId: flavorIds["Baunilha"], fillings: [flavorIds["Brigadeiro"]], msg: "Festa da Mari", details: "Laço rosa de fita na embalagem", subtotal: 139.90, deposit: 69.95, status: "confirmed" },
+    { name: "Lucas Andrade", phone: "11977665544", eventDate: dateStr(5), sizeId: sizeIds["Grande"], flavorId: flavorIds["Chocolate"], fillings: [flavorIds["Frutas Vermelhas"]], msg: "Festa de 1 Aninho", details: "Decoração temática safari", subtotal: 304.90, deposit: 152.45, status: "confirmed" },
+    { name: "Camila Rodrigues", phone: "11966554433", eventDate: dateStr(1), sizeId: sizeIds["Mini Bolo"], flavorId: flavorIds["Baunilha"], fillings: [flavorIds["Doce de Leite"]], msg: "Com Carinho", details: "Entregar até às 14h", subtotal: 89.90, deposit: 44.95, status: "completed" },
+    { name: "Fernanda Oliveira", phone: "11955443322", eventDate: dateStr(-1), sizeId: sizeIds["Médio"], flavorId: flavorIds["Red Velvet"], fillings: [flavorIds["Pistache"]], msg: "Casamento Fernanda & Thiago", details: "Bolo de 2 andares decorado", subtotal: 269.90, deposit: 134.95, status: "cancelled" },
   ];
 
-  for (const o of mockOrders) {
+  for (const order of mockOrders) {
     await prisma.order.create({
       data: {
         id: uuid(),
         tenantId,
-        customerName: o.name,
-        customerPhone: o.phone,
-        eventDate: o.eventDate,
-        cakeSizeId: o.sizeId,
-        flavorId: o.flavorId,
-        fillingIds: JSON.stringify(o.fillings),
-        addonIds: JSON.stringify(o.addons),
+        customerName: order.name,
+        customerPhone: order.phone,
+        eventDate: order.eventDate,
+        cakeSizeId: order.sizeId,
+        flavorId: order.flavorId,
+        fillingIds: JSON.stringify(order.fillings),
+        addonIds: "[]",
         referenceImageUrl: "",
-        cakeMessage: o.msg,
-        details: o.details,
-        subtotal: o.subtotal,
-        depositAmount: o.deposit,
+        cakeMessage: order.msg,
+        details: order.details,
+        subtotal: order.subtotal,
+        depositAmount: order.deposit,
         depositMode: "50_percent",
-        status: o.status,
-      }
+        status: order.status,
+      },
     });
   }
 
-  console.log("[SUCCESS] Seed completed. Demo tenant and mock orders created:");
+  console.log("[SUCCESS] Synthetic demo tenant and mock orders created.");
   console.log("  Name: Doce Arte Confeitaria");
   console.log("  Slug: doce-arte");
-  console.log("  Admin Password: admin123");
+  console.log("  Admin credential: configured for demo use (value intentionally not logged)");
 }
 
 main()
-  .catch(e => {
-    console.error(e);
+  .catch((error) => {
+    console.error(error instanceof Error ? error.message : "Demo seed failed");
     process.exit(1);
   })
   .finally(async () => {

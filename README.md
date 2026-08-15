@@ -133,11 +133,14 @@ npm ci
 cp .env.example .env
 npm run db:generate
 npm run db:migrate
-npm run db:seed   # optional local/demo data
+# Optional destructive synthetic demo data, local/disposable database only:
+LMERE_ALLOW_DEMO_SEED=true npm run db:seed
 npm run dev
 ```
 
 Set `POSTGRES_PRISMA_URL` to your development database and replace the placeholder `ADMIN_SESSION_SECRET` with unique secret material. Never commit real credentials.
+
+`npm run db:seed` is **not** a production/bootstrap step. It deliberately replaces the synthetic `doce-arte` tenant and installs a known demo-only admin credential, so the command fails closed in `NODE_ENV=production` and requires `LMERE_ALLOW_DEMO_SEED=true` before the destructive seed process is launched. The preflight prints only `host[:port]/database`; usernames, passwords and connection query parameters are never echoed. Production/bootstrap uses `npm run db:migrate` only.
 
 ### Quality commands
 
@@ -151,9 +154,9 @@ For the complete disposable-PostgreSQL CI contract, see [`docs/QUALITY.md`](docs
 ### Database commands
 
 - `npm run db:generate` — generate Prisma Client.
-- `npm run db:migrate` — apply committed migrations with `prisma migrate deploy`.
+- `npm run db:migrate` — apply committed migrations with `prisma migrate deploy`; this is the production/bootstrap database command.
 - `npm run db:validate` — validate Prisma schema/config.
-- `npm run db:seed` — optional development seed.
+- `LMERE_ALLOW_DEMO_SEED=true npm run db:seed` — optional **destructive synthetic** local/demo seed; refused in production and without explicit opt-in.
 - `npm run db:push` — development-only schema synchronization; not the CI/production bootstrap strategy.
 
 ## Quality evidence
