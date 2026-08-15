@@ -3,7 +3,7 @@ import { expect, test, type Page, type TestInfo } from "@playwright/test";
 function retryDate(testInfo: TestInfo) {
   const projectOffset = testInfo.project.name.includes("mobile") ? 1 : 0;
   const retryOffset = testInfo.retry * 2;
-  const date = new Date(Date.UTC(2035, 0, 9 + 7 * (projectOffset + retryOffset)));
+  const date = new Date(Date.UTC(2030, 1, 13 + 7 * (30 + projectOffset + retryOffset)));
   return { year: date.getUTCFullYear(), month: date.getUTCMonth(), day: date.getUTCDate() };
 }
 
