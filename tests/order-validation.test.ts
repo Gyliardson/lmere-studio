@@ -1,6 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { businessDateOrdinal, businessDateParts, calendarLeadDays, normalizeBrazilianPhone } from "../src/lib/order-validation";
+import {
+  ORDER_TEXT_LIMITS,
+  businessDateOrdinal,
+  businessDateParts,
+  calendarLeadDays,
+  normalizeBrazilianPhone,
+  orderTextWithinLimit,
+} from "../src/lib/order-validation";
 
 test("normalizes Brazilian phones with or without country code", () => {
   assert.equal(normalizeBrazilianPhone("(11) 99999-9999"), "11999999999");
@@ -12,6 +19,13 @@ test("rejects malformed Brazilian phone shapes", () => {
   assert.equal(normalizeBrazilianPhone("123"), null);
   assert.equal(normalizeBrazilianPhone("00 99999-9999"), null);
   assert.equal(normalizeBrazilianPhone("+55 00 99999-9999"), null);
+});
+
+test("public order text bounds accept the boundary and reject boundary plus one", () => {
+  for (const maxLength of Object.values(ORDER_TEXT_LIMITS)) {
+    assert.equal(orderTextWithinLimit("x".repeat(maxLength), maxLength), true);
+    assert.equal(orderTextWithinLimit("x".repeat(maxLength + 1), maxLength), false);
+  }
 });
 
 test("business date uses America/Sao_Paulo across the UTC rollover", () => {

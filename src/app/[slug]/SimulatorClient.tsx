@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import type { TenantFullData, SimulatorState, CakeFlavorData, AddonData, CakeSizeData } from "@/lib/types";
 import { calculateOrderTotal, calculateDeposit, formatCurrency } from "@/lib/pricing";
+import { ORDER_TEXT_LIMITS } from "@/lib/order-validation";
 import { buildWhatsAppMessage, openWhatsApp } from "@/lib/whatsapp";
 import { copyToClipboard, cn, getDateString, isDateBlocked, getDaysInMonth, getFirstDayOfMonth, hexToHsl, hexToRgb, formatPhoneBR, isValidPhoneBR } from "@/lib/utils";
 import {
@@ -71,7 +72,9 @@ export function SimulatorClient({ slug }: { slug: string }) {
       case 2: return !!state.cakeSize;
       case 3: return !!state.dough && state.fillings.length > 0;
       case 4: return true;
-      case 5: return !!state.customerName?.trim() && isValidPhoneBR(state.customerPhone);
+      case 5: return !!state.customerName?.trim()
+        && state.customerName.trim().length <= ORDER_TEXT_LIMITS.customerName
+        && isValidPhoneBR(state.customerPhone);
       default: return false;
     }
   };
@@ -859,7 +862,12 @@ function StepDetails({
           placeholder='Ex: "Parabéns Maria - 30 anos"'
           className="input-field"
           id="input-cake-message"
+          maxLength={ORDER_TEXT_LIMITS.cakeMessage}
+          aria-describedby="input-cake-message-help"
         />
+        <p id="input-cake-message-help" className="text-[11px] text-white/40 mt-1.5">
+          Até {ORDER_TEXT_LIMITS.cakeMessage} caracteres · {state.cakeMessage.length}/{ORDER_TEXT_LIMITS.cakeMessage}
+        </p>
       </div>
 
       <div>
@@ -873,7 +881,12 @@ function StepDetails({
           rows={3}
           className="input-field resize-none"
           id="input-details"
+          maxLength={ORDER_TEXT_LIMITS.details}
+          aria-describedby="input-details-help"
         />
+        <p id="input-details-help" className="text-[11px] text-white/40 mt-1.5">
+          Até {ORDER_TEXT_LIMITS.details} caracteres · {state.details.length}/{ORDER_TEXT_LIMITS.details}
+        </p>
       </div>
 
       {allowUpload && (
@@ -1005,6 +1018,7 @@ function StepSummary({
   onChange: (updates: Partial<SimulatorState>) => void;
 }) {
   const phoneInvalid = Boolean(state.customerPhone) && !isValidPhoneBR(state.customerPhone);
+  const nameInvalid = state.customerName.trim().length > ORDER_TEXT_LIMITS.customerName;
 
   return (
     <div className="space-y-6">
@@ -1024,9 +1038,15 @@ function StepSummary({
             value={state.customerName}
             onChange={(e) => onChange({ customerName: e.target.value })}
             placeholder="Nome completo"
-            className="input-field"
+            className={cn("input-field", nameInvalid && "border-error/60 focus:border-error")}
             id="input-name"
+            maxLength={ORDER_TEXT_LIMITS.customerName}
+            aria-invalid={nameInvalid || undefined}
+            aria-describedby="input-name-help"
           />
+          <p id="input-name-help" className="text-[11px] text-white/40 mt-1.5">
+            Até {ORDER_TEXT_LIMITS.customerName} caracteres · {state.customerName.length}/{ORDER_TEXT_LIMITS.customerName}
+          </p>
         </div>
         <div>
           <label htmlFor="input-phone" className="block text-sm font-medium mb-2 text-white/80 flex items-center gap-1.5">
@@ -1163,7 +1183,7 @@ function StepSummary({
 
       <button
         onClick={onSendWhatsApp}
-        disabled={!state.customerName.trim() || !isValidPhoneBR(state.customerPhone)}
+        disabled={!state.customerName.trim() || nameInvalid || !isValidPhoneBR(state.customerPhone)}
         className="btn-primary w-full py-4 text-base"
         id="btn-send-whatsapp"
       >
