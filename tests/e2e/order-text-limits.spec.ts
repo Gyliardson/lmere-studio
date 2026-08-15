@@ -1,5 +1,8 @@
+import { createHmac } from "node:crypto";
 import { expect, test, type APIRequestContext } from "@playwright/test";
 
+const SESSION_SECRET = process.env.ADMIN_SESSION_SECRET || "lmere-ci-admin-session-secret-at-least-32-bytes";
+const SESSION_COOKIE = "lmere_admin_session";
 const baseOrder = {
   tenantId: "ci-tenant-a",
   customerName: "Text Limit Test",
@@ -11,20 +14,20 @@ const baseOrder = {
   addonIds: [],
 };
 
-async function adminToken(request: APIRequestContext) {
-  const login = await request.post("/api/admin/auth", {
-    data: { slug: "ci-tenant-a", password: "ci-admin-password" },
-  });
-  expect(login.status()).toBe(200);
-  const token = (login.headers()["set-cookie"] ?? "").match(/lmere_admin_session=([^;]+)/)?.[1];
-  expect(token).toBeTruthy();
-  return token!;
+function adminToken() {
+  const payload = Buffer.from(JSON.stringify({
+    version: 1,
+    tenantId: "ci-tenant-a",
+    expiresAt: Math.floor(Date.now() / 1000) + 3600,
+    sessionVersion: 0,
+  }), "utf8").toString("base64url");
+  const signature = createHmac("sha256", SESSION_SECRET).update(payload).digest("base64url");
+  return `${payload}.${signature}`;
 }
 
 async function orderCount(request: APIRequestContext) {
-  const token = await adminToken(request);
   const response = await request.get("/api/admin/orders", {
-    headers: { cookie: `lmere_admin_session=${token}` },
+    headers: { cookie: `${SESSION_COOKIE}=${adminToken()}` },
   });
   expect(response.status()).toBe(200);
   const body = await response.json();
