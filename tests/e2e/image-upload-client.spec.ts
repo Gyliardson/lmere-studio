@@ -82,8 +82,9 @@ test.describe("bounded image upload clients", () => {
     await reachReferenceStep(page, testInfo);
 
     const input = page.locator("#input-file-photo");
+    const validationAlert = page.locator("#photo-reference-error");
     await input.setInputFiles({ name: "reference.gif", mimeType: "image/gif", buffer: Buffer.from("GIF89a") });
-    await expect(page.getByRole("alert")).toContainText("Use uma imagem PNG, JPG ou WEBP.");
+    await expect(validationAlert).toContainText("Use uma imagem PNG, JPG ou WEBP.");
     expect(await fileReaderCount(page)).toBe(0);
 
     await input.setInputFiles({
@@ -91,7 +92,7 @@ test.describe("bounded image upload clients", () => {
       mimeType: "image/png",
       buffer: Buffer.alloc(IMAGE_REFERENCE_LIMITS.maxBytes + 1, 0x41),
     });
-    await expect(page.getByRole("alert")).toContainText("no máximo 2 MB");
+    await expect(validationAlert).toContainText("no máximo 2 MB");
     expect(await fileReaderCount(page)).toBe(0);
     await expect(page.getByText("PNG, JPG ou WEBP até 2 MB")).toBeVisible();
   });
@@ -99,10 +100,11 @@ test.describe("bounded image upload clients", () => {
   test("storefront validates URL before committing external preview", async ({ page }, testInfo) => {
     await reachReferenceStep(page, testInfo);
     const urlInput = page.locator("#input-reference-url");
+    const validationAlert = page.locator("#photo-reference-error");
 
     await urlInput.fill("http://images.example.test/reference.png");
     await urlInput.blur();
-    await expect(page.getByRole("alert")).toContainText("URL HTTPS");
+    await expect(validationAlert).toContainText("URL HTTPS");
     await expect(urlInput).toHaveAttribute("aria-invalid", "true");
     await expect(page.getByAltText("Foto de referência")).toHaveCount(0);
 
