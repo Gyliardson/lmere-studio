@@ -12,15 +12,17 @@
 }
 
 /*
- * Legacy muted copy used very low white alpha values that look intentional on the
- * dark glass UI but fall below WCAG AA for normal text. The persisted theme now
- * guarantees brand-text against brand-bg, so that validated foreground is the
- * safe authority for readable copy on both dark and light white-label themes.
+ * Legacy muted copy used low white alpha values that look intentional on dark
+ * glass but fall below WCAG AA for normal text. The persisted theme guarantees
+ * brand-text against brand-bg, so that validated foreground is the safe
+ * authority for readable copy on both dark and light white-label themes.
  */
 .text-white\/30,
 .text-white\/40,
 .text-white\/50,
-.text-white\/60 {
+.text-white\/60,
+.text-white\/70,
+.text-white\/80 {
   color: var(--color-brand-text) !important;
 }
 
@@ -40,10 +42,12 @@
   color: var(--color-error) !important;
 }
 
+.btn-primary,
 button.bg-brand-primary.text-white,
 button[aria-current="page"].bg-brand-primary.text-white,
 button[aria-pressed="true"].bg-brand-primary.text-white {
   background-color: var(--color-brand-button) !important;
+  color: #fff !important;
 }
 
 #simulator-root button:not(:disabled) {
