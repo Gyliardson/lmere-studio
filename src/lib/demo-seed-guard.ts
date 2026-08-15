@@ -20,7 +20,9 @@ export function safeDatabaseIdentity(rawUrl: string): string {
     throw new Error("POSTGRES_PRISMA_URL must identify a database host");
   }
 
-  const database = decodeURIComponent(parsed.pathname.replace(/^\/+/, ""));
+  // Keep the URL parser's percent-encoded pathname so control characters cannot
+  // become terminal/log injection when the safe target identity is printed.
+  const database = parsed.pathname.replace(/^\/+/, "");
   if (!database) {
     throw new Error("POSTGRES_PRISMA_URL must identify a database name");
   }
