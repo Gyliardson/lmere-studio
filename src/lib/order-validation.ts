@@ -1,5 +1,15 @@
 export const BUSINESS_TIME_ZONE = "America/Sao_Paulo";
+export const ORDER_TEXT_LIMITS = {
+  customerName: 120,
+  cakeMessage: 200,
+  details: 2000,
+} as const;
+
 const DAY_MS = 86_400_000;
+
+export function orderTextWithinLimit(value: string, maxLength: number) {
+  return value.length <= maxLength;
+}
 
 export function normalizeBrazilianPhone(value: string) {
   const digits = value.replace(/\D/g, "");
