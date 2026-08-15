@@ -2,6 +2,11 @@ import { expect, test } from "@playwright/test";
 
 const CI_PASSWORD = "ci-admin-password";
 const SESSION_COOKIE = "lmere_admin_session";
+const SESSION_TENANT = {
+  id: "ci-tenant-session",
+  slug: "ci-tenant-session",
+  name: "CI Session Tenant",
+} as const;
 
 function extractSessionCookie(setCookie: string): string {
   const match = setCookie.match(new RegExp(`${SESSION_COOKIE}=([^;]+)`));
@@ -24,14 +29,15 @@ test.describe("admin authentication API", () => {
   });
 
   test("login establishes a signed server session and logout expires the client cookie", async ({ request }) => {
+    // Logout mutates the tenant session generation. Keep that stateful contract
+    // isolated from Tenant A/B, whose fixed generation-zero cookies are used by
+    // unrelated authorization/integrity regressions in the same clean-room DB.
     const login = await request.post("/api/admin/auth", {
-      data: { slug: "ci-tenant-a", password: CI_PASSWORD },
+      data: { slug: SESSION_TENANT.slug, password: CI_PASSWORD },
     });
 
     expect(login.status()).toBe(200);
-    expect(await login.json()).toEqual({
-      tenant: { id: "ci-tenant-a", slug: "ci-tenant-a", name: "CI Tenant A" },
-    });
+    expect(await login.json()).toEqual({ tenant: SESSION_TENANT });
 
     const setCookie = login.headers()["set-cookie"] ?? "";
     expect(setCookie).toContain(`${SESSION_COOKIE}=`);
@@ -43,7 +49,7 @@ test.describe("admin authentication API", () => {
       headers: { cookie: sessionCookie },
     });
     expect(current.status()).toBe(200);
-    expect((await current.json()).tenant.id).toBe("ci-tenant-a");
+    expect((await current.json()).tenant.id).toBe(SESSION_TENANT.id);
 
     const logout = await request.delete("/api/admin/auth", {
       headers: { cookie: sessionCookie },
