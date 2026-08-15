@@ -10,7 +10,7 @@
 
 L'Mere Studio は、洋菓子店やケーキデザイナー向けのホワイトラベル型マルチテナント Web アプリケーションです。5 ステップの公開注文シミュレーターと、注文・商品・営業日・ブランド・テナント設定を管理する認証済み管理画面を提供します。
 
-> **ポートフォリオ品質改善中:** `portfolio/revamp-2026` は改善プログラムの統合ブランチです。この README は現在実装・検証されている内容だけを記載し、最終リリース認証は別の gate として扱います。
+> **ポートフォリオ向けエンジニアリング基盤:** このリポジトリは、下記の再現可能な品質 gate で検証されている実装済みの動作を記載します。デフォルトブランチへの昇格は引き続き手動レビューの判断です。
 
 ## 課題 → 解決策
 
@@ -129,9 +129,9 @@ CI/PostgreSQL の詳細は [`docs/QUALITY.md`](docs/QUALITY.md)、メディア�
 
 ## 品質証拠と制約
 
-現在の基盤は lint、typecheck、build、dependency audit、secret scan、unit test、空 PostgreSQL migration、Tenant A/B 分離、注文 negative path、idempotency/concurrency、管理セッション lifecycle、desktop/mobile Playwright、keyboard/focus/dialog/combobox 回帰、および手動確認される決定的 visual artifact を含みます。
+リポジトリの gate は lint、typecheck、build、dependency audit、到達可能な Git 履歴の secret scan、unit test、空 PostgreSQL migration、Tenant A/B 分離、注文 negative path、idempotency/concurrency、管理セッション lifecycle、desktop/mobile Playwright、keyboard/focus/dialog/combobox 回帰、および手動確認される決定的 visual artifact を含みます。
 
-これはリスク重視の回帰証拠であり、完全な WCAG 認証や最終 release certification を意味しません。Clean-room/deploy と branch protection は後続 gate で再検証します。
+これはリスク重視の回帰証拠であり、完全な WCAG 認証を意味しません。デフォルトブランチへの昇格は意図的に手動で、[`docs/RELEASE.md`](docs/RELEASE.md) の checklist に従います。branch protection / ruleset はアプリケーションの正当性とは別の governance 設定として release 時に再確認します。
 
 ## ライセンス
 
