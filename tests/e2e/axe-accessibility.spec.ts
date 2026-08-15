@@ -16,6 +16,11 @@ type AxeResults = {
 };
 
 async function expectNoSeriousOrCriticalAxeViolations(page: Page, label: string) {
+  // Motion behavior is exercised separately. Axe should inspect the stable
+  // interactive state rather than transient opacity during entrance transitions.
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.waitForTimeout(25);
+
   const axeSource = path.join(process.cwd(), "node_modules", "axe-core", "axe.min.js");
   await page.addScriptTag({ path: axeSource });
   const results = await page.evaluate(async () => {
@@ -97,7 +102,8 @@ test.describe("representative axe gate", () => {
 
   test("storefront error state has no serious or critical axe violations", async ({ page }, testInfo) => {
     await page.goto("/tenant-that-does-not-exist");
-    await expect(page.getByRole("alert")).toBeVisible();
+    const storefrontAlert = page.locator('[role="alert"]').filter({ hasText: "Ateliê não encontrado" });
+    await expect(storefrontAlert).toBeVisible();
     await expectNoSeriousOrCriticalAxeViolations(page, `${testInfo.project.name} storefront error`);
   });
 
