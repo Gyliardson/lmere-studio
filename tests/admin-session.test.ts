@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHmac } from "node:crypto";
 import test from "node:test";
 import {
   ADMIN_SESSION_COOKIE,
@@ -23,18 +24,13 @@ test("valid signed session preserves tenant, expiration and revocation generatio
 test("legacy signed session without an explicit generation defaults to zero", () => {
   const expiresAt = Math.floor(NOW / 1000) + ADMIN_SESSION_TTL_SECONDS;
   const payload = Buffer.from(JSON.stringify({ version: 1, tenantId: "tenant-a", expiresAt }), "utf8").toString("base64url");
-  const signature = createHmacForTest(payload);
+  const signature = createHmac("sha256", process.env.ADMIN_SESSION_SECRET!).update(payload).digest("base64url");
   assert.deepEqual(verifyAdminSessionToken(`${payload}.${signature}`, NOW), {
     tenantId: "tenant-a",
     expiresAt,
     sessionVersion: 0,
   });
 });
-
-function createHmacForTest(payload: string) {
-  const { createHmac } = require("node:crypto") as typeof import("node:crypto");
-  return createHmac("sha256", process.env.ADMIN_SESSION_SECRET!).update(payload).digest("base64url");
-}
 
 test("changed session content is rejected", () => {
   const token = createAdminSessionToken("tenant-a", NOW);
