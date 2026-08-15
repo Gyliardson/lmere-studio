@@ -21,14 +21,14 @@ async function adminToken(request: APIRequestContext) {
   return token!;
 }
 
-async function orderCount(request: APIRequestContext, customerName: string) {
+async function orderCount(request: APIRequestContext) {
   const token = await adminToken(request);
   const response = await request.get("/api/admin/orders", {
     headers: { cookie: `lmere_admin_session=${token}` },
   });
   expect(response.status()).toBe(200);
   const body = await response.json();
-  return body.orders.filter((order: { customerName: string }) => order.customerName === customerName).length;
+  return body.orders.length as number;
 }
 
 for (const field of [
@@ -37,19 +37,17 @@ for (const field of [
   { key: "details", limit: 2000, code: "ORDER_DETAILS_TOO_LONG" },
 ] as const) {
   test(`public order rejects ${field.key} above the server-owned limit without persistence`, async ({ request }) => {
-    const marker = `Reject-${field.key}-${test.info().project.name}`;
-    const customerName = field.key === "customerName" ? "x".repeat(field.limit + 1) : marker;
-    const before = field.key === "customerName" ? null : await orderCount(request, customerName);
+    const before = await orderCount(request);
     const response = await request.post("/api/orders", {
       data: {
         ...baseOrder,
-        customerName,
+        customerName: field.key === "customerName" ? "x".repeat(field.limit + 1) : `Reject-${field.key}-${test.info().project.name}`,
         [field.key]: "x".repeat(field.limit + 1),
       },
     });
     expect(response.status()).toBe(422);
     expect((await response.json()).code).toBe(field.code);
-    if (before !== null) expect(await orderCount(request, customerName)).toBe(before);
+    expect(await orderCount(request)).toBe(before);
   });
 }
 
