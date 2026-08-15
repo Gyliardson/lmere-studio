@@ -175,6 +175,29 @@ jobs:
       - name: Run PostgreSQL integration assertions
         run: npm run test:integration:db
 
+      - name: Prove demo seed refuses missing opt-in before destructive work
+        shell: bash
+        run: |
+          set +e
+          output=$(npm run db:seed 2>&1)
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ]; then
+            echo "Demo seed unexpectedly succeeded without LMERE_ALLOW_DEMO_SEED=true."
+            exit 1
+          fi
+          printf '%s\n' "$output" | grep -F "requires explicit opt-in"
+          if printf '%s\n' "$output" | grep -Eq 'postgres:postgres|@127\.0\.0\.1|sslmode='; then
+            echo "Demo seed refusal leaked connection credentials or query material."
+            exit 1
+          fi
+
+      - name: Prove explicitly opted-in demo seed on disposable PostgreSQL
+        env:
+          LMERE_ALLOW_DEMO_SEED: "true"
+          LMERE_DEMO_ADMIN_PASSWORD: "ci-synthetic-demo-password"
+        run: npm run db:seed
+
       - name: Build application for runtime smoke
         run: npm run build
 
@@ -202,6 +225,13 @@ jobs:
             exit 1
           fi
 
+          demo_status=$(curl --silent --output tenant-demo.json --write-out '%{http_code}' http://127.0.0.1:3000/api/tenants/doce-arte)
+          if [ "$demo_status" != "200" ]; then
+            echo "Explicitly opted-in demo seed was not queryable through the application."
+            cat tenant-demo.json
+            exit 1
+          fi
+
           node <<'NODE'
           const fs = require('node:fs');
           const payload = JSON.parse(fs.readFileSync('tenant-a.json', 'utf8'));
@@ -218,6 +248,10 @@ jobs:
           if (resourceIds.some((id) => String(id).endsWith('-b'))) {
             throw new Error('Tenant B resource leaked into Tenant A public response');
           }
+
+          const demo = JSON.parse(fs.readFileSync('tenant-demo.json', 'utf8'));
+          if (demo.tenant?.slug !== 'doce-arte') throw new Error('Expected explicitly seeded synthetic demo tenant');
+          if ('adminPasswordHash' in demo.tenant) throw new Error('Demo public tenant response exposed adminPasswordHash');
           NODE
 
           missing_status=$(curl --silent --output tenant-missing.json --write-out '%{http_code}' http://127.0.0.1:3000/api/tenants/ci-tenant-missing)
@@ -235,6 +269,7 @@ jobs:
           path: |
             next-server.log
             tenant-a.json
+            tenant-demo.json
             tenant-missing.json
           if-no-files-found: warn
           retention-days: 7
