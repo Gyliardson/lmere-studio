@@ -65,7 +65,7 @@ test("custom fields are keyboard-accessible, required and included in confirmed 
   await popup.waitForURL(/wa\.me/);
   const message = new URL(popup.url()).searchParams.get("text") ?? "";
   expect(message).toContain("Informações personalizadas");
-  expect(message).toContain("Tema da festa: Jardim encantado");
-  expect(message).toContain("Estilo: Moderno");
-  expect(message).toContain("Convidados extras: 12");
+  expect(message).toContain("*Tema da festa:* Jardim encantado");
+  expect(message).toContain("*Estilo:* Moderno");
+  expect(message).toContain("*Convidados extras:* 12");
 });
