@@ -34,6 +34,14 @@ test.describe("admin security boundaries", () => {
     expect(settingsUpdate.status()).toBe(401);
   });
 
+  test("public tenant payload omits admin authentication internals", async ({ request }) => {
+    const response = await request.get("/api/tenants/ci-tenant-a");
+    expect(response.status()).toBe(200);
+    const payload = await response.json();
+    expect(payload.tenant).not.toHaveProperty("adminPasswordHash");
+    expect(payload.tenant).not.toHaveProperty("adminSessionVersion");
+  });
+
   test("admin document blocks automatic external image requests", async ({ request }) => {
     const adminResponse = await request.get("/admin");
     expect(adminResponse.status()).toBe(200);
