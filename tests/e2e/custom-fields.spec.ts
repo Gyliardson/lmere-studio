@@ -56,7 +56,7 @@ test.describe("tenant custom fields", () => {
 
     for (const item of cases) {
       const response = await request.post("/api/orders", {
-        headers: { "Idempotency-Key": `custom-negative-${testInfo.project.name}-${item.name}` },
+        headers: { "Idempotency-Key": `custom-negative-${testInfo.project.name}-retry-${testInfo.retry}-${item.name}` },
         data: orderData({ customFieldAnswers: item.answers }),
       });
       expect(response.status(), item.name).toBe(422);
@@ -69,7 +69,7 @@ test.describe("tenant custom fields", () => {
 
   test("valid answers are normalized and preserved in the historical order snapshot", async ({ request }, testInfo) => {
     const response = await request.post("/api/orders", {
-      headers: { "Idempotency-Key": `custom-valid-${testInfo.project.name}` },
+      headers: { "Idempotency-Key": `custom-valid-${testInfo.project.name}-retry-${testInfo.retry}` },
       data: orderData(),
     });
     expect(response.status()).toBe(201);
@@ -91,7 +91,7 @@ test.describe("tenant custom fields", () => {
   test("admin CRUD is session-tenant scoped and rejects foreign IDs", async ({ request }, testInfo) => {
     const tenantAHeaders = authHeaders("ci-custom-a");
     const tenantBHeaders = authHeaders("ci-custom-b");
-    const label = `Preferência ${testInfo.project.name}`;
+    const label = `Preferência ${testInfo.project.name} retry ${testInfo.retry}`;
 
     const create = await request.post("/api/admin/custom-fields", {
       headers: tenantAHeaders,
