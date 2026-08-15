@@ -126,7 +126,8 @@ export interface SimulatorState {
   details: string;
   customerName: string;
   customerPhone: string;
-  customFieldAnswers: Record<string, string>;
+  /** Transitional optionality until the storefront form is wired in this issue. */
+  customFieldAnswers?: Record<string, string>;
 }
 
 export interface TenantFullData {
