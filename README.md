@@ -10,7 +10,7 @@
 
 L'Mere Studio is a white-label, multi-tenant web application for artisan bakeries and cake designers. It combines a five-step public order simulator with an authenticated admin dashboard for orders, catalog, schedule, branding and tenant configuration.
 
-> **Professionalization in progress:** `portfolio/revamp-2026` is the integration branch for the portfolio hardening program. The repository documents only behavior currently implemented and tested; final release certification remains a separate gate.
+> **Portfolio engineering baseline:** the repository documents behavior that is implemented and covered by the reproducible quality gates described below. Release promotion to the default branch remains a manual review decision.
 
 ## Problem → solution
 
@@ -158,10 +158,10 @@ For the complete disposable-PostgreSQL CI contract, see [`docs/QUALITY.md`](docs
 
 ## Quality evidence
 
-The current professionalization CI covers, among other gates:
+The repository-owned gates cover, among other checks:
 
 - ESLint, TypeScript and production build;
-- production dependency audit and read-only secret scanning;
+- production dependency audit and read-only full-history secret scanning;
 - unit tests for pricing, business dates, sessions, validation and configuration;
 - empty PostgreSQL migrations, deterministic Tenant A/B fixtures and relational assertions;
 - application smoke against disposable PostgreSQL;
@@ -188,10 +188,10 @@ This is risk-focused regression evidence, not a claim of complete WCAG certifica
 
 ## Limitations / release status
 
-- Final clean-room/deployment certification is tracked separately from day-to-day CI.
+- Promotion to the default branch is intentionally manual and requires the release checklist in [`docs/RELEASE.md`](docs/RELEASE.md).
 - Generated documentation media must be manually inspected before publication.
 - The accessibility suite is representative risk coverage, not comprehensive WCAG certification.
-- Repository branch/ruleset enforcement must be rechecked before final promotion.
+- Repository branch/ruleset enforcement is a governance setting outside application correctness and must be checked at release time.
 
 ## License
 

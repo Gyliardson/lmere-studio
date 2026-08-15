@@ -11,6 +11,7 @@ export async function GET(
 
     const tenant = await prisma.tenant.findUnique({
       where: { slug },
+      omit: { adminPasswordHash: true },
       include: {
         cakeSizes: { where: { active: true }, orderBy: { sortOrder: "asc" } },
         cakeFlavors: { where: { active: true }, orderBy: { sortOrder: "asc" } },
@@ -27,8 +28,7 @@ export async function GET(
       );
     }
 
-    const { adminPasswordHash, ...publicTenant } = tenant;
-    const featuresConfig = normalizePersistedFeaturesConfig(JSON.parse(publicTenant.featuresConfig) as unknown);
+    const featuresConfig = normalizePersistedFeaturesConfig(JSON.parse(tenant.featuresConfig) as unknown);
     if (!featuresConfig.ok) {
       console.error("[ERROR] Persisted tenant featuresConfig violates the server contract", tenant.id);
       return NextResponse.json({ error: "Configuração do ateliê inválida" }, { status: 500 });
@@ -39,8 +39,8 @@ export async function GET(
 
     return NextResponse.json({
       tenant: {
-        ...publicTenant,
-        shadowColor: (publicTenant as Record<string, unknown>).shadowColor || publicTenant.primaryColor || "#8B5CF6",
+        ...tenant,
+        shadowColor: tenant.shadowColor || tenant.primaryColor || "#8B5CF6",
         featuresConfig: featuresConfig.value,
       },
       sizes: tenant.cakeSizes,

@@ -10,7 +10,7 @@
 
 L'Mere Studio é uma aplicação white-label e multi-tenant para ateliês de confeitaria e cake designers. Combina um simulador público de encomendas em cinco etapas com um painel administrativo autenticado para pedidos, catálogo, agenda, marca e configurações do tenant.
 
-> **Profissionalização em andamento:** `portfolio/revamp-2026` é a branch de integração do programa. A documentação descreve apenas comportamento atualmente implementado/testado; a certificação final de release é uma etapa separada.
+> **Baseline de engenharia do portfólio:** a documentação descreve comportamento implementado e coberto pelos gates reproduzíveis de qualidade abaixo. A promoção para a branch padrão permanece uma decisão de revisão manual.
 
 ## Problema → solução
 
@@ -140,16 +140,16 @@ O contrato completo de CI/PostgreSQL está em [`docs/QUALITY.md`](docs/QUALITY.m
 
 ## Evidência de qualidade
 
-A fundação atual cobre lint, typecheck, build, audit de dependências, secret scan, unit tests, migrations em PostgreSQL vazio, fixtures Tenant A/B, assertions relacionais, smoke da aplicação, regras negativas de pedidos, idempotência/concurrency, isolamento multi-tenant admin, lifecycle de sessão, Playwright desktop/mobile, teclado/foco/dialog/combobox e artifacts visuais determinísticos inspecionados manualmente.
+Os gates do repositório cobrem lint, typecheck, build, audit de dependências, secret scan de histórico alcançável, unit tests, migrations em PostgreSQL vazio, fixtures Tenant A/B, assertions relacionais, smoke da aplicação, regras negativas de pedidos, idempotência/concurrency, isolamento multi-tenant admin, lifecycle de sessão, Playwright desktop/mobile, teclado/foco/dialog/combobox e artifacts visuais determinísticos inspecionados manualmente.
 
-Isso é cobertura de regressão orientada a risco, não certificação WCAG completa nem substituto da auditoria final de release.
+Isso é cobertura de regressão orientada a risco, não certificação WCAG completa nem substituto da revisão final de release.
 
 ## Status / limitações
 
-- Clean-room e deploy final ainda possuem gate próprio.
+- A promoção para a branch padrão é intencionalmente manual e segue o checklist de [`docs/RELEASE.md`](docs/RELEASE.md).
 - Mídia gerada precisa de inspeção manual antes de publicação.
 - Acessibilidade é coberta de forma representativa, não como certificação integral.
-- Proteção/rulesets das branches deve ser revalidada antes da promoção final.
+- Proteção/rulesets das branches é uma configuração de governança fora da correção da aplicação e deve ser revalidada no release.
 
 ## Licença
 

@@ -17,18 +17,16 @@ const validationError = (issues: ValidationIssue[]) => NextResponse.json({
 }, { status: 422 });
 
 function serializeSettings(tenant: {
-  adminPasswordHash: string;
   shadowColor: string;
   primaryColor: string;
   featuresConfig: string;
   [key: string]: unknown;
 }) {
-  const { adminPasswordHash: _adminPasswordHash, ...settings } = tenant;
   const rawFeatures = JSON.parse(tenant.featuresConfig) as unknown;
   const parsedFeatures = normalizePersistedFeaturesConfig(rawFeatures);
   if (!parsedFeatures.ok) throw new Error("Persisted featuresConfig violates the server contract");
   return {
-    ...settings,
+    ...tenant,
     shadowColor: tenant.shadowColor || tenant.primaryColor || "#8B5CF6",
     featuresConfig: parsedFeatures.value,
   };
@@ -50,7 +48,10 @@ export async function GET(request: Request) {
     const session = getAdminSession(request);
     if (!session) return unauthorized();
 
-    const tenant = await prisma.tenant.findUnique({ where: { id: session.tenantId } });
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: session.tenantId },
+      omit: { adminPasswordHash: true },
+    });
     if (!tenant) return unauthorized();
 
     return NextResponse.json({ settings: serializeSettings(tenant) });
@@ -80,6 +81,7 @@ export async function PUT(request: Request) {
     const tenant = await prisma.tenant.update({
       where: { id: session.tenantId },
       data: parsed.value,
+      omit: { adminPasswordHash: true },
     });
 
     return NextResponse.json({ settings: serializeSettings(tenant) });

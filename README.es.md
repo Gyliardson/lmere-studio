@@ -10,7 +10,7 @@
 
 L'Mere Studio es una aplicación white-label y multi-tenant para pastelerías artesanales y diseñadores de tartas. Combina un simulador público de pedidos en cinco pasos con un panel administrativo autenticado para pedidos, catálogo, agenda, marca y configuración del tenant.
 
-> **Profesionalización en curso:** `portfolio/revamp-2026` es la rama de integración del programa. La documentación solo describe comportamiento actualmente implementado y probado; la certificación final de release es un gate separado.
+> **Baseline de ingeniería del portfolio:** la documentación describe comportamiento implementado y cubierto por los gates reproducibles de calidad indicados abajo. La promoción a la rama por defecto sigue siendo una decisión de revisión manual.
 
 ## Problema → solución
 
@@ -120,9 +120,9 @@ Consulta [`docs/QUALITY.md`](docs/QUALITY.md) para el contrato completo de CI y 
 
 ## Evidencia y limitaciones
 
-La fundación actual cubre lint, typecheck, build, dependency audit, secret scan, tests unitarios, migraciones sobre PostgreSQL vacío, aislamiento Tenant A/B, reglas negativas de pedidos, idempotencia/concurrencia, lifecycle de sesión, Playwright desktop/mobile y regresiones de teclado/foco/dialog/combobox con artifacts visuales deterministas inspeccionados manualmente.
+Los gates del repositorio cubren lint, typecheck, build, dependency audit, secret scan del historial alcanzable, tests unitarios, migraciones sobre PostgreSQL vacío, aislamiento Tenant A/B, reglas negativas de pedidos, idempotencia/concurrencia, lifecycle de sesión, Playwright desktop/mobile y regresiones de teclado/foco/dialog/combobox con artifacts visuales deterministas inspeccionados manualmente.
 
-Esto es cobertura orientada a riesgo, no certificación WCAG completa ni certificación final de release. Clean-room/deploy y protección de branches se validan en fases posteriores.
+Esto es cobertura orientada a riesgo, no certificación WCAG completa. La promoción a la rama por defecto es intencionalmente manual y sigue el checklist de [`docs/RELEASE.md`](docs/RELEASE.md); la protección/rulesets de branches es una configuración de gobernanza que se revalida en el release.
 
 ## Licencia
 
