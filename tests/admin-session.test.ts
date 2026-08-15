@@ -11,18 +11,35 @@ import {
 process.env.ADMIN_SESSION_SECRET = "x".repeat(40);
 const NOW = Date.UTC(2026, 7, 13, 12, 0, 0);
 
-test("valid signed session preserves tenant and expiration", () => {
-  const token = createAdminSessionToken("tenant-a", NOW);
+test("valid signed session preserves tenant, expiration and revocation generation", () => {
+  const token = createAdminSessionToken("tenant-a", NOW, 7);
   assert.deepEqual(verifyAdminSessionToken(token, NOW + 1_000), {
     tenantId: "tenant-a",
     expiresAt: Math.floor(NOW / 1000) + ADMIN_SESSION_TTL_SECONDS,
+    sessionVersion: 7,
   });
 });
+
+test("legacy signed session without an explicit generation defaults to zero", () => {
+  const expiresAt = Math.floor(NOW / 1000) + ADMIN_SESSION_TTL_SECONDS;
+  const payload = Buffer.from(JSON.stringify({ version: 1, tenantId: "tenant-a", expiresAt }), "utf8").toString("base64url");
+  const signature = createHmacForTest(payload);
+  assert.deepEqual(verifyAdminSessionToken(`${payload}.${signature}`, NOW), {
+    tenantId: "tenant-a",
+    expiresAt,
+    sessionVersion: 0,
+  });
+});
+
+function createHmacForTest(payload: string) {
+  const { createHmac } = require("node:crypto") as typeof import("node:crypto");
+  return createHmac("sha256", process.env.ADMIN_SESSION_SECRET!).update(payload).digest("base64url");
+}
 
 test("changed session content is rejected", () => {
   const token = createAdminSessionToken("tenant-a", NOW);
   const signature = token.split(".")[1];
-  const changed = Buffer.from(JSON.stringify({ version: 1, tenantId: "tenant-b", expiresAt: Math.floor(NOW / 1000) + 3600 })).toString("base64url");
+  const changed = Buffer.from(JSON.stringify({ version: 1, tenantId: "tenant-b", expiresAt: Math.floor(NOW / 1000) + 3600, sessionVersion: 0 })).toString("base64url");
   assert.equal(verifyAdminSessionToken(`${changed}.${signature}`, NOW), null);
 });
 
@@ -34,11 +51,15 @@ test("expired and malformed sessions are rejected", () => {
 });
 
 test("request session is read from the admin cookie", () => {
-  const token = createAdminSessionToken("tenant-a", NOW);
+  const token = createAdminSessionToken("tenant-a", NOW, 2);
   const request = new Request("http://localhost/api/admin/orders", {
     headers: { cookie: `other=value; ${ADMIN_SESSION_COOKIE}=${encodeURIComponent(token)}` },
   });
-  assert.equal(getAdminSession(request, NOW)?.tenantId, "tenant-a");
+  assert.deepEqual(getAdminSession(request, NOW), {
+    tenantId: "tenant-a",
+    expiresAt: Math.floor(NOW / 1000) + ADMIN_SESSION_TTL_SECONDS,
+    sessionVersion: 2,
+  });
   assert.equal(getAdminSession(new Request("http://localhost/api/admin/orders"), NOW), null);
 });
 
