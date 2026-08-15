@@ -30,7 +30,15 @@ export class OrderSubmissionError extends Error {
   }
 }
 
+class AmbiguousOrderSubmissionError extends Error {
+  constructor(message = "Não foi possível confirmar se o pedido foi recebido. Tente novamente para recuperar a mesma tentativa com segurança.") {
+    super(message);
+    this.name = "AmbiguousOrderSubmissionError";
+  }
+}
+
 const pendingMessages = new Map<string, Promise<ConfirmedHandoff>>();
+const retryIdempotencyKeys = new Map<string, string>();
 const handoffWindows = new WeakMap<Promise<ConfirmedHandoff>, Window | null>();
 
 function orderSignature(state: SimulatorState, tenant: TenantData) {
@@ -68,34 +76,43 @@ async function createServerOrder(
     );
   }
 
-  const response = await fetch("/api/orders", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Idempotency-Key": idempotencyKey,
-    },
-    body: JSON.stringify({
-      tenantId: tenant.id,
-      customerName: state.customerName,
-      customerPhone: state.customerPhone,
-      eventDate: state.eventDate,
-      cakeSizeId: state.cakeSize.id,
-      flavorId: state.dough.id,
-      fillingIds: state.fillings.map((item) => item.id),
-      addonIds: state.addons.map((item) => item.id),
-      referenceImageUrl: state.referenceImage ?? "",
-      cakeMessage: state.cakeMessage,
-      details: state.details,
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetch("/api/orders", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": idempotencyKey,
+      },
+      body: JSON.stringify({
+        tenantId: tenant.id,
+        customerName: state.customerName,
+        customerPhone: state.customerPhone,
+        eventDate: state.eventDate,
+        cakeSizeId: state.cakeSize.id,
+        flavorId: state.dough.id,
+        fillingIds: state.fillings.map((item) => item.id),
+        addonIds: state.addons.map((item) => item.id),
+        referenceImageUrl: state.referenceImage ?? "",
+        cakeMessage: state.cakeMessage,
+        details: state.details,
+      }),
+    });
+  } catch {
+    throw new AmbiguousOrderSubmissionError();
+  }
 
   const payload = await response.json().catch(() => null) as (OrderResponse & { code?: string; error?: string }) | null;
-  if (!response.ok || !payload?.order || !payload.pricing) {
+  if (!response.ok) {
     throw new OrderSubmissionError(
       payload?.error || "Não foi possível confirmar o pedido. Tente novamente.",
       payload?.code || "ORDER_CREATE_FAILED",
       response.status,
     );
+  }
+
+  if (!payload?.order || !payload.pricing) {
+    throw new AmbiguousOrderSubmissionError();
   }
 
   return payload;
@@ -163,12 +180,28 @@ export function buildWhatsAppMessage(
   const pending = pendingMessages.get(signature);
   if (pending) return pending;
 
-  // The key belongs to one intentional submit attempt/retry window. Once this
-  // Promise settles, a later identical order receives a fresh key.
-  const idempotencyKey = newIdempotencyKey();
-  const operation = buildConfirmedHandoff(state, tenant, idempotencyKey).finally(() => {
-    pendingMessages.delete(signature);
-  });
+  // Reuse the same key after an ambiguous transport/response failure so a
+  // committed-but-unconfirmed order can be recovered by the server replay.
+  const idempotencyKey = retryIdempotencyKeys.get(signature) ?? newIdempotencyKey();
+  retryIdempotencyKeys.set(signature, idempotencyKey);
+
+  const operation = buildConfirmedHandoff(state, tenant, idempotencyKey)
+    .then((confirmed) => {
+      // Confirmation closes this attempt window. A later intentional identical
+      // order must start with a fresh key.
+      retryIdempotencyKeys.delete(signature);
+      return confirmed;
+    })
+    .catch((error: unknown) => {
+      // A structured HTTP rejection proves the server responded and did not
+      // confirm this attempt. A corrected/new submit should receive a fresh key.
+      if (error instanceof OrderSubmissionError) retryIdempotencyKeys.delete(signature);
+      throw error;
+    })
+    .finally(() => {
+      pendingMessages.delete(signature);
+    });
+
   pendingMessages.set(signature, operation);
   return operation;
 }
@@ -249,7 +282,7 @@ export function openWhatsApp(phone: string, submission: Promise<ConfirmedHandoff
     .catch((error: unknown) => {
       popup?.close();
       const message = error instanceof Error ? error.message : "Não foi possível confirmar o pedido.";
-      const code = error instanceof OrderSubmissionError ? error.code : "ORDER_CREATE_FAILED";
+      const code = error instanceof OrderSubmissionError ? error.code : "ORDER_CONFIRMATION_UNKNOWN";
       const status = renderSubmissionStatus("error", message, code);
       status?.focus({ preventScroll: false });
     })
