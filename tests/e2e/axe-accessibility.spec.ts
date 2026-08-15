@@ -1,11 +1,27 @@
+import path from "node:path";
 import { expect, test, type BrowserContext, type Page, type TestInfo } from "@playwright/test";
 import { ADMIN_SESSION_COOKIE, createAdminSessionToken } from "../../src/lib/admin-session";
 
 const shouldRunAxe = process.env.AXE_SCAN === "1";
 
+type AxeViolation = {
+  id: string;
+  impact: string | null;
+  help: string;
+  nodes: unknown[];
+};
+
+type AxeResults = {
+  violations: AxeViolation[];
+};
+
 async function expectNoSeriousOrCriticalAxeViolations(page: Page, label: string) {
-  const { default: AxeBuilder } = await import("@axe-core/playwright");
-  const results = await new AxeBuilder({ page }).analyze();
+  const axeSource = path.join(process.cwd(), "node_modules", "axe-core", "axe.min.js");
+  await page.addScriptTag({ path: axeSource });
+  const results = await page.evaluate(async () => {
+    const axe = (globalThis as unknown as { axe: { run: () => Promise<AxeResults> } }).axe;
+    return axe.run();
+  });
   const blocking = results.violations.filter((violation) =>
     violation.impact === "serious" || violation.impact === "critical"
   );
