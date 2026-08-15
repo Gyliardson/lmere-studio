@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { TenantFullData, SimulatorState, CakeFlavorData, AddonData, CakeSizeData } from "@/lib/types";
+import type { TenantFullData, SimulatorState, CakeFlavorData, AddonData, CakeSizeData, CustomFieldData } from "@/lib/types";
 import { calculateOrderTotal, calculateDeposit, formatCurrency } from "@/lib/pricing";
 import { ORDER_TEXT_LIMITS } from "@/lib/order-validation";
 import { buildWhatsAppMessage, openWhatsApp } from "@/lib/whatsapp";
@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 
 const TOTAL_STEPS = 5;
+const CUSTOM_TEXT_MAX = 500;
 
 export function SimulatorClient({ slug }: { slug: string }) {
   const [data, setData] = useState<TenantFullData | null>(null);
@@ -40,6 +41,7 @@ export function SimulatorClient({ slug }: { slug: string }) {
     details: "",
     customerName: "",
     customerPhone: "",
+    customFieldAnswers: {},
   });
 
   useEffect(() => {
@@ -66,15 +68,20 @@ export function SimulatorClient({ slug }: { slug: string }) {
   const goNext = () => setState((s) => ({ ...s, step: Math.min(s.step + 1, TOTAL_STEPS) }));
   const goBack = () => setState((s) => ({ ...s, step: Math.max(s.step - 1, 1) }));
 
+  const customFieldsComplete = (data?.customFields ?? []).every(
+    (field) => !field.required || Boolean(state.customFieldAnswers?.[field.id]?.trim())
+  );
+
   const canProceed = (): boolean => {
     switch (state.step) {
       case 1: return !!state.eventDate;
       case 2: return !!state.cakeSize;
       case 3: return !!state.dough && state.fillings.length > 0;
-      case 4: return true;
+      case 4: return customFieldsComplete;
       case 5: return !!state.customerName?.trim()
         && state.customerName.trim().length <= ORDER_TEXT_LIMITS.customerName
-        && isValidPhoneBR(state.customerPhone);
+        && isValidPhoneBR(state.customerPhone)
+        && customFieldsComplete;
       default: return false;
     }
   };
@@ -102,7 +109,7 @@ export function SimulatorClient({ slug }: { slug: string }) {
     );
   }
 
-  const { tenant, sizes, doughs, fillings, addons, blockedDates, workSchedule } = data;
+  const { tenant, sizes, doughs, fillings, addons, customFields, blockedDates, workSchedule } = data;
 
   const total = calculateOrderTotal(state.cakeSize, state.dough, state.fillings, state.addons);
   const deposit = calculateDeposit(total, tenant.featuresConfig.deposit_mode);
@@ -291,6 +298,7 @@ export function SimulatorClient({ slug }: { slug: string }) {
           {state.step === 4 && (
             <StepDetails
               state={state}
+              customFields={customFields}
               onChange={(updates) => setState((s) => ({ ...s, ...updates }))}
               allowUpload={tenant.featuresConfig.allow_photo_upload}
             />
@@ -299,6 +307,7 @@ export function SimulatorClient({ slug }: { slug: string }) {
             <StepSummary
               state={state}
               tenant={tenant}
+              customFields={customFields}
               total={total}
               deposit={deposit}
               copied={copied}
@@ -769,12 +778,58 @@ function StepFlavors({
   );
 }
 
+function CustomFieldsForm({ fields, state, onChange }: { fields: CustomFieldData[]; state: SimulatorState; onChange: (updates: Partial<SimulatorState>) => void }) {
+  if (fields.length === 0) return null;
+  const answers = state.customFieldAnswers ?? {};
+  const updateAnswer = (id: string, value: string) => onChange({ customFieldAnswers: { ...answers, [id]: value } });
+
+  return (
+    <fieldset className="glass-card p-4 space-y-4">
+      <legend className="px-1 text-sm font-semibold text-white/90">Informações do seu evento</legend>
+      <p className="text-xs text-white/50">Estes campos são configurados pelo ateliê para esta encomenda.</p>
+      {fields.map((field) => {
+        const inputId = `custom-field-${field.id}`;
+        const value = answers[field.id] ?? "";
+        return (
+          <div key={field.id}>
+            <label htmlFor={inputId} className="block text-sm font-medium mb-2 text-white/80">
+              {field.label}{field.required ? <span className="text-brand-secondary"> *</span> : null}
+            </label>
+            {field.type === "select" ? (
+              <select id={inputId} required={field.required} value={value} onChange={(event) => updateAnswer(field.id, event.target.value)} className="input-field">
+                <option value="">Selecione uma opção</option>
+                {field.options.map((option) => <option key={option} value={option}>{option}</option>)}
+              </select>
+            ) : (
+              <input
+                id={inputId}
+                type={field.type === "number" ? "number" : "text"}
+                inputMode={field.type === "number" ? "decimal" : undefined}
+                required={field.required}
+                maxLength={field.type === "text" ? CUSTOM_TEXT_MAX : undefined}
+                value={value}
+                onChange={(event) => updateAnswer(field.id, event.target.value)}
+                className="input-field"
+                aria-describedby={field.type === "text" ? `${inputId}-help` : undefined}
+              />
+            )}
+            {field.type === "text" && <p id={`${inputId}-help`} className="text-[11px] text-white/40 mt-1.5">Até {CUSTOM_TEXT_MAX} caracteres · {value.length}/{CUSTOM_TEXT_MAX}</p>}
+          </div>
+        );
+      })}
+      <p className="text-[11px] text-white/40">* Campos obrigatórios. O servidor valida estas respostas antes de confirmar o pedido.</p>
+    </fieldset>
+  );
+}
+
 function StepDetails({
   state,
+  customFields,
   onChange,
   allowUpload,
 }: {
   state: SimulatorState;
+  customFields: CustomFieldData[];
   onChange: (updates: Partial<SimulatorState>) => void;
   allowUpload: boolean;
 }) {
@@ -850,6 +905,8 @@ function StepDetails({
         Detalhes do Pedido
       </h2>
       <p className="text-white/50 text-sm mb-5">Informações adicionais para personalizar seu bolo</p>
+
+      <CustomFieldsForm fields={customFields} state={state} onChange={onChange} />
 
       <div>
         <label htmlFor="input-cake-message" className="block text-sm font-medium mb-2 text-white/80">
@@ -1001,6 +1058,7 @@ function StepDetails({
 function StepSummary({
   state,
   tenant,
+  customFields,
   total,
   deposit,
   copied,
@@ -1010,6 +1068,7 @@ function StepSummary({
 }: {
   state: SimulatorState;
   tenant: TenantFullData["tenant"];
+  customFields: CustomFieldData[];
   total: number;
   deposit: number;
   copied: boolean;
@@ -1019,6 +1078,8 @@ function StepSummary({
 }) {
   const phoneInvalid = Boolean(state.customerPhone) && !isValidPhoneBR(state.customerPhone);
   const nameInvalid = state.customerName.trim().length > ORDER_TEXT_LIMITS.customerName;
+  const answers = state.customFieldAnswers ?? {};
+  const customFieldsComplete = customFields.every((field) => !field.required || Boolean(answers[field.id]?.trim()));
 
   return (
     <div className="space-y-6">
@@ -1129,6 +1190,18 @@ function StepSummary({
           </div>
         )}
 
+        {customFields.some((field) => answers[field.id]?.trim()) && (
+          <div>
+            <span className="text-sm text-white/50 block mb-1">Informações personalizadas</span>
+            {customFields.filter((field) => answers[field.id]?.trim()).map((field) => (
+              <div key={field.id} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] gap-3 text-sm pl-3">
+                <span className="text-white/50 break-words">{field.label}</span>
+                <span className="text-right break-words">{answers[field.id]}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {state.cakeMessage && (
           <div className="flex justify-between text-sm">
             <span className="text-white/50">Placa</span>
@@ -1183,7 +1256,7 @@ function StepSummary({
 
       <button
         onClick={onSendWhatsApp}
-        disabled={!state.customerName.trim() || nameInvalid || !isValidPhoneBR(state.customerPhone)}
+        disabled={!state.customerName.trim() || nameInvalid || !isValidPhoneBR(state.customerPhone) || !customFieldsComplete}
         className="btn-primary w-full py-4 text-base"
         id="btn-send-whatsapp"
       >
