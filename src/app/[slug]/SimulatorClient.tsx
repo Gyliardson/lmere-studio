@@ -6,6 +6,12 @@ import { calculateOrderTotal, calculateDeposit, formatCurrency } from "@/lib/pri
 import { buildWhatsAppMessage, openWhatsApp } from "@/lib/whatsapp";
 import { copyToClipboard, cn, getDateString, isDateBlocked, getDaysInMonth, getFirstDayOfMonth, hexToHsl, hexToRgb, formatPhoneBR, isValidPhoneBR } from "@/lib/utils";
 import {
+  imageUploadHelpText,
+  SUPPORTED_IMAGE_MIME_TYPES,
+  validateImageFileMetadata,
+  validateImageReference,
+} from "@/lib/image-reference";
+import {
   Calendar, ChevronLeft, ChevronRight, Cake, Layers, Palette, Upload,
   ClipboardCheck, MessageCircle, Copy, Check, Star, Plus,
   ArrowLeft, ArrowRight, Phone, User, FileText, X, Sparkles, Weight,
@@ -770,12 +776,23 @@ function StepDetails({
   allowUpload: boolean;
 }) {
   const [isDragging, setIsDragging] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [urlDraft, setUrlDraft] = useState(() =>
+    state.referenceImage && !state.referenceImage.startsWith("data:") ? state.referenceImage : ""
+  );
 
   const handleFileProcess = (file: File) => {
-    if (!file.type.startsWith("image/")) return;
+    const validation = validateImageFileMetadata(file);
+    if (!validation.ok) {
+      setImageError(validation.message);
+      return;
+    }
+
+    setImageError(null);
     const reader = new FileReader();
     reader.onload = (e) => {
       if (e.target?.result) {
+        setUrlDraft("");
         onChange({ referenceImage: e.target.result as string });
       }
     };
@@ -785,6 +802,7 @@ function StepDetails({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) handleFileProcess(file);
+    e.target.value = "";
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -802,6 +820,24 @@ function StepDetails({
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
+  };
+
+  const validateUrlDraft = () => {
+    if (!urlDraft.trim()) {
+      setImageError(null);
+      onChange({ referenceImage: null });
+      return;
+    }
+
+    const validation = validateImageReference(urlDraft);
+    if (!validation.ok || validation.kind !== "url") {
+      setImageError(validation.ok ? "Use uma URL HTTPS válida." : validation.message);
+      return;
+    }
+
+    setImageError(null);
+    setUrlDraft(validation.value);
+    onChange({ referenceImage: validation.value });
   };
 
   return (
@@ -852,6 +888,7 @@ function StepDetails({
                 <img
                   src={state.referenceImage}
                   alt="Foto de referência"
+                  referrerPolicy="no-referrer"
                   className="w-16 h-16 rounded-lg object-cover border border-white/10 flex-shrink-0"
                 />
                 <div className="min-w-0">
@@ -863,7 +900,11 @@ function StepDetails({
               </div>
               <button
                 type="button"
-                onClick={() => onChange({ referenceImage: null })}
+                onClick={() => {
+                  setImageError(null);
+                  setUrlDraft("");
+                  onChange({ referenceImage: null });
+                }}
                 className="p-2 rounded-lg bg-error/15 text-error hover:bg-error/25 transition-colors text-xs flex items-center gap-1 flex-shrink-0"
                 id="btn-remove-photo"
               >
@@ -887,6 +928,7 @@ function StepDetails({
                 tabIndex={0}
                 role="button"
                 aria-labelledby="photo-reference-label"
+                aria-describedby="photo-reference-help photo-reference-error"
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
@@ -896,7 +938,7 @@ function StepDetails({
               >
                 <input
                   type="file"
-                  accept="image/*"
+                  accept={SUPPORTED_IMAGE_MIME_TYPES.join(",")}
                   onChange={handleFileSelect}
                   className="hidden"
                   id="input-file-photo"
@@ -906,7 +948,7 @@ function StepDetails({
                 <p className="text-sm font-medium text-white/80">
                   Clique aqui ou arraste uma foto para enviar
                 </p>
-                <p className="text-xs text-white/40 mt-1">Formatos suportados: PNG, JPG ou WEBP (até 5MB)</p>
+                <p className="text-xs text-white/40 mt-1" id="photo-reference-help">{imageUploadHelpText()}</p>
               </label>
 
               <div className="relative flex items-center justify-center my-2" aria-hidden="true">
@@ -917,12 +959,24 @@ function StepDetails({
               <label htmlFor="input-reference-url" className="sr-only">URL da imagem de referência</label>
               <input
                 type="url"
-                value={state.referenceImage || ""}
-                onChange={(e) => onChange({ referenceImage: e.target.value || null })}
+                value={urlDraft}
+                onChange={(e) => {
+                  setUrlDraft(e.target.value);
+                  setImageError(null);
+                  if (!e.target.value) onChange({ referenceImage: null });
+                }}
+                onBlur={validateUrlDraft}
                 placeholder="Cole a URL da imagem de referência (ex: https://...)"
-                className="input-field text-xs"
+                className={cn("input-field text-xs", imageError && "border-error/60 focus:border-error")}
                 id="input-reference-url"
+                aria-invalid={imageError ? true : undefined}
+                aria-describedby="photo-reference-help photo-reference-error"
               />
+              {imageError && (
+                <p id="photo-reference-error" className="text-xs text-error mt-1.5" role="alert">
+                  {imageError}
+                </p>
+              )}
             </div>
           )}
         </div>
