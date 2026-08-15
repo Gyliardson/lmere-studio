@@ -1,5 +1,6 @@
 import { getAdminSession } from "@/lib/admin-session";
 import { validateMenuCreate, validateMenuUpdate, type ValidationIssue } from "@/lib/admin-validation";
+import { validateImageReference } from "@/lib/image-reference";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
@@ -18,6 +19,15 @@ async function jsonBody(request: Request) {
   } catch {
     return { ok: false as const };
   }
+}
+
+function boundedImage(value: string | undefined): { ok: true; value?: string } | { ok: false; response: NextResponse } {
+  if (value === undefined) return { ok: true };
+  const result = validateImageReference(value);
+  if (!result.ok) {
+    return { ok: false, response: validationError([{ field: "imageUrl", message: result.message }]) };
+  }
+  return { ok: true, value: result.value };
 }
 
 export async function GET(request: Request) {
@@ -53,12 +63,18 @@ export async function POST(request: Request) {
       case "size":
         item = await prisma.cakeSize.create({ data: { tenantId: session.tenantId, ...parsed.value.data } });
         break;
-      case "flavor":
-        item = await prisma.cakeFlavor.create({ data: { tenantId: session.tenantId, ...parsed.value.data } });
+      case "flavor": {
+        const image = boundedImage(parsed.value.data.imageUrl);
+        if (!image.ok) return image.response;
+        item = await prisma.cakeFlavor.create({ data: { tenantId: session.tenantId, ...parsed.value.data, imageUrl: image.value ?? "" } });
         break;
-      case "addon":
-        item = await prisma.addon.create({ data: { tenantId: session.tenantId, ...parsed.value.data } });
+      }
+      case "addon": {
+        const image = boundedImage(parsed.value.data.imageUrl);
+        if (!image.ok) return image.response;
+        item = await prisma.addon.create({ data: { tenantId: session.tenantId, ...parsed.value.data, imageUrl: image.value ?? "" } });
         break;
+      }
     }
 
     return NextResponse.json({ item }, { status: 201 });
@@ -87,15 +103,25 @@ export async function PUT(request: Request) {
         break;
       }
       case "flavor": {
+        const image = boundedImage(parsed.value.data.imageUrl);
+        if (!image.ok) return image.response;
         const owned = await prisma.cakeFlavor.findFirst({ where: { id: parsed.value.id, tenantId: session.tenantId }, select: { id: true } });
         if (!owned) return notFound();
-        item = await prisma.cakeFlavor.update({ where: { id: owned.id }, data: parsed.value.data });
+        item = await prisma.cakeFlavor.update({
+          where: { id: owned.id },
+          data: { ...parsed.value.data, ...(image.value === undefined ? {} : { imageUrl: image.value }) },
+        });
         break;
       }
       case "addon": {
+        const image = boundedImage(parsed.value.data.imageUrl);
+        if (!image.ok) return image.response;
         const owned = await prisma.addon.findFirst({ where: { id: parsed.value.id, tenantId: session.tenantId }, select: { id: true } });
         if (!owned) return notFound();
-        item = await prisma.addon.update({ where: { id: owned.id }, data: parsed.value.data });
+        item = await prisma.addon.update({
+          where: { id: owned.id },
+          data: { ...parsed.value.data, ...(image.value === undefined ? {} : { imageUrl: image.value }) },
+        });
         break;
       }
     }

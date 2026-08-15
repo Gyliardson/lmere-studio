@@ -75,14 +75,16 @@ jobs:
           set -uo pipefail
           mapfile -t specs < <(find tests/e2e -maxdepth 1 -type f -name '*.spec.ts' -print | sort)
           test "${#specs[@]}" -gt 0
+          mkdir -p playwright-diagnostics
 
           failed=0
           for spec in "${specs[@]}"; do
+            spec_name=$(basename "$spec" .spec.ts)
             echo "::group::Playwright ${spec}"
             if ! npx prisma db execute --file prisma/ci-reset-rate-limits.sql --config=prisma.config.ts; then
               failed=1
               echo "::error::Failed to reset rate-limit fixtures before ${spec}"
-            elif ! npx playwright test "${spec}"; then
+            elif ! npx playwright test "${spec}" 2>&1 | tee "playwright-diagnostics/${spec_name}.log"; then
               failed=1
             fi
             echo "::endgroup::"
@@ -107,5 +109,6 @@ jobs:
           path: |
             playwright-report
             test-results
+            playwright-diagnostics
           if-no-files-found: warn
           retention-days: 7
