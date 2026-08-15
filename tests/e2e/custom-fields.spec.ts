@@ -100,6 +100,20 @@ test.describe("tenant custom fields", () => {
     const created = createdFields.find((field) => field.label === label);
     expect(created).toBeTruthy();
 
+    const foreignUpdate = await request.put("/api/admin/custom-fields", {
+      headers: tenantBHeaders,
+      data: { id: created!.id, label: `${label} forged`, type: "text", required: false, options: [] },
+    });
+    expect(foreignUpdate.status()).toBe(404);
+
+    const update = await request.put("/api/admin/custom-fields", {
+      headers: tenantAHeaders,
+      data: { id: created!.id, label: `${label} editada`, type: "text", required: true, options: [] },
+    });
+    expect(update.status()).toBe(200);
+    const updated = (await update.json()).customFields.find((field: { id: string }) => field.id === created!.id);
+    expect(updated).toMatchObject({ label: `${label} editada`, type: "text", required: true, options: [] });
+
     const foreignDelete = await request.delete(`/api/admin/custom-fields?id=${created!.id}`, { headers: tenantBHeaders });
     expect(foreignDelete.status()).toBe(404);
 
