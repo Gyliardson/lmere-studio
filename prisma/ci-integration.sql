@@ -94,6 +94,24 @@ BEGIN
 END
 $$;
 
+-- Verify tenant-owned custom field labels cannot duplicate under concurrent writes.
+DO $$
+BEGIN
+  BEGIN
+    INSERT INTO "CustomField" ("id", "tenantId", "label", "type", "required", "options")
+    VALUES ('ci-custom-duplicate-label', 'ci-custom-a', 'Tema da festa', 'text', false, '[]');
+    RAISE EXCEPTION 'Expected unique violation for duplicate tenant/custom-field label';
+  EXCEPTION
+    WHEN unique_violation THEN
+      NULL;
+  END;
+
+  IF EXISTS (SELECT 1 FROM "CustomField" WHERE "id" = 'ci-custom-duplicate-label') THEN
+    RAISE EXCEPTION 'Custom-field unique-constraint assertion left duplicate data behind';
+  END IF;
+END
+$$;
+
 -- Verify the database-level default itself produces the complete public feature contract.
 DO $$
 DECLARE
