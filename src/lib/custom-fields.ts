@@ -74,17 +74,22 @@ export function validateCustomFieldWrite(input: unknown): CustomFieldResult<Omit
   const issues: CustomFieldIssue[] = [];
   const allowed = new Set(["label", "type", "required", "options"]);
   for (const key of Object.keys(raw)) if (!allowed.has(key)) issue(issues, key, "campo não suportado");
-  const label = typeof raw.label === "string" ? raw.label.trim() : "";
+  const rawLabel = typeof raw.label === "string" ? raw.label : "";
+  const label = rawLabel.trim();
   const type = raw.type;
   const required = raw.required;
-  if (!label || label.length > CUSTOM_FIELD_LIMITS.label) issue(issues, "label", `deve ter entre 1 e ${CUSTOM_FIELD_LIMITS.label} caracteres`);
+  if (!label || rawLabel.length > CUSTOM_FIELD_LIMITS.label) issue(issues, "label", `deve ter entre 1 e ${CUSTOM_FIELD_LIMITS.label} caracteres`);
   if (type !== "text" && type !== "select" && type !== "number") issue(issues, "type", "tipo suportado: text, select, number");
   if (typeof required !== "boolean") issue(issues, "required", "deve ser booleano");
 
   let options: string[] = [];
   if (raw.options !== undefined) {
     if (!Array.isArray(raw.options) || raw.options.some((value) => typeof value !== "string")) issue(issues, "options", "deve ser uma lista de textos");
-    else options = raw.options.map((value) => (value as string).trim());
+    else {
+      const rawOptions = raw.options as string[];
+      if (rawOptions.some((value) => value.length > CUSTOM_FIELD_LIMITS.option)) issue(issues, "options", "opção vazia ou longa demais");
+      options = rawOptions.map((value) => value.trim());
+    }
   }
   if (options.length > CUSTOM_FIELD_LIMITS.options) issue(issues, "options", `máximo de ${CUSTOM_FIELD_LIMITS.options} opções`);
   if (options.some((value) => !value || value.length > CUSTOM_FIELD_LIMITS.option)) issue(issues, "options", "opção vazia ou longa demais");
