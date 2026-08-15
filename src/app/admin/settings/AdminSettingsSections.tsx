@@ -16,7 +16,7 @@ export function AdminBrandSection({ tenantId, showToast }: { tenantId: string; s
   const [form, setForm] = useState({
     name: "", whatsapp: "", pixKey: "", logoUrl: "", bannerUrl: "",
     primaryColor: "#8B5CF6", secondaryColor: "#EC4899", backgroundColor: "#0F0A1A",
-    buttonColor: "#8B5CF6", shadowColor: "#8B5CF6", textColor: "#FFFFFF",
+    buttonColor: "#7C3AED", shadowColor: "#8B5CF6", textColor: "#FFFFFF",
   });
   const [loading, setLoading] = useState(true);
 
@@ -34,7 +34,7 @@ export function AdminBrandSection({ tenantId, showToast }: { tenantId: string; s
           name: settings.name || "", whatsapp: settings.whatsapp || "", pixKey: settings.pixKey || "",
           logoUrl: settings.logoUrl || "", bannerUrl: settings.bannerUrl || "",
           primaryColor: settings.primaryColor || "#8B5CF6", secondaryColor: settings.secondaryColor || "#EC4899",
-          backgroundColor: settings.backgroundColor || "#0F0A1A", buttonColor: settings.buttonColor || "#8B5CF6",
+          backgroundColor: settings.backgroundColor || "#0F0A1A", buttonColor: settings.buttonColor || "#7C3AED",
           shadowColor: settings.shadowColor || settings.primaryColor || "#8B5CF6", textColor: settings.textColor || "#FFFFFF",
         });
       } catch { showToast("Erro ao carregar marca"); }
@@ -74,7 +74,7 @@ export function AdminBrandSection({ tenantId, showToast }: { tenantId: string; s
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
               {([ ["primaryColor", "Cor Primaria"], ["secondaryColor", "Cor Secundaria"], ["backgroundColor", "Cor de Fundo"], ["buttonColor", "Cor dos Botoes"], ["shadowColor", "Cor da Sombra / Brilho"], ["textColor", "Cor do Texto"] ] as const).map(([key, label]) => <div key={key}><span className="block text-xs font-medium text-white/70 mb-1">{label}</span><div className="flex items-center gap-2"><input aria-label={`${label} — seletor`} type="color" value={form[key]} onChange={(event) => setForm({ ...form, [key]: event.target.value })} className="w-9 h-9 rounded cursor-pointer border-0 bg-transparent" /><input aria-label={`${label} — hexadecimal`} type="text" value={form[key]} onChange={(event) => setForm({ ...form, [key]: event.target.value })} className="input-field text-xs font-mono" /></div></div>)}
             </div>
-            <div className="mt-4 p-4 rounded-xl border border-white/10 space-y-2" style={{ backgroundColor: form.backgroundColor }}><span className="text-[11px] font-bold uppercase tracking-wider text-white/60 block">Pré-visualização do Tema</span><div className="flex items-center justify-between gap-3 flex-wrap"><span className="text-sm font-bold" style={{ color: form.primaryColor }}>{form.name || "Seu Ateliê"} - Título em Destaque</span><button type="button" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all" style={{ background: `linear-gradient(135deg, ${form.buttonColor}, ${form.secondaryColor})`, boxShadow: `0 4px 16px ${form.shadowColor}88` }}>Botão de Exemplo</button></div></div>
+            <div className="mt-4 p-4 rounded-xl border border-white/10 space-y-2" style={{ backgroundColor: form.backgroundColor }}><span className="text-[11px] font-bold uppercase tracking-wider text-white/60 block">Pré-visualização do Tema</span><div className="flex items-center justify-between gap-3 flex-wrap"><span className="text-sm font-bold" style={{ color: form.primaryColor }}>{form.name || "Seu Ateliê"} - Título em Destaque</span><button type="button" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all" style={{ backgroundColor: form.buttonColor, boxShadow: `0 4px 16px ${form.shadowColor}88` }}>Botão de Exemplo</button></div></div>
           </div>
           <div className="glass-card p-5 space-y-4"><h2 className="font-bold text-base">Imagens do Ateliê (Logo & Banner)</h2><div className="grid sm:grid-cols-2 gap-4 items-stretch"><ImageUploaderDropzone label="Logo do Atelie" value={form.logoUrl} onChange={(url) => setForm({ ...form, logoUrl: url })} aspect="square" /><ImageUploaderDropzone label="Banner de Capa" value={form.bannerUrl} onChange={(url) => setForm({ ...form, bannerUrl: url })} aspect="banner" /></div></div>
           <div className="glass-card p-5 space-y-4"><h2 className="font-bold text-base">Informações Gerais</h2><div className="grid sm:grid-cols-2 gap-4"><div><label htmlFor="admin-brand-name" className="block text-xs font-medium text-white/70 mb-1">Nome do Ateliê</label><input id="admin-brand-name" type="text" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className="input-field" /></div><div><label htmlFor="admin-brand-whatsapp" className="block text-xs font-medium text-white/70 mb-1">WhatsApp (com DDD)</label><input id="admin-brand-whatsapp" type="text" value={form.whatsapp} onChange={(event) => setForm({ ...form, whatsapp: formatPhoneBR(event.target.value) })} className="input-field" placeholder="Ex: (11) 99999-9999" /></div><div className="sm:col-span-2"><label htmlFor="admin-brand-pix" className="block text-xs font-medium text-white/70 mb-1">Chave PIX (E-mail, CPF, Telefone ou Aleatória)</label><input id="admin-brand-pix" type="text" value={form.pixKey} onChange={(event) => setForm({ ...form, pixKey: event.target.value })} className="input-field" /></div></div></div>
