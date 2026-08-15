@@ -134,8 +134,10 @@ test.describe("UX accessibility foundation", () => {
   test("admin login remains fully reachable by keyboard", async ({ page }) => {
     await page.goto("/admin");
 
+    const slugInput = page.locator("#admin-slug");
+    await expect(slugInput).toBeVisible();
     await page.keyboard.press("Tab");
-    await expect(page.locator("#admin-slug")).toBeFocused();
+    await expect(slugInput).toBeFocused();
     await page.keyboard.press("Tab");
     await expect(page.locator("#admin-password")).toBeFocused();
     await page.keyboard.press("Tab");
