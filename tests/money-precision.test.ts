@@ -19,7 +19,9 @@ test("catalog money accepts values aligned to whole cents", () => {
     active: true,
   });
   assert.equal(size.ok, true);
-  if (size.ok) assert.equal(size.value.data.basePrice, 12.34);
+  if (size.ok && size.value.itemType === "size") {
+    assert.equal(size.value.data.basePrice, 12.34);
+  }
 
   const flavor = validateMenuCreate({
     itemType: "flavor",
