@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Ban, Calendar as CalendarIcon, Plus, Trash2 } from "lucide-react";
 
+import { getBusinessQuickDate } from "@/lib/business-calendar";
 import { cn } from "@/lib/utils";
 import { CustomSelect } from "../components/AdminControls";
 
@@ -17,6 +18,11 @@ interface WorkScheduleItem {
   isOpen: boolean;
 }
 
+async function responseError(response: Response, fallback: string) {
+  const data = await response.json().catch(() => null) as { error?: string } | null;
+  return data?.error || fallback;
+}
+
 export function AdminCalendarSection({ tenantId, showToast }: { tenantId: string; showToast: (message: string) => void }) {
   const [blockedDates, setBlockedDates] = useState<BlockedDateItem[]>([]);
   const [workSchedule, setWorkSchedule] = useState<WorkScheduleItem[]>([]);
@@ -28,13 +34,17 @@ export function AdminCalendarSection({ tenantId, showToast }: { tenantId: string
   const fetchCalendar = useCallback(async () => {
     try {
       const response = await fetch(`/api/admin/calendar?tenantId=${tenantId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setBlockedDates(data.blockedDates || []);
-        setWorkSchedule(data.workSchedule || []);
+      if (!response.ok) {
+        showToast(await responseError(response, "Não foi possível carregar a agenda"));
+        return false;
       }
+      const data = await response.json();
+      setBlockedDates(data.blockedDates || []);
+      setWorkSchedule(data.workSchedule || []);
+      return true;
     } catch {
       showToast("Erro ao carregar agenda");
+      return false;
     } finally {
       setLoading(false);
     }
@@ -44,11 +54,13 @@ export function AdminCalendarSection({ tenantId, showToast }: { tenantId: string
     async function loadCalendar() {
       try {
         const response = await fetch(`/api/admin/calendar?tenantId=${tenantId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setBlockedDates(data.blockedDates || []);
-          setWorkSchedule(data.workSchedule || []);
+        if (!response.ok) {
+          showToast(await responseError(response, "Não foi possível carregar a agenda"));
+          return;
         }
+        const data = await response.json();
+        setBlockedDates(data.blockedDates || []);
+        setWorkSchedule(data.workSchedule || []);
       } catch {
         showToast("Erro ao carregar agenda");
       } finally {
@@ -65,12 +77,14 @@ export function AdminCalendarSection({ tenantId, showToast }: { tenantId: string
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tenantId, dayOfWeek, isOpen: !currentOpen }),
       });
-      if (response.ok) {
-        showToast("Horario atualizado!");
-        void fetchCalendar();
+      if (!response.ok) {
+        showToast(await responseError(response, "Não foi possível atualizar o horário"));
+        return;
       }
+      showToast("Horário atualizado!");
+      await fetchCalendar();
     } catch {
-      showToast("Erro ao atualizar horario");
+      showToast("Erro ao atualizar horário");
     }
   };
 
@@ -82,14 +96,13 @@ export function AdminCalendarSection({ tenantId, showToast }: { tenantId: string
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tenantId, date: newDate, reason: newReason }),
       });
-      if (response.ok) {
-        showToast("Data bloqueada com sucesso!");
-        setNewDate("");
-        void fetchCalendar();
-      } else {
-        const data = await response.json();
-        showToast(data.error || "Erro ao bloquear data");
+      if (!response.ok) {
+        showToast(await responseError(response, "Erro ao bloquear data"));
+        return;
       }
+      showToast("Data bloqueada com sucesso!");
+      setNewDate("");
+      await fetchCalendar();
     } catch {
       showToast("Erro ao bloquear data");
     }
@@ -97,11 +110,13 @@ export function AdminCalendarSection({ tenantId, showToast }: { tenantId: string
 
   const handleUnblockDate = async (id: string) => {
     try {
-      const response = await fetch(`/api/admin/calendar?id=${id}`, { method: "DELETE" });
-      if (response.ok) {
-        showToast("Data desbloqueada!");
-        void fetchCalendar();
+      const response = await fetch(`/api/admin/calendar?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+      if (!response.ok) {
+        showToast(await responseError(response, "Não foi possível desbloquear a data"));
+        return;
       }
+      showToast("Data desbloqueada!");
+      await fetchCalendar();
     } catch {
       showToast("Erro ao desbloquear data");
     }
@@ -114,7 +129,7 @@ export function AdminCalendarSection({ tenantId, showToast }: { tenantId: string
         <p className="text-white/50 text-xs sm:text-sm">Gerencie os dias de atendimento e bloqueie datas lotadas</p>
       </div>
       {loading ? (
-        <div className="glass-card p-12 text-center text-white/50" role="status" aria-live="polite">Carregando configuracoes da agenda...</div>
+        <div className="glass-card p-12 text-center text-white/50" role="status" aria-live="polite">Carregando configurações da agenda...</div>
       ) : (
         <div className="grid md:grid-cols-2 gap-6">
           <div className="glass-card p-5 space-y-4">
@@ -127,7 +142,7 @@ export function AdminCalendarSection({ tenantId, showToast }: { tenantId: string
                 return (
                   <div key={dayIdx} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5">
                     <span className="text-sm font-medium">{daysName[dayIdx]}</span>
-                    <button aria-pressed={isOpen} onClick={() => toggleDayOpen(dayIdx, isOpen)} className={cn("px-3 py-1 rounded-full text-xs font-semibold transition-all", isOpen ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-rose-500/20 text-rose-300 border border-rose-500/30")}>{isOpen ? "Aberto" : "Fechado"}</button>
+                    <button type="button" aria-pressed={isOpen} onClick={() => void toggleDayOpen(dayIdx, isOpen)} className={cn("px-3 py-1 rounded-full text-xs font-semibold transition-all", isOpen ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-rose-500/20 text-rose-300 border border-rose-500/30")}>{isOpen ? "Aberto" : "Fechado"}</button>
                   </div>
                 );
               })}
@@ -142,12 +157,12 @@ export function AdminCalendarSection({ tenantId, showToast }: { tenantId: string
                 <label htmlFor="admin-block-date" className="block text-xs font-medium text-white/70 mb-1">Selecione a Data</label>
                 <div className="flex gap-2 items-center">
                   <input id="admin-block-date" type="date" value={newDate} onChange={(event) => setNewDate(event.target.value)} className="input-field text-xs flex-1" />
-                  <button type="button" onClick={() => setNewDate(new Date().toISOString().split("T")[0])} className="btn-secondary text-[11px] py-2 px-2.5 flex-shrink-0">Hoje</button>
-                  <button type="button" onClick={() => { const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1); setNewDate(tomorrow.toISOString().split("T")[0]); }} className="btn-secondary text-[11px] py-2 px-2.5 flex-shrink-0">Amanhã</button>
+                  <button type="button" onClick={() => setNewDate(getBusinessQuickDate(0))} className="btn-secondary text-[11px] py-2 px-2.5 flex-shrink-0">Hoje</button>
+                  <button type="button" onClick={() => setNewDate(getBusinessQuickDate(1))} className="btn-secondary text-[11px] py-2 px-2.5 flex-shrink-0">Amanhã</button>
                 </div>
               </div>
               <CustomSelect label="Motivo do Bloqueio" value={newReason} onChange={setNewReason} options={[{ value: "Agenda Lotada", label: "Agenda Lotada / Esgotado" }, { value: "Feriado", label: "Feriado Nacional / Municipal" }, { value: "Folga / Manutencao", label: "Folga do Ateliê / Manutenção" }, { value: "Ferias Coletivas", label: "Férias Coletivas" }]} />
-              <button onClick={handleBlockDate} disabled={!newDate} className="btn-primary w-full py-2.5 text-xs font-semibold flex items-center justify-center gap-1.5 mt-2"><Plus aria-hidden="true" className="w-4 h-4" /> Bloquear Data</button>
+              <button type="button" onClick={() => void handleBlockDate()} disabled={!newDate} className="btn-primary w-full py-2.5 text-xs font-semibold flex items-center justify-center gap-1.5 mt-2"><Plus aria-hidden="true" className="w-4 h-4" /> Bloquear Data</button>
             </div>
             <div className="pt-4 border-t border-white/10 space-y-2">
               <h3 className="text-xs font-bold text-white/70">Datas Bloqueadas ({blockedDates.length})</h3>
@@ -158,7 +173,7 @@ export function AdminCalendarSection({ tenantId, showToast }: { tenantId: string
                   {blockedDates.map((blockedDate) => (
                     <div key={blockedDate.id} className="flex items-center justify-between p-2 rounded-lg bg-white/5 text-xs">
                       <div><span className="font-semibold text-white">{blockedDate.date}</span><span className="text-white/50 ml-2">({blockedDate.reason})</span></div>
-                      <button aria-label={`Desbloquear ${blockedDate.date}`} onClick={() => handleUnblockDate(blockedDate.id)} className="p-1 text-error hover:bg-error/10 rounded"><Trash2 aria-hidden="true" className="w-3.5 h-3.5" /></button>
+                      <button type="button" aria-label={`Desbloquear ${blockedDate.date}`} onClick={() => void handleUnblockDate(blockedDate.id)} className="p-1 text-error hover:bg-error/10 rounded"><Trash2 aria-hidden="true" className="w-3.5 h-3.5" /></button>
                     </div>
                   ))}
                 </div>

@@ -54,12 +54,12 @@
   --color-brand-primary: var(--tenant-primary, #8B5CF6);
   --color-brand-secondary: var(--tenant-secondary, #EC4899);
   --color-brand-bg: var(--tenant-bg, #0F0A1A);
-  --color-brand-button: var(--tenant-button, #8B5CF6);
+  --color-brand-button: var(--tenant-button, #7C3AED);
   --color-brand-shadow: var(--tenant-shadow, #8B5CF6);
   --color-brand-text: var(--tenant-text, #FFFFFF);
   --color-brand-primary-rgb: var(--tenant-primary-rgb, 139, 92, 246);
   --color-brand-secondary-rgb: var(--tenant-secondary-rgb, 236, 72, 153);
-  --color-brand-button-rgb: var(--tenant-button-rgb, 139, 92, 246);
+  --color-brand-button-rgb: var(--tenant-button-rgb, 124, 58, 237);
   --color-brand-shadow-rgb: var(--tenant-shadow-rgb, 139, 92, 246);
 }
 
@@ -171,7 +171,7 @@
     justify-content: center;
     gap: 0.5rem;
     padding: 0.75rem 1.5rem;
-    background: linear-gradient(135deg, var(--color-brand-button), var(--color-brand-secondary));
+    background: var(--color-brand-button);
     color: white;
     font-weight: 600;
     border-radius: var(--radius-md);

@@ -17,7 +17,7 @@ model Tenant {
   primaryColor        String   @default("#8B5CF6")
   secondaryColor      String   @default("#EC4899")
   backgroundColor     String   @default("#0F0A1A")
-  buttonColor         String   @default("#8B5CF6")
+  buttonColor         String   @default("#7C3AED")
   shadowColor         String   @default("#8B5CF6")
   textColor           String   @default("#FFFFFF")
   adminPasswordHash   String   @default("")
