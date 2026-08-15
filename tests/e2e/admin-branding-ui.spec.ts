@@ -22,7 +22,7 @@ async function openBranding(context: BrowserContext, page: Page, testInfo: TestI
   await expect(page.getByRole("heading", { name: "Marca & Personalizacao Visual" })).toBeVisible();
 }
 
-test("unsafe tenant palette is rejected with recoverable admin feedback", async ({ context, page }, testInfo) => {
+test("unsafe tenant palette is rejected with actionable recoverable admin feedback", async ({ context, page }, testInfo) => {
   await openBranding(context, page, testInfo);
 
   const background = page.getByRole("textbox", { name: "Cor de Fundo — hexadecimal" });
@@ -39,7 +39,7 @@ test("unsafe tenant palette is rejected with recoverable admin feedback", async 
   await text.fill("#FFFFFF");
   await button.fill("#F5B7D2");
   await page.getByRole("button", { name: "Salvar Marca & Estilo" }).click();
-  await expect(page.getByRole("status")).toContainText("Não foi possível salvar marca");
+  await expect(page.getByRole("status")).toContainText("texto e fundo precisam atingir contraste AA de 4.5:1");
 
   await background.fill("#000000");
   await text.fill("#FFFFFF");
