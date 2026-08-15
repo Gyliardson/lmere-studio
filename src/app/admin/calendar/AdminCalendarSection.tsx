@@ -51,8 +51,24 @@ export function AdminCalendarSection({ tenantId, showToast }: { tenantId: string
   }, [tenantId, showToast]);
 
   useEffect(() => {
-    void fetchCalendar();
-  }, [fetchCalendar]);
+    async function loadCalendar() {
+      try {
+        const response = await fetch(`/api/admin/calendar?tenantId=${tenantId}`);
+        if (!response.ok) {
+          showToast(await responseError(response, "Não foi possível carregar a agenda"));
+          return;
+        }
+        const data = await response.json();
+        setBlockedDates(data.blockedDates || []);
+        setWorkSchedule(data.workSchedule || []);
+      } catch {
+        showToast("Erro ao carregar agenda");
+      } finally {
+        setLoading(false);
+      }
+    }
+    void loadCalendar();
+  }, [tenantId, showToast]);
 
   const toggleDayOpen = async (dayOfWeek: number, currentOpen: boolean) => {
     try {
