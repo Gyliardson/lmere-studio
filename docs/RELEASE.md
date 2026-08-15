@@ -96,6 +96,12 @@ A production/preview deployment must provide at least:
 
 External deployment configuration is intentionally not stored as secret material in this repository. A successful Vercel preview proves the application can build/deploy in that environment, but it does not replace Quality, Secret Scan, E2E or clean-room verification.
 
+## Media evidence contract
+
+Final certification must use the reproducible media path documented in `docs/MEDIA.md`. Generated capture output and the curated `docs/media/portfolio/` subset are the only current visual-evidence surfaces. Superseded historical screenshot corpora must be removed once the curated evidence replaces them, so reviewers are not presented with conflicting or obsolete UI states.
+
+Deleting obsolete documentation media is not itself visual approval: the current deterministic capture/evidence still needs to remain reproducible and intact.
+
 ## GitHub governance
 
 The live repository state must be rechecked immediately before the final `portfolio/revamp-2026 → master` PR.
@@ -116,6 +122,7 @@ Before final certification:
 - [ ] full-history Secret Scan is green on that SHA;
 - [ ] E2E is green on that SHA;
 - [ ] deterministic visual/media evidence has been inspected where applicable;
+- [ ] only the current reproducible/curated media contract remains; superseded screenshot corpora are removed;
 - [ ] live deployment/environment requirements are documented and no production secret appears in repository history/artifacts;
 - [ ] live branch/ruleset state has been rechecked;
 - [ ] no open P0/P1 or release blocker remains;
