@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type APIRequestContext } from "@playwright/test";
 
 const baseOrder = {
   tenantId: "ci-tenant-a",
@@ -11,18 +11,18 @@ const baseOrder = {
   addonIds: [],
 };
 
-async function ordersForName(request: Parameters<typeof test>[0] extends never ? never : never, _name: string) {
-  return request;
-}
-
-async function orderCount(request: import("@playwright/test").APIRequestContext, customerName: string) {
+async function adminToken(request: APIRequestContext) {
   const login = await request.post("/api/admin/auth", {
     data: { slug: "ci-tenant-a", password: "ci-admin-password" },
   });
   expect(login.status()).toBe(200);
-  const setCookie = login.headers()["set-cookie"] ?? "";
-  const token = setCookie.match(/lmere_admin_session=([^;]+)/)?.[1];
+  const token = (login.headers()["set-cookie"] ?? "").match(/lmere_admin_session=([^;]+)/)?.[1];
   expect(token).toBeTruthy();
+  return token!;
+}
+
+async function orderCount(request: APIRequestContext, customerName: string) {
+  const token = await adminToken(request);
   const response = await request.get("/api/admin/orders", {
     headers: { cookie: `lmere_admin_session=${token}` },
   });
@@ -54,12 +54,11 @@ for (const field of [
 }
 
 test("public order accepts long content exactly at the server-owned boundaries", async ({ request }) => {
-  const customerName = "N".repeat(120);
   const response = await request.post("/api/orders", {
     data: {
       ...baseOrder,
       eventDate: "2026-12-28",
-      customerName,
+      customerName: "N".repeat(120),
       cakeMessage: "M".repeat(200),
       details: "D".repeat(2000),
     },
