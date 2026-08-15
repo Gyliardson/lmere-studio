@@ -94,7 +94,7 @@ A production/preview deployment must provide at least:
 - `ADMIN_SESSION_SECRET`;
 - optionally a distinct `RATE_LIMIT_SECRET`.
 
-External deployment configuration is intentionally not stored as secret material in this repository. A successful Vercel preview proves the application can build/deploy in that environment, but it does not replace Quality, Secret Scan, E2E or clean-room verification.
+External deployment configuration is intentionally not stored as secret material in this repository. A successful Vercel preview proves the application can build/deploy in that environment, but it does not replace Quality, full-history Secret Scan, E2E, Clean Room or CodeQL verification.
 
 ## Media evidence contract
 
@@ -121,6 +121,7 @@ Before final certification:
 - [ ] Quality is green on that SHA;
 - [ ] full-history Secret Scan is green on that SHA;
 - [ ] E2E is green on that SHA;
+- [ ] CodeQL JavaScript/TypeScript analysis completed on that SHA and post-processed SARIF was inspected for material findings;
 - [ ] deterministic visual/media evidence has been inspected where applicable;
 - [ ] only the current reproducible/curated media contract remains; superseded screenshot corpora are removed;
 - [ ] live deployment/environment requirements are documented and no production secret appears in repository history/artifacts;
