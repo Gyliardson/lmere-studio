@@ -37,6 +37,14 @@ test("admin logout revokes a captured token and allows a fresh session", async (
   });
   expect(beforeLogout.status()).toBe(200);
 
+  const settingsBeforeLogout = await context.request.get("/api/admin/settings", {
+    headers: { cookie: `lmere_admin_session=${capturedToken}` },
+  });
+  expect(settingsBeforeLogout.status()).toBe(200);
+  const settingsPayload = await settingsBeforeLogout.json();
+  expect(settingsPayload.settings).not.toHaveProperty("adminPasswordHash");
+  expect(settingsPayload.settings).not.toHaveProperty("adminSessionVersion");
+
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Gestão de Pedidos" })).toBeVisible();
 
