@@ -115,11 +115,14 @@ npm ci
 cp .env.example .env
 npm run db:generate
 npm run db:migrate
-npm run db:seed   # opcional para desenvolvimento/demo
+# Seed sintético destrutivo opcional, apenas em banco local/descartável:
+LMERE_ALLOW_DEMO_SEED=true npm run db:seed
 npm run dev
 ```
 
 Configure `POSTGRES_PRISMA_URL` para o banco de desenvolvimento e substitua o placeholder de `ADMIN_SESSION_SECRET` por segredo único. Nunca versione credenciais reais.
+
+`npm run db:seed` **não** é etapa de produção/bootstrap. Ele substitui deliberadamente o tenant sintético `doce-arte`, é recusado quando `NODE_ENV=production` e exige `LMERE_ALLOW_DEMO_SEED=true`. O bootstrap de produção usa apenas `npm run db:migrate`.
 
 ### Qualidade
 
@@ -133,14 +136,14 @@ O contrato completo de CI/PostgreSQL está em [`docs/QUALITY.md`](docs/QUALITY.m
 ### Banco
 
 - `npm run db:generate` — gera Prisma Client.
-- `npm run db:migrate` — aplica migrations commitadas.
+- `npm run db:migrate` — aplica migrations commitadas; é o caminho de bootstrap de CI/produção.
 - `npm run db:validate` — valida schema/configuração.
-- `npm run db:seed` — seed opcional de desenvolvimento.
+- `LMERE_ALLOW_DEMO_SEED=true npm run db:seed` — seed sintético **destrutivo**, opcional para ambiente local/descartável; recusado em produção e sem opt-in explícito.
 - `npm run db:push` — somente sincronização de desenvolvimento; não é estratégia de bootstrap de CI/produção.
 
 ## Evidência de qualidade
 
-Os gates do repositório cobrem lint, typecheck, build, audit de dependências, secret scan de histórico alcançável, unit tests, migrations em PostgreSQL vazio, fixtures Tenant A/B, assertions relacionais, smoke da aplicação, regras negativas de pedidos, idempotência/concurrency, isolamento multi-tenant admin, lifecycle de sessão, Playwright desktop/mobile, teclado/foco/dialog/combobox e artifacts visuais determinísticos inspecionados manualmente.
+Os gates do repositório cobrem lint, typecheck, build, audit de dependências, secret scan de histórico alcançável, CodeQL JavaScript/TypeScript com SARIF auditável, unit tests, migrations em PostgreSQL vazio, fixtures Tenant A/B, assertions relacionais, smoke da aplicação, regras negativas de pedidos, idempotência/concurrency, isolamento multi-tenant admin, lifecycle de sessão, Playwright desktop/mobile, axe representativo, teclado/foco/dialog/combobox e artifacts visuais determinísticos inspecionados manualmente.
 
 Isso é cobertura de regressão orientada a risco, não certificação WCAG completa nem substituto da revisão final de release.
 
