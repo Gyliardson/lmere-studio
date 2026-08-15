@@ -96,6 +96,23 @@ test.describe("bounded image upload clients", () => {
     await expect(page.getByText("PNG, JPG ou WEBP até 2 MB")).toBeVisible();
   });
 
+  test("storefront validates URL before committing external preview", async ({ page }, testInfo) => {
+    await reachReferenceStep(page, testInfo);
+    const urlInput = page.locator("#input-reference-url");
+
+    await urlInput.fill("http://images.example.test/reference.png");
+    await urlInput.blur();
+    await expect(page.getByRole("alert")).toContainText("URL HTTPS");
+    await expect(urlInput).toHaveAttribute("aria-invalid", "true");
+    await expect(page.getByAltText("Foto de referência")).toHaveCount(0);
+
+    await urlInput.fill("https://images.example.test/reference.png");
+    await urlInput.blur();
+    const preview = page.getByAltText("Foto de referência");
+    await expect(preview).toBeVisible();
+    await expect(preview).toHaveAttribute("referrerpolicy", "no-referrer");
+  });
+
   test("admin rejects unsupported and oversized files before FileReader", async ({ context, page }, testInfo) => {
     await installFileReaderProbe(page);
     await openAdminFlavorEditor(context, page, testInfo);
@@ -114,5 +131,23 @@ test.describe("bounded image upload clients", () => {
     await expect(dialog.getByRole("alert")).toContainText("no máximo 2 MB");
     expect(await fileReaderCount(page)).toBe(0);
     await expect(dialog.getByText("PNG, JPG ou WEBP até 2 MB")).toBeVisible();
+  });
+
+  test("admin validates URL before committing external preview", async ({ context, page }, testInfo) => {
+    await openAdminFlavorEditor(context, page, testInfo);
+    const dialog = page.getByRole("dialog", { name: "Editar Item" });
+    const urlInput = dialog.getByPlaceholder("Ou cole a URL da imagem (https://...)");
+
+    await urlInput.fill("http://images.example.test/catalog.png");
+    await urlInput.blur();
+    await expect(dialog.getByRole("alert")).toContainText("URL HTTPS");
+    await expect(urlInput).toHaveAttribute("aria-invalid", "true");
+    await expect(dialog.getByAltText("Imagem Ilustrativa do Sabor")).toHaveCount(0);
+
+    await urlInput.fill("https://images.example.test/catalog.png");
+    await urlInput.blur();
+    const preview = dialog.getByAltText("Imagem Ilustrativa do Sabor");
+    await expect(preview).toBeVisible();
+    await expect(preview).toHaveAttribute("referrerpolicy", "no-referrer");
   });
 });
