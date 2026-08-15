@@ -32,6 +32,9 @@ export interface LegacyCustomFieldDef {
   options?: string[];
 }
 
+/** @deprecated Use CustomFieldData for runtime tenant fields. */
+export type CustomFieldDef = LegacyCustomFieldDef;
+
 export interface CustomFieldData {
   id: string;
   label: string;
