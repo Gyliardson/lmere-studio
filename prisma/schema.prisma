@@ -7,25 +7,26 @@ datasource db {
 }
 
 model Tenant {
-  id                String   @id @default(uuid())
-  slug              String   @unique
-  name              String
-  logoUrl           String   @default("")
-  bannerUrl         String   @default("")
-  whatsapp          String   @default("")
-  pixKey            String   @default("")
-  primaryColor      String   @default("#8B5CF6")
-  secondaryColor    String   @default("#EC4899")
-  backgroundColor   String   @default("#0F0A1A")
-  buttonColor       String   @default("#8B5CF6")
-  shadowColor       String   @default("#8B5CF6")
-  textColor         String   @default("#FFFFFF")
-  adminPasswordHash String   @default("")
-  maxOrdersPerDay   Int      @default(5)
-  minLeadDays       Int      @default(3)
-  featuresConfig    String   @default("{\"allow_photo_upload\":true,\"deposit_mode\":\"50_percent\",\"enable_delivery_step\":false,\"custom_fields\":[]}")
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                  String   @id @default(uuid())
+  slug                String   @unique
+  name                String
+  logoUrl             String   @default("")
+  bannerUrl           String   @default("")
+  whatsapp            String   @default("")
+  pixKey              String   @default("")
+  primaryColor        String   @default("#8B5CF6")
+  secondaryColor      String   @default("#EC4899")
+  backgroundColor     String   @default("#0F0A1A")
+  buttonColor         String   @default("#8B5CF6")
+  shadowColor         String   @default("#8B5CF6")
+  textColor           String   @default("#FFFFFF")
+  adminPasswordHash   String   @default("")
+  adminSessionVersion Int      @default(0)
+  maxOrdersPerDay     Int      @default(5)
+  minLeadDays         Int      @default(3)
+  featuresConfig      String   @default("{\"allow_photo_upload\":true,\"deposit_mode\":\"50_percent\",\"enable_delivery_step\":false,\"custom_fields\":[]}")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   cakeSizes    CakeSize[]
   cakeFlavors  CakeFlavor[]
