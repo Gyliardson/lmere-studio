@@ -53,7 +53,7 @@ test("admin logout revokes a captured token and allows a fresh session", async (
   const cookiesAfterLogout = await context.cookies("http://127.0.0.1:3000/api/admin/auth");
   expect(cookiesAfterLogout.some((cookie) => cookie.name === "lmere_admin_session")).toBe(false);
 
-  for (const route of ["/api/admin/orders", "/api/admin/menu", "/api/admin/calendar", "/api/admin/settings"]) {
+  for (const route of ["/api/admin/auth", "/api/admin/orders", "/api/admin/menu", "/api/admin/calendar", "/api/admin/settings"]) {
     const replay = await context.request.get(route, {
       headers: { cookie: `lmere_admin_session=${capturedToken}` },
     });
