@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { getVerifiedAdminSession } from "@/lib/admin-session";
 import { CUSTOM_FIELD_LIMITS, normalizeCustomFields, validateCustomFieldWrite } from "@/lib/custom-fields";
 import { prisma } from "@/lib/prisma";
@@ -6,6 +7,7 @@ import { NextResponse } from "next/server";
 const unauthorized = () => NextResponse.json({ error: "Sessão inválida ou expirada" }, { status: 401 });
 const invalidJson = () => NextResponse.json({ code: "INVALID_JSON", error: "Corpo JSON inválido" }, { status: 400 });
 const validationError = (issues: Array<{ field: string; message: string }>) => NextResponse.json({ code: "VALIDATION_ERROR", error: "Dados inválidos", issues }, { status: 422 });
+const duplicateLabel = () => validationError([{ field: "label", message: "já existe um campo com este rótulo" }]);
 
 async function sessionTenant(request: Request) {
   const session = await getVerifiedAdminSession(request);
@@ -17,6 +19,10 @@ async function serializedFields(tenantId: string) {
   const parsed = normalizeCustomFields(rows);
   if (!parsed.ok) throw new Error("Persisted custom fields violate the server contract");
   return parsed.value;
+}
+
+function isUniqueConflict(error: unknown) {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
 }
 
 export async function GET(request: Request) {
@@ -44,7 +50,7 @@ export async function POST(request: Request) {
       prisma.customField.findFirst({ where: { tenantId, label: { equals: parsed.value.label, mode: "insensitive" } } }),
     ]);
     if (count >= CUSTOM_FIELD_LIMITS.fields) return validationError([{ field: "$", message: `máximo de ${CUSTOM_FIELD_LIMITS.fields} campos personalizados` }]);
-    if (duplicate) return validationError([{ field: "label", message: "já existe um campo com este rótulo" }]);
+    if (duplicate) return duplicateLabel();
 
     await prisma.customField.create({ data: {
       tenantId,
@@ -55,6 +61,7 @@ export async function POST(request: Request) {
     } });
     return NextResponse.json({ customFields: await serializedFields(tenantId) }, { status: 201 });
   } catch (error) {
+    if (isUniqueConflict(error)) return duplicateLabel();
     console.error("[ERROR] Failed to create custom field", error instanceof Error ? error.message : "unknown error");
     return NextResponse.json({ error: "Erro ao criar campo personalizado" }, { status: 500 });
   }
@@ -76,7 +83,7 @@ export async function PUT(request: Request) {
     const owned = await prisma.customField.findFirst({ where: { id, tenantId } });
     if (!owned) return NextResponse.json({ error: "Campo não encontrado" }, { status: 404 });
     const duplicate = await prisma.customField.findFirst({ where: { tenantId, label: { equals: parsed.value.label, mode: "insensitive" }, NOT: { id } } });
-    if (duplicate) return validationError([{ field: "label", message: "já existe um campo com este rótulo" }]);
+    if (duplicate) return duplicateLabel();
 
     await prisma.customField.update({ where: { id: owned.id }, data: {
       label: parsed.value.label,
@@ -86,6 +93,7 @@ export async function PUT(request: Request) {
     } });
     return NextResponse.json({ customFields: await serializedFields(tenantId) });
   } catch (error) {
+    if (isUniqueConflict(error)) return duplicateLabel();
     console.error("[ERROR] Failed to update custom field", error instanceof Error ? error.message : "unknown error");
     return NextResponse.json({ error: "Erro ao atualizar campo personalizado" }, { status: 500 });
   }
