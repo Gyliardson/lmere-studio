@@ -1,0 +1,15 @@
+/* The final summary owns its submit CTA. Keep the remaining Back action in
+   normal document flow so dense financial/status content cannot be covered by
+   the step-navigation overlay on short mobile viewports. */
+#simulator-root:has(#btn-send-whatsapp) > main {
+  padding-bottom: 1.5rem;
+}
+
+#simulator-root:has(#btn-send-whatsapp) > div.fixed.bottom-0 {
+  position: static;
+}
+
+#simulator-root:has(#btn-send-whatsapp) > div.fixed.bottom-0 > div {
+  padding-top: 0.5rem;
+  background-image: none;
+}
