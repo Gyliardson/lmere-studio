@@ -9,12 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Reproducible quality gates**: GitHub Actions for lint, typecheck, unit tests, production dependency audit, Prisma validation, production build, disposable PostgreSQL integration/application smoke, Playwright E2E, full-history secret scanning and clean-room verification.
+- **CodeQL SAST evidence**: JavaScript/TypeScript `security-and-quality` analysis with least-privilege permissions, completed SARIF processing and a short-retention post-processed SARIF artifact for audit.
 - **PostgreSQL migration baseline**: committed migrations, deterministic Tenant A/Tenant B CI fixtures and real PostgreSQL integration assertions.
 - **Server-authoritative order flow**: catalog/date/capacity validation, pricing/deposit recalculation, serializable persistence, bounded retries and tenant-scoped idempotency.
-- **Admin security model**: expiry-bound HMAC-signed HttpOnly sessions, server-derived tenant identity, ownership checks and negative cross-tenant tests.
+- **Canonical tenant custom fields**: tenant-owned text/select/number fields flow from authenticated admin configuration through storefront validation, server-side persistence snapshots, admin history and confirmed WhatsApp handoff.
+- **Admin security model**: expiry-bound HMAC-signed HttpOnly sessions, persisted session-generation revocation, server-derived tenant identity, ownership checks and negative cross-tenant tests.
 - **Persistent abuse controls**: privacy-preserving PostgreSQL-backed rate limiting for admin login and public order creation.
 - **Bounded image-reference contract**: PNG/JPEG/WEBP Data URLs up to 2 MiB plus bounded credential-free HTTPS references, enforced at browser and API boundaries.
-- **Accessibility/robustness regressions**: desktop/mobile keyboard, focus, dialog, combobox, reduced-motion, responsive overflow and representative state coverage.
+- **Bounded public order text**: server-owned limits for customer name, cake message and observations, with boundary tests and responsive long-content coverage.
+- **Accessibility/robustness regressions**: desktop/mobile keyboard, focus, dialog, combobox, reduced-motion, responsive overflow, representative axe scans and state coverage.
 - **Baseline response hardening**: anti-MIME-sniffing, clickjacking denial, strict-origin referrer policy and restrictive camera/microphone/geolocation permissions policy.
 - **Release documentation**: architecture, quality, media and clean-room/release contracts under `docs/`.
 
@@ -25,16 +28,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Documentation media**: replaced the historical video/FFmpeg and screenshot corpus with a deterministic Playwright capture pipeline and four curated portfolio images.
 - **README state**: reconciled EN/PT-BR/ES/JA documentation with the implemented stack, security model, test strategy and manual release-promotion contract.
 - **Public-repository hygiene**: preserved explicit local-secret/private-key ignore rules and proprietary wording compatible with publicly visible source.
+- **Demo seed safety**: destructive synthetic demo seeding now fails closed in production, requires explicit opt-in and no longer prints the demo password value.
 
 ### Security
 - Admin password hashes are omitted at Prisma query/update boundaries for public tenant and admin-settings responses rather than loaded and stripped afterward.
 - Customer-controlled tenant/resource identifiers are not trusted for protected admin authorization.
+- Logout advances the persisted tenant session generation so captured pre-logout admin tokens are rejected across protected API families.
 - Public order pricing, deposit, active catalog membership, business dates and capacity are revalidated server-side.
-- External reference images are never fetched server-side; direct-browser privacy implications are documented.
+- External reference images are never fetched server-side; direct-browser privacy implications are documented and privileged admin rendering is constrained.
+- Public/admin persisted text and image inputs have explicit application-level bounds instead of relying on hosting-layer body limits.
 
 ### Removed
 - SQLite drift and obsolete database bootstrap assumptions.
 - Legacy video-generation scripts, prerecorded demo assets and superseded `docs/screenshots/` evidence.
+- Dormant delivery-step behavior claims; the legacy flag is normalized disabled until a real delivery flow exists.
 
 > Historical entries below describe the repository at the time each version was released. Later `Unreleased` changes intentionally supersede some older implementation details such as SQLite and the legacy video pipeline.
 
