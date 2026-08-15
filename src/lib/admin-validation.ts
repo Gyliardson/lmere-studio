@@ -120,7 +120,7 @@ function numberValue(
   value: unknown,
   field: string,
   issues: ValidationIssue[],
-  options: { min: number; max: number; integer?: boolean },
+  options: { min: number; max: number; integer?: boolean; centPrecision?: boolean },
 ): number | undefined {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     issue(issues, field, "deve ser um número JSON finito");
@@ -133,6 +133,14 @@ function numberValue(
   if (value < options.min || value > options.max) {
     issue(issues, field, `deve estar entre ${options.min} e ${options.max}`);
     return undefined;
+  }
+  if (options.centPrecision) {
+    const normalized = Math.round(value * 100) / 100;
+    if (Math.abs(value - normalized) > 1e-9) {
+      issue(issues, field, "deve ter no máximo duas casas decimais");
+      return undefined;
+    }
+    return normalized;
   }
   return value;
 }
@@ -217,7 +225,7 @@ function sizeData(raw: Record<string, unknown>, issues: ValidationIssue[], parti
   if (take("name")) data.name = stringValue(raw.name, "name", issues, { max: 80 });
   if (take("servings")) data.servings = stringValue(raw.servings, "servings", issues, { max: 80 });
   if (take("weightKg")) data.weightKg = numberValue(raw.weightKg, "weightKg", issues, { min: 0.1, max: ADMIN_LIMITS.weightKg });
-  if (take("basePrice")) data.basePrice = numberValue(raw.basePrice, "basePrice", issues, { min: 0, max: ADMIN_LIMITS.money });
+  if (take("basePrice")) data.basePrice = numberValue(raw.basePrice, "basePrice", issues, { min: 0, max: ADMIN_LIMITS.money, centPrecision: true });
   if (take("maxFillings")) data.maxFillings = numberValue(raw.maxFillings, "maxFillings", issues, { min: 1, max: ADMIN_LIMITS.maxFillings, integer: true });
   if (take("sortOrder")) data.sortOrder = numberValue(defaultIfUndefined(raw.sortOrder, 0), "sortOrder", issues, { min: 0, max: ADMIN_LIMITS.sortOrder, integer: true });
   if (take("active")) data.active = booleanValue(defaultIfUndefined(raw.active, true), "active", issues);
@@ -229,7 +237,7 @@ function flavorData(raw: Record<string, unknown>, issues: ValidationIssue[], par
   const take = (key: keyof FlavorData) => !partial || raw[key] !== undefined || (key === "type" && (raw.flavorType !== undefined || raw.category !== undefined));
   if (take("name")) data.name = stringValue(raw.name, "name", issues, { max: 80 });
   if (take("type")) data.type = enumValue(flavorCategory(raw), "type", ["MASSA", "RECHEIO"] as const, issues);
-  if (take("additionalPrice")) data.additionalPrice = numberValue(defaultIfUndefined(raw.additionalPrice, 0), "additionalPrice", issues, { min: 0, max: ADMIN_LIMITS.money });
+  if (take("additionalPrice")) data.additionalPrice = numberValue(defaultIfUndefined(raw.additionalPrice, 0), "additionalPrice", issues, { min: 0, max: ADMIN_LIMITS.money, centPrecision: true });
   if (take("isSpecial")) data.isSpecial = booleanValue(defaultIfUndefined(raw.isSpecial, false), "isSpecial", issues);
   if (take("imageUrl")) data.imageUrl = imageValue(defaultIfUndefined(raw.imageUrl, ""), "imageUrl", issues);
   if (take("sortOrder")) data.sortOrder = numberValue(defaultIfUndefined(raw.sortOrder, 0), "sortOrder", issues, { min: 0, max: ADMIN_LIMITS.sortOrder, integer: true });
@@ -242,7 +250,7 @@ function addonData(raw: Record<string, unknown>, issues: ValidationIssue[], part
   const take = (key: keyof AddonData) => !partial || raw[key] !== undefined;
   if (take("name")) data.name = stringValue(raw.name, "name", issues, { max: 80 });
   if (take("description")) data.description = stringValue(defaultIfUndefined(raw.description, ""), "description", issues, { allowEmpty: true, max: ADMIN_LIMITS.description });
-  if (take("price")) data.price = numberValue(raw.price, "price", issues, { min: 0, max: ADMIN_LIMITS.money });
+  if (take("price")) data.price = numberValue(raw.price, "price", issues, { min: 0, max: ADMIN_LIMITS.money, centPrecision: true });
   if (take("imageUrl")) data.imageUrl = imageValue(defaultIfUndefined(raw.imageUrl, ""), "imageUrl", issues);
   if (take("sortOrder")) data.sortOrder = numberValue(defaultIfUndefined(raw.sortOrder, 0), "sortOrder", issues, { min: 0, max: ADMIN_LIMITS.sortOrder, integer: true });
   if (take("active")) data.active = booleanValue(defaultIfUndefined(raw.active, true), "active", issues);
