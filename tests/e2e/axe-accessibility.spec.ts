@@ -28,6 +28,34 @@ async function expectNoSeriousOrCriticalAxeViolations(page: Page, label: string)
   expect(blocking, `${label} has serious/critical axe violations:\n${JSON.stringify(blocking, null, 2)}`).toEqual([]);
 }
 
+function storefrontDate(testInfo: TestInfo) {
+  const projectOffset = testInfo.project.name.includes("mobile") ? 6 : 0;
+  const retryOffset = testInfo.retry * 12;
+  const date = new Date(Date.UTC(2032, 1, 13 + 7 * (projectOffset + retryOffset)));
+  return { year: date.getUTCFullYear(), month: date.getUTCMonth(), day: date.getUTCDate() };
+}
+
+async function reachStorefrontSummary(page: Page, testInfo: TestInfo) {
+  await page.goto("/ci-tenant-a");
+
+  const target = storefrontDate(testInfo);
+  const now = await page.evaluate(() => ({ year: new Date().getFullYear(), month: new Date().getMonth() }));
+  const monthsForward = (target.year - now.year) * 12 + (target.month - now.month);
+  for (let index = 0; index < monthsForward; index += 1) await page.locator("#cal-next").click();
+
+  await page.locator(`#cal-day-${target.day}`).click();
+  await page.locator("#btn-next").click();
+  await page.locator("#size-ci-size-a").click();
+  await page.locator("#btn-next").click();
+  await page.locator("#dough-ci-flavor-a").click();
+  await page.locator("#filling-ci-filling-a").click();
+  await page.locator("#btn-next").click();
+  await page.locator("#btn-next").click();
+  await page.locator("#input-name").fill("CI Axe Customer");
+  await page.locator("#input-phone").fill("11000000000");
+  await expect(page.locator("#btn-send-whatsapp")).toBeEnabled();
+}
+
 async function openAuthenticatedAdmin(context: BrowserContext, page: Page, testInfo: TestInfo) {
   const tenantId = testInfo.project.name.includes("mobile") ? "ci-tenant-b" : "ci-tenant-a";
   await context.addCookies([
@@ -60,6 +88,11 @@ test.describe("representative axe gate", () => {
     await page.goto(`/${slug}`);
     await expect(page.getByRole("main")).toBeVisible();
     await expectNoSeriousOrCriticalAxeViolations(page, `${testInfo.project.name} loaded storefront`);
+  });
+
+  test("storefront summary has no serious or critical axe violations", async ({ page }, testInfo) => {
+    await reachStorefrontSummary(page, testInfo);
+    await expectNoSeriousOrCriticalAxeViolations(page, `${testInfo.project.name} storefront summary`);
   });
 
   test("storefront error state has no serious or critical axe violations", async ({ page }, testInfo) => {
