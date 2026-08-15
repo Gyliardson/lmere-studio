@@ -1,54 +1,159 @@
 # L'Mere Studio — Simulador de Encomendas & CMS Multi-Tenant
 
-[![Licença](https://img.shields.io/badge/licen%C3%A7a-Propriet%C3%A1ria-red.svg)](LICENSE)
+[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.2.0-purple.svg)](CHANGELOG.md)
+[![Next.js](https://img.shields.io/badge/Next.js-16.3.0-black.svg)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.2.4-blue.svg)](https://react.dev/)
+[![Prisma](https://img.shields.io/badge/Prisma-7.9.1-darkblue.svg)](https://www.prisma.io/)
+[![Licença](https://img.shields.io/badge/Licen%C3%A7a-Propriet%C3%A1ria-red.svg)](LICENSE)
 
 [English](README.md) | [Português](README.pt-BR.md) | [日本語](README.ja.md) | [Español](README.es.md)
 
-O L'Mere Studio é uma aplicação web white-label e multi-tenant para ateliês de confeitaria e cake designers. O projeto combina um fluxo público de encomendas com um CMS administrativo para catálogo, agenda, identidade visual e gestão de pedidos.
+L'Mere Studio é uma aplicação white-label e multi-tenant para ateliês de confeitaria e cake designers. Combina um simulador público de encomendas em cinco etapas com um painel administrativo autenticado para pedidos, catálogo, agenda, marca e configurações do tenant.
 
-> **Active engineering hardening:** este repositório está passando pelo programa de profissionalização `portfolio/revamp-2026`. Ele é publicado como projeto de engenharia/portfólio e **não possui certificação de produção**. O trabalho atual de integração é preparado em [`portfolio/revamp-2026`](../../tree/portfolio/revamp-2026) antes de qualquer merge final aprovado pelo mantenedor em `master`.
+> **Baseline de engenharia do portfólio:** a documentação descreve comportamento implementado e coberto pelos gates reproduzíveis de qualidade abaixo. A promoção para a branch padrão permanece uma decisão de revisão manual.
 
-## Estado do repositório
+## Problema → solução
 
-- `master` é a baseline pública/default e não representa certificação de release.
-- `portfolio/revamp-2026` concentra o hardening ativo de segurança, CI, banco de dados, acessibilidade, UX, documentação e release.
-- Evidências do GitHub Actions precisam ser avaliadas no commit exato em revisão; tornar o repositório público não transforma gates pendentes em PASS.
-- Não implante esta baseline com dados reais de clientes ou credenciais de produção sem concluir o hardening e a validação de release restantes.
+Encomendas personalizadas exigem conciliar disponibilidade, catálogo configurável, regras financeiras e comunicação com o cliente. O L'Mere centraliza essas regras numa experiência multi-tenant, mantendo preço, disponibilidade e persistência críticos sob autoridade do servidor.
 
-## Segurança e credenciais
+O case técnico demonstra:
 
-Segredos de produção não devem ser versionados. Arquivos locais de ambiente são ignorados por padrão e `.env.example` contém somente placeholders.
+- catálogo, agenda, branding e administração isolados por tenant;
+- preço e disponibilidade recalculados no servidor;
+- sessão admin HMAC assinada e verificações de ownership;
+- PostgreSQL com migrations versionadas e fixtures determinísticas de dois tenants;
+- testes unitários, integração e Playwright orientados a risco;
+- captura reproduzível de evidências desktop/mobile.
 
-O repositório possui dados determinísticos de seed para desenvolvimento/demonstração. **Todas as identidades, informações de contato e credenciais de demo são sintéticas e destinadas exclusivamente ao desenvolvimento local. Nunca reutilize valores de demo em ambiente público ou de produção.** Configure credenciais e connection strings únicas fora do repositório para qualquer ambiente real.
+## Mídia de demonstração reproduzível
 
-Nunca execute seeds de desenvolvimento contra um banco de produção.
+A documentação não depende mais de vídeos pré-gravados, cursor falso, narração, legendas, música de fundo ou pós-processamento com ffmpeg. As capturas atuais são produzidas com dados PostgreSQL sintéticos por um comando Playwright separado da suíte comportamental:
 
-## Banco de dados / runtime
+```bash
+npm run demo:capture
+```
 
-A baseline atual do código está configurada para **PostgreSQL** via Prisma e lê a conexão em `POSTGRES_PRISMA_URL`. As antigas instruções de SQLite foram removidas porque não correspondem mais ao estado do repositório.
+Veja [`docs/MEDIA.md`](docs/MEDIA.md) para pré-requisitos, bootstrap limpo, dados determinísticos e arquivos gerados em `docs/media/generated/`.
 
-A branch de profissionalização contém o trabalho atual de migrations, banco descartável de CI e validação de segurança. Durante o programa, use o README e `docs/QUALITY.md` de `portfolio/revamp-2026` como referência autoritativa de setup para essa branch.
+Os testes E2E continuam separados:
 
-## Desenvolvimento durante a profissionalização
+```bash
+npm run test:e2e
+```
+
+## Funcionalidades
+
+### Simulador público (`/[slug]`)
+
+1. **Calendário:** agenda semanal, datas bloqueadas e antecedência mínima do tenant.
+2. **Tamanho:** porções, peso, preço-base e limite de recheios configurados pelo tenant.
+3. **Sabores e adicionais:** massas, recheios, especiais e extras ativos.
+4. **Personalização:** mensagem, observações e imagem de referência opcional.
+5. **Finalização confirmada:** o servidor revalida catálogo/data/capacidade, recalcula subtotal/sinal, persiste o pedido e só então entrega valores confirmados para o handoff ao WhatsApp.
+
+### Admin autenticado (`/admin`)
+
+- gestão de status de pedidos;
+- CRUD de tamanhos, sabores/recheios e adicionais;
+- agenda semanal e datas bloqueadas;
+- branding/contato por tenant;
+- configuração de funcionalidades, sinal, capacidade e lead time;
+- navegação responsiva e regressões de teclado/foco em desktop/mobile.
+
+## Arquitetura
+
+```mermaid
+flowchart TD
+    Cliente[Cliente] --> Loja[Storefront Next.js]
+    Admin[Admin] --> Painel[Painel Admin Next.js]
+    Loja --> APIPublica[APIs públicas]
+    Painel --> APIAdmin[APIs admin autenticadas]
+    APIPublica --> Prisma[Prisma 7]
+    APIAdmin --> Prisma
+    Prisma --> PostgreSQL[(PostgreSQL / compatível com Neon)]
+```
+
+### Contrato de banco/runtime
+
+- Provider Prisma: **PostgreSQL**.
+- Variável canônica: `POSTGRES_PRISMA_URL`.
+- Adapter runtime: `@prisma/adapter-pg`.
+- Produção pode usar Neon; local/CI usa PostgreSQL TCP comum.
+- Banco vazio é preparado com migrations versionadas via `prisma migrate deploy`.
+- CI usa PostgreSQL 16 descartável e fixtures Tenant A/Tenant B.
+
+### Modelo de segurança
+
+- Sessão admin HMAC-SHA256 com expiração em cookie HttpOnly e `SameSite=Strict`; produção usa `Secure`.
+- `ADMIN_SESSION_SECRET` exige pelo menos 32 bytes de material secreto único.
+- Rotas admin derivam tenant da sessão verificada, não de `tenantId` enviado pelo cliente.
+- Mutações de recursos existentes verificam ownership.
+- `/api/orders` trata subtotal, sinal, disponibilidade e IDs enviados pelo navegador como não confiáveis.
+- Servidor re-resolve catálogo ativo, calendário/capacidade e financeiro dentro de transação PostgreSQL serializável com retry limitado.
+- Login e pedidos públicos possuem rate limiting persistente.
+
+## Stack
+
+| Área | Tecnologia |
+| --- | --- |
+| Framework | Next.js 16.3.0 App Router |
+| UI | React 19.2.4, Tailwind CSS v4, Lucide React |
+| Linguagem | TypeScript 5 |
+| Banco | PostgreSQL, Prisma 7.9.1, `@prisma/adapter-pg` |
+| Hash de senha | bcryptjs |
+| Browser tests | Playwright |
+| Banco de CI | PostgreSQL 16 descartável |
+
+## Instalação
+
+Pré-requisitos: Node.js **22+**, npm compatível e PostgreSQL/Neon.
 
 ```bash
 git clone https://github.com/Gyliardson/lmere-studio.git
 cd lmere-studio
-git checkout portfolio/revamp-2026
 npm ci
 cp .env.example .env
+npm run db:generate
+npm run db:migrate
+# Seed sintético destrutivo opcional, apenas em banco local/descartável:
+LMERE_ALLOW_DEMO_SEED=true npm run db:seed
+npm run dev
 ```
 
-Substitua todos os placeholders do `.env` por valores exclusivos de desenvolvimento e siga a documentação da branch para preparar o banco e executar as validações.
+Configure `POSTGRES_PRISMA_URL` para o banco de desenvolvimento e substitua o placeholder de `ADMIN_SESSION_SECRET` por segredo único. Nunca versione credenciais reais.
 
-## Escopo
+`npm run db:seed` **não** é etapa de produção/bootstrap. Ele substitui deliberadamente o tenant sintético `doce-arte`, é recusado quando `NODE_ENV=production` e exige `LMERE_ALLOW_DEMO_SEED=true`. O bootstrap de produção usa apenas `npm run db:migrate`.
 
-A aplicação inclui um simulador público de encomendas em múltiplas etapas e um CMS administrativo isolado por tenant para pedidos, catálogo, agenda, identidade visual e configurações. Segurança adicional, controles de abuso, acessibilidade, mídia reproduzível, validação clean-room e limpeza arquitetural continuam rastreados pelo programa antes da certificação final.
+### Qualidade
 
-## Mídia
+```bash
+npm run quality
+npm run test:e2e
+```
 
-Screenshots e vídeos do repositório são artefatos de portfólio gerados a partir de fluxos de desenvolvimento/demo. Eles não constituem evidência de prontidão para produção. A atualização final de mídia permanece rastreada separadamente.
+O contrato completo de CI/PostgreSQL está em [`docs/QUALITY.md`](docs/QUALITY.md). A captura de documentação está em [`docs/MEDIA.md`](docs/MEDIA.md).
+
+### Banco
+
+- `npm run db:generate` — gera Prisma Client.
+- `npm run db:migrate` — aplica migrations commitadas; é o caminho de bootstrap de CI/produção.
+- `npm run db:validate` — valida schema/configuração.
+- `LMERE_ALLOW_DEMO_SEED=true npm run db:seed` — seed sintético **destrutivo**, opcional para ambiente local/descartável; recusado em produção e sem opt-in explícito.
+- `npm run db:push` — somente sincronização de desenvolvimento; não é estratégia de bootstrap de CI/produção.
+
+## Evidência de qualidade
+
+Os gates do repositório cobrem lint, typecheck, build, audit de dependências, secret scan de histórico alcançável, CodeQL JavaScript/TypeScript com SARIF auditável, unit tests, migrations em PostgreSQL vazio, fixtures Tenant A/B, assertions relacionais, smoke da aplicação, regras negativas de pedidos, idempotência/concurrency, isolamento multi-tenant admin, lifecycle de sessão, Playwright desktop/mobile, axe representativo, teclado/foco/dialog/combobox e artifacts visuais determinísticos inspecionados manualmente.
+
+Isso é cobertura de regressão orientada a risco, não certificação WCAG completa nem substituto da revisão final de release.
+
+## Status / limitações
+
+- A promoção para a branch padrão é intencionalmente manual e segue o checklist de [`docs/RELEASE.md`](docs/RELEASE.md).
+- Mídia gerada precisa de inspeção manual antes de publicação.
+- Acessibilidade é coberta de forma representativa, não como certificação integral.
+- Proteção/rulesets das branches é uma configuração de governança fora da correção da aplicação e deve ser revalidada no release.
 
 ## Licença
 
-Este repositório é publicamente visível, mas **não é open source**. O código-fonte e os materiais associados continuam sob a [Licença de Software Proprietário — Todos os Direitos Reservados](LICENSE). A visibilidade pública não concede permissão para copiar, redistribuir, hospedar, sublicenciar ou explorar comercialmente o software fora do que for explicitamente autorizado pela licença ou pelo titular dos direitos.
+Software sob **Licença Proprietária (Todos os Direitos Reservados)**. Uso comercial, redistribuição, hospedagem SaaS ou cópia de código exige autorização explícita. Consulte [LICENSE](LICENSE).

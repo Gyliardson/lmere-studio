@@ -1,0 +1,278 @@
+name: Quality
+
+on:
+  pull_request:
+    branches:
+      - portfolio/revamp-2026
+      - master
+  push:
+    branches:
+      - portfolio/revamp-2026
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static-quality:
+    name: Lint, typecheck, unit, security, Prisma validate, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      POSTGRES_PRISMA_URL: postgresql://postgres:postgres@127.0.0.1:5432/lmere_ci?sslmode=disable
+      NODE_ENV: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Lint
+        id: lint
+        shell: bash
+        run: |
+          set +e
+          npx eslint . --format json --output-file eslint-report.json
+          status=$?
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Upload lint report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: eslint-report
+          path: eslint-report.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Audit production dependencies
+        id: dependency_audit
+        shell: bash
+        run: |
+          set +e
+          npm audit --omit=dev --audit-level=high --json > npm-audit.json
+          status=$?
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Upload dependency audit report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: npm-audit-report
+          path: npm-audit.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Typecheck
+        id: typecheck
+        continue-on-error: true
+        run: npm run typecheck
+
+      - name: Unit tests
+        id: unit_tests
+        continue-on-error: true
+        run: npm run test:unit
+
+      - name: Validate Prisma schema
+        id: prisma_validate
+        continue-on-error: true
+        run: npm run db:validate
+
+      - name: Production build
+        id: production_build
+        continue-on-error: true
+        run: npm run build
+
+      - name: Enforce static quality gates
+        if: always()
+        shell: bash
+        run: |
+          failed=0
+          if [ "${{ steps.lint.outputs.exit_code }}" != "0" ]; then
+            echo "ESLint failed with exit code ${{ steps.lint.outputs.exit_code }}. See eslint-report artifact for exact findings."
+            failed=1
+          fi
+          if [ "${{ steps.dependency_audit.outputs.exit_code }}" != "0" ]; then
+            echo "Production dependency audit found high-or-critical vulnerabilities. See npm-audit-report artifact."
+            failed=1
+          fi
+          if [ "${{ steps.typecheck.outcome }}" != "success" ]; then
+            echo "Typecheck failed."
+            failed=1
+          fi
+          if [ "${{ steps.unit_tests.outcome }}" != "success" ]; then
+            echo "Unit tests failed."
+            failed=1
+          fi
+          if [ "${{ steps.prisma_validate.outcome }}" != "success" ]; then
+            echo "Prisma schema validation failed."
+            failed=1
+          fi
+          if [ "${{ steps.production_build.outcome }}" != "success" ]; then
+            echo "Production build failed."
+            failed=1
+          fi
+          exit "$failed"
+
+  database-bootstrap:
+    name: PostgreSQL migrate, seed, integration, application smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: lmere_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d lmere_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      POSTGRES_PRISMA_URL: postgresql://postgres:postgres@127.0.0.1:5432/lmere_ci?sslmode=disable
+      NODE_ENV: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Apply versioned migrations to empty PostgreSQL
+        run: npm run db:migrate
+
+      - name: Seed deterministic CI fixtures
+        run: npx prisma db execute --file prisma/ci-seed.sql --config=prisma.config.ts
+
+      - name: Run PostgreSQL integration assertions
+        run: npm run test:integration:db
+
+      - name: Prove demo seed refuses missing opt-in before destructive work
+        shell: bash
+        run: |
+          set +e
+          output=$(npm run db:seed 2>&1)
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ]; then
+            echo "Demo seed unexpectedly succeeded without LMERE_ALLOW_DEMO_SEED=true."
+            exit 1
+          fi
+          printf '%s\n' "$output" | grep -F "requires explicit opt-in"
+          if printf '%s\n' "$output" | grep -Eq 'postgres:postgres|@127\.0\.0\.1|sslmode='; then
+            echo "Demo seed refusal leaked connection credentials or query material."
+            exit 1
+          fi
+
+      - name: Prove explicitly opted-in demo seed on disposable PostgreSQL
+        env:
+          LMERE_ALLOW_DEMO_SEED: "true"
+          LMERE_DEMO_ADMIN_PASSWORD: "ci-synthetic-demo-password"
+        run: npm run db:seed
+
+      - name: Build application for runtime smoke
+        run: npm run build
+
+      - name: Prove application queries disposable PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm start > next-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+
+          ready=0
+          for attempt in {1..30}; do
+            status=$(curl --silent --output tenant-a.json --write-out '%{http_code}' http://127.0.0.1:3000/api/tenants/ci-tenant-a || true)
+            if [ "$status" = "200" ]; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+
+          if [ "$ready" != "1" ]; then
+            echo "Application did not become ready with the disposable PostgreSQL database."
+            cat next-server.log
+            exit 1
+          fi
+
+          demo_status=$(curl --silent --output tenant-demo.json --write-out '%{http_code}' http://127.0.0.1:3000/api/tenants/doce-arte)
+          if [ "$demo_status" != "200" ]; then
+            echo "Explicitly opted-in demo seed was not queryable through the application."
+            cat tenant-demo.json
+            exit 1
+          fi
+
+          node <<'NODE'
+          const fs = require('node:fs');
+          const payload = JSON.parse(fs.readFileSync('tenant-a.json', 'utf8'));
+          if (payload.tenant?.id !== 'ci-tenant-a') throw new Error('Expected Tenant A from application API');
+          if ('adminPasswordHash' in payload.tenant) throw new Error('Public tenant API exposed adminPasswordHash');
+          const resourceIds = [
+            ...(payload.sizes ?? []).map((item) => item.id),
+            ...(payload.doughs ?? []).map((item) => item.id),
+            ...(payload.fillings ?? []).map((item) => item.id),
+          ];
+          if (!resourceIds.includes('ci-size-a') || !resourceIds.includes('ci-flavor-a') || !resourceIds.includes('ci-filling-a')) {
+            throw new Error('Tenant A deterministic resources were not returned');
+          }
+          if (resourceIds.some((id) => String(id).endsWith('-b'))) {
+            throw new Error('Tenant B resource leaked into Tenant A public response');
+          }
+
+          const demo = JSON.parse(fs.readFileSync('tenant-demo.json', 'utf8'));
+          if (demo.tenant?.slug !== 'doce-arte') throw new Error('Expected explicitly seeded synthetic demo tenant');
+          if ('adminPasswordHash' in demo.tenant) throw new Error('Demo public tenant response exposed adminPasswordHash');
+          NODE
+
+          missing_status=$(curl --silent --output tenant-missing.json --write-out '%{http_code}' http://127.0.0.1:3000/api/tenants/ci-tenant-missing)
+          if [ "$missing_status" != "404" ]; then
+            echo "Unknown tenant returned HTTP $missing_status instead of 404."
+            cat tenant-missing.json
+            exit 1
+          fi
+
+      - name: Upload application smoke diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: application-smoke-diagnostics
+          path: |
+            next-server.log
+            tenant-a.json
+            tenant-demo.json
+            tenant-missing.json
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Verify migration state
+        run: npx prisma migrate status --config=prisma.config.ts

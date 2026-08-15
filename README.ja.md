@@ -1,54 +1,141 @@
 # L'Mere Studio — マルチテナント注文シミュレーター & CMS
 
-[![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-1.2.0-purple.svg)](CHANGELOG.md)
+[![Next.js](https://img.shields.io/badge/Next.js-16.3.0-black.svg)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.2.4-blue.svg)](https://react.dev/)
+[![Prisma](https://img.shields.io/badge/Prisma-7.9.1-darkblue.svg)](https://www.prisma.io/)
+[![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
 
 [English](README.md) | [Português](README.pt-BR.md) | [日本語](README.ja.md) | [Español](README.es.md)
 
-L'Mere Studio は、洋菓子店やケーキデザイナー向けのホワイトレーベル型マルチテナント Web アプリケーションです。顧客向け注文フローと、カタログ、スケジュール、ブランド設定、注文管理を行う管理 CMS を提供します。
+L'Mere Studio は、洋菓子店やケーキデザイナー向けのホワイトラベル型マルチテナント Web アプリケーションです。5 ステップの公開注文シミュレーターと、注文・商品・営業日・ブランド・テナント設定を管理する認証済み管理画面を提供します。
 
-> **Active engineering hardening:** このリポジトリでは `portfolio/revamp-2026` プロフェッショナライゼーション・プログラムを進行中です。本リポジトリはエンジニアリング／ポートフォリオ用途として公開されるもので、**本番運用の認証・認定済みリリースではありません**。現在の統合作業は [`portfolio/revamp-2026`](../../tree/portfolio/revamp-2026) で行われ、メンテナー承認なしに `master` へ最終マージされるものではありません。
+> **ポートフォリオ向けエンジニアリング基盤:** このリポジトリは、下記の再現可能な品質 gate で検証されている実装済みの動作を記載します。デフォルトブランチへの昇格は引き続き手動レビューの判断です。
 
-## リポジトリの状態
+## 課題 → 解決策
 
-- `master` は公開時のデフォルト・ベースラインであり、リリース認証を意味しません。
-- `portfolio/revamp-2026` では、セキュリティ、CI、データベース、アクセシビリティ、UX、ドキュメント、リリース再現性のハードニングを進めています。
-- GitHub Actions の結果はレビュー対象の正確なコミットで確認する必要があります。公開化そのものは、未実行のゲートを PASS にしません。
-- 残るハードニングとリリース検証を完了する前に、実顧客データや本番資格情報を使用してこのベースラインをデプロイしないでください。
+カスタム注文では、空き状況、商品構成、価格ルール、顧客連絡を一貫して扱う必要があります。L'Mere はこれらをテナント単位で管理し、重要な価格・在庫/日程・永続化ルールはサーバー側を権威とします。
 
-## セキュリティと資格情報
+技術的な主題は以下です。
 
-本番用シークレットは Git に保存しません。ローカル環境ファイルはデフォルトで無視され、`.env.example` にはプレースホルダーのみを置きます。
+- テナントごとの商品・営業日・ブランド・管理データ分離
+- サーバー側での価格/日程/容量再検証
+- HMAC 署名付き管理セッションと ownership 検証
+- PostgreSQL のバージョン管理 migration と決定的な 2 テナント fixture
+- unit / integration / Playwright によるリスク重視の回帰テスト
+- 再現可能な desktop/mobile ドキュメント画像生成
 
-このリポジトリには、開発・デモ用の決定的な seed データが含まれます。**デモの氏名、連絡先、資格情報はすべて合成データで、ローカル開発専用です。公開環境や本番環境でデモ値を再利用しないでください。** 実環境では、リポジトリ外で固有の資格情報と接続文字列を設定してください。
+## 再現可能なデモメディア
 
-開発用 seed を本番データベースに対して実行しないでください。
+README は、事前録画動画、疑似カーソル、ナレーション、字幕、BGM、ffmpeg 後処理には依存しません。ドキュメント用スクリーンショットは、合成 PostgreSQL fixture を使い、E2E とは別の Playwright コマンドで生成します。
 
-## データベース / ランタイム
+```bash
+npm run demo:capture
+```
 
-現在のコード・ベースラインは Prisma 経由の **PostgreSQL** を使用し、接続情報を `POSTGRES_PRISMA_URL` から読み取ります。リポジトリの現状と一致しない旧 SQLite セットアップ手順は廃止されています。
+クリーンな準備手順、前提条件、`docs/media/generated/` の出力については [`docs/MEDIA.md`](docs/MEDIA.md) を参照してください。
 
-プロフェッショナライゼーション・ブランチには、現在のマイグレーション、破棄可能な CI データベース、セキュリティ検証の作業が含まれます。ハードニング期間中は `portfolio/revamp-2026` の README と `docs/QUALITY.md` を、そのブランチのセットアップに関する基準としてください。
+通常の動作検証は別コマンドです。
 
-## プロフェッショナライゼーション中の開発
+```bash
+npm run test:e2e
+```
+
+## 主な機能
+
+### 公開注文シミュレーター (`/[slug]`)
+
+1. テナントの週間営業日、休業日、最小 lead time に基づくカレンダー
+2. 人数、重量、基本価格、フィリング上限を持つサイズ選択
+3. 生地、フィリング、特別価格、追加オプション
+4. メッセージ、備考、任意の参考画像
+5. サーバー確認済み finalization: 商品/日付/容量を再検証し、subtotal/deposit を再計算、注文を保存してから WhatsApp handoff 用の確定値を返します
+
+### 認証済み管理画面 (`/admin`)
+
+- 注文ステータス管理
+- サイズ・味/フィリング・追加商品の CRUD
+- 週間営業日とブロック日管理
+- テナントごとのブランド/連絡先設定
+- deposit、capacity、lead time などの機能設定
+- desktop/mobile のレスポンシブ操作とキーボード/フォーカス回帰テスト
+
+## アーキテクチャ
+
+```mermaid
+flowchart TD
+    Customer[Customer] --> Storefront[Next.js storefront]
+    Admin[Admin] --> Dashboard[Next.js admin]
+    Storefront --> PublicAPI[Public API]
+    Dashboard --> AdminAPI[Authenticated admin API]
+    PublicAPI --> Prisma[Prisma 7]
+    AdminAPI --> Prisma
+    Prisma --> PG[(PostgreSQL / Neon compatible)]
+```
+
+- Prisma provider: **PostgreSQL**
+- 接続変数: `POSTGRES_PRISMA_URL`
+- runtime adapter: `@prisma/adapter-pg`
+- 本番は Neon を利用可能、local/CI は通常の PostgreSQL TCP
+- 空 DB は `prisma migrate deploy` の commit 済み migration で初期化
+- CI は disposable PostgreSQL 16 と Tenant A/Tenant B fixture を使用
+
+## セキュリティモデル
+
+- 管理セッションは期限付き HMAC-SHA256、HttpOnly + `SameSite=Strict` cookie。本番は `Secure`。
+- `ADMIN_SESSION_SECRET` は最低 32 bytes の一意な秘密情報が必要です。
+- 管理 API は request の tenantId を信用せず、検証済みセッションから tenant を決定します。
+- 既存リソース更新/削除では ownership を検証します。
+- `/api/orders` は browser の subtotal、deposit、availability、関連 ID を権威として扱いません。
+- サーバーは active catalog、日程/容量、価格を再評価し、serializable PostgreSQL transaction と限定 retry を使います。
+- 公開 login/order には永続 rate limiting があります。
+
+## 技術スタック
+
+| 領域 | 技術 |
+| --- | --- |
+| Framework | Next.js 16.3.0 App Router |
+| UI | React 19.2.4, Tailwind CSS v4, Lucide React |
+| Language | TypeScript 5 |
+| Database | PostgreSQL, Prisma 7.9.1, `@prisma/adapter-pg` |
+| Password hashing | bcryptjs |
+| Browser test | Playwright |
+
+## セットアップ
+
+前提: Node.js **22+**、対応 npm、PostgreSQL または Neon。
 
 ```bash
 git clone https://github.com/Gyliardson/lmere-studio.git
 cd lmere-studio
-git checkout portfolio/revamp-2026
 npm ci
 cp .env.example .env
+npm run db:generate
+npm run db:migrate
+# 任意の破壊的な合成 demo seed。local/disposable DB のみ:
+LMERE_ALLOW_DEMO_SEED=true npm run db:seed
+npm run dev
 ```
 
-`.env` のプレースホルダーを開発専用の値に置き換えたうえで、同ブランチのドキュメントに従ってデータベース準備と検証を実行してください。
+`POSTGRES_PRISMA_URL` を開発 DB に設定し、`ADMIN_SESSION_SECRET` の placeholder を一意な秘密情報に置き換えてください。実際の credential を commit しないでください。
 
-## プロジェクト範囲
+`npm run db:seed` は本番 bootstrap ではありません。合成 `doce-arte` tenant を意図的に置き換える破壊的 demo seed であり、`NODE_ENV=production` では拒否され、`LMERE_ALLOW_DEMO_SEED=true` の明示 opt-in が必要です。本番 bootstrap は `npm run db:migrate` のみを使用します。
 
-アプリケーションには、複数ステップの公開注文シミュレーターと、テナント分離された管理 CMS が含まれます。注文、カタログ、スケジュール、ブランド、機能設定を扱います。追加のセキュリティ、悪用対策、アクセシビリティ、再現可能なメディア、clean-room 検証、アーキテクチャ整理は、最終認証まで継続して追跡されます。
+### 品質確認
 
-## メディア
+```bash
+npm run quality
+npm run test:e2e
+```
 
-リポジトリ内のスクリーンショットと動画は、開発／デモフローから生成されたポートフォリオ用アーティファクトです。本番準備完了の証拠ではありません。最終メディア更新は別途プロフェッショナライゼーション作業として追跡されます。
+CI/PostgreSQL の詳細は [`docs/QUALITY.md`](docs/QUALITY.md)、メディア生成は [`docs/MEDIA.md`](docs/MEDIA.md) を参照してください。
+
+## 品質証拠と制約
+
+リポジトリの gate は lint、typecheck、build、dependency audit、到達可能な Git 履歴の secret scan、監査可能な SARIF を伴う CodeQL JavaScript/TypeScript、unit test、空 PostgreSQL migration、Tenant A/B 分離、注文 negative path、idempotency/concurrency、管理セッション lifecycle、desktop/mobile Playwright、代表的 axe scan、keyboard/focus/dialog/combobox 回帰、および手動確認される決定的 visual artifact を含みます。
+
+これはリスク重視の回帰証拠であり、完全な WCAG 認証を意味しません。デフォルトブランチへの昇格は意図的に手動で、[`docs/RELEASE.md`](docs/RELEASE.md) の checklist に従います。branch protection / ruleset はアプリケーションの正当性とは別の governance 設定として release 時に再確認します。
 
 ## ライセンス
 
-このリポジトリは公開表示されますが、**オープンソースではありません**。ソースコードおよび関連資料には [Proprietary Software License — All Rights Reserved](LICENSE) が適用されます。公開表示は、ライセンスまたは著作権者が明示的に許可する場合を除き、複製、再配布、ホスティング、サブライセンス、商用利用の権利を付与しません。
+**Proprietary License (All Rights Reserved)**。商用利用、再配布、SaaS hosting、コード複製には明示的な許可が必要です。詳細は [LICENSE](LICENSE) を参照してください。

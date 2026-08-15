@@ -1,0 +1,93 @@
+/* Cross-surface accessibility primitives for storefront and admin.
+ * Keep these rules structural and tenant-safe: no fixed brand palette is imposed.
+ */
+
+:where(a, button, input, select, textarea, [role="button"], [tabindex]):focus-visible {
+  outline: 3px solid var(--color-brand-primary, #8b5cf6);
+  outline-offset: 3px;
+}
+
+:where(button, [role="button"]):focus-visible {
+  box-shadow: 0 0 0 5px rgba(var(--color-brand-primary-rgb, 139, 92, 246), 0.22);
+}
+
+/*
+ * Legacy muted copy used low white alpha values that look intentional on dark
+ * glass but fall below WCAG AA for normal text. The persisted theme guarantees
+ * brand-text against brand-bg, so that validated foreground is the safe
+ * authority for readable copy on both dark and light white-label themes.
+ */
+.text-white\/30,
+.text-white\/40,
+.text-white\/50,
+.text-white\/60,
+.text-white\/70,
+.text-white\/80 {
+  color: var(--color-brand-text) !important;
+}
+
+/* Primary/secondary accents remain useful for decoration, borders and imagery,
+ * but arbitrary tenant accent hues are not guaranteed to contrast as small text.
+ * Textual accent utilities therefore inherit the validated foreground token.
+ * Filled controls use the separately validated button token, whose contract
+ * requires WCAG AA contrast with white text.
+ */
+.text-brand-primary,
+.text-brand-primary\/90,
+.text-brand-secondary {
+  color: var(--color-brand-text) !important;
+}
+
+.text-error\/80 {
+  color: var(--color-error) !important;
+}
+
+.btn-primary,
+button.bg-brand-primary.text-white,
+button[aria-current="page"].bg-brand-primary.text-white,
+button[aria-pressed="true"].bg-brand-primary.text-white {
+  background-color: var(--color-brand-button) !important;
+  color: #fff !important;
+}
+
+#simulator-root button:not(:disabled) {
+  min-height: 44px;
+}
+
+#order-submit-status {
+  border-left: 3px solid rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+#order-submit-status[data-state="submitting"] {
+  border-left-color: var(--color-brand-primary);
+}
+
+#order-submit-status[data-state="confirmed"] {
+  border-left-color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 12%, transparent);
+}
+
+#order-submit-status[data-state="error"] {
+  border-left-color: var(--color-error);
+  background: color-mix(in srgb, var(--color-error) 12%, transparent);
+}
+
+#btn-send-whatsapp[aria-busy="true"] {
+  cursor: progress;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

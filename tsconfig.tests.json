@@ -1,0 +1,30 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": ".tmp-tests",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "target": "ES2022",
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "tests/pricing.test.ts",
+    "tests/admin-session.test.ts",
+    "tests/order-validation.test.ts",
+    "tests/admin-validation.test.ts",
+    "tests/features-config.test.ts",
+    "tests/image-reference.test.ts",
+    "tests/demo-seed-guard.test.ts",
+    "src/lib/pricing.ts",
+    "src/lib/types.ts",
+    "src/lib/admin-session.ts",
+    "src/lib/order-validation.ts",
+    "src/lib/admin-validation.ts",
+    "src/lib/features-config.ts",
+    "src/lib/image-reference.ts",
+    "src/lib/demo-seed-guard.ts",
+    "src/lib/utils.ts"
+  ]
+}

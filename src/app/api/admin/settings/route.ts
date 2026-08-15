@@ -1,89 +1,118 @@
+import {
+  validateTenantSettingsUpdate,
+  type ValidationIssue,
+} from "@/lib/admin-validation";
+import { getVerifiedAdminSession } from "@/lib/admin-session";
+import { meetsContrast, WCAG_AA_NORMAL_TEXT } from "@/lib/color-contrast";
+import { normalizePersistedFeaturesConfig } from "@/lib/features-config";
+import { validateImageReference } from "@/lib/image-reference";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
+const unauthorized = () => NextResponse.json({ error: "Sessão inválida ou expirada" }, { status: 401 });
+const invalidJson = () => NextResponse.json({ code: "INVALID_JSON", error: "Corpo JSON inválido" }, { status: 400 });
+const validationError = (issues: ValidationIssue[]) => NextResponse.json({
+  code: "VALIDATION_ERROR",
+  error: issues[0]?.message ? `Dados inválidos: ${issues[0].message}` : "Dados inválidos",
+  issues,
+}, { status: 422 });
+
+function serializeSettings(tenant: {
+  shadowColor: string;
+  primaryColor: string;
+  featuresConfig: string;
+  [key: string]: unknown;
+}) {
+  const rawFeatures = JSON.parse(tenant.featuresConfig) as unknown;
+  const parsedFeatures = normalizePersistedFeaturesConfig(rawFeatures);
+  if (!parsedFeatures.ok) throw new Error("Persisted featuresConfig violates the server contract");
+  return {
+    ...tenant,
+    shadowColor: tenant.shadowColor || tenant.primaryColor || "#8B5CF6",
+    featuresConfig: parsedFeatures.value,
+  };
+}
+
+function imageIssues(updates: { logoUrl?: string; bannerUrl?: string }): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  for (const field of ["logoUrl", "bannerUrl"] as const) {
+    if (updates[field] === undefined) continue;
+    const result = validateImageReference(updates[field]);
+    if (!result.ok) issues.push({ field, message: result.message });
+    else updates[field] = result.value;
+  }
+  return issues;
+}
+
+function contrastIssues(theme: { backgroundColor: string; textColor: string; buttonColor: string }): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  if (!meetsContrast(theme.textColor, theme.backgroundColor, WCAG_AA_NORMAL_TEXT)) {
+    issues.push({ field: "textColor", message: "texto e fundo precisam atingir contraste AA de 4.5:1" });
+  }
+  if (!meetsContrast("#FFFFFF", theme.buttonColor, WCAG_AA_NORMAL_TEXT)) {
+    issues.push({ field: "buttonColor", message: "botões precisam atingir contraste AA de 4.5:1 com o texto claro" });
+  }
+  return issues;
+}
+
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const tenantId = searchParams.get("tenantId");
-    if (!tenantId) {
-      return NextResponse.json({ error: "tenantId obrigatório" }, { status: 400 });
-    }
+    const session = await getVerifiedAdminSession(request);
+    if (!session) return unauthorized();
 
     const tenant = await prisma.tenant.findUnique({
-      where: { id: tenantId },
+      where: { id: session.tenantId },
+      omit: { adminPasswordHash: true, adminSessionVersion: true },
     });
+    if (!tenant) return unauthorized();
 
-    if (!tenant) {
-      return NextResponse.json({ error: "Ateliê não encontrado" }, { status: 404 });
-    }
-
-    const { adminPasswordHash, ...settings } = tenant;
-
-    return NextResponse.json({
-      settings: {
-        ...settings,
-        shadowColor: (tenant as Record<string, unknown>).shadowColor || tenant.primaryColor || "#8B5CF6",
-        featuresConfig: JSON.parse(tenant.featuresConfig),
-      },
-    });
+    return NextResponse.json({ settings: serializeSettings(tenant) });
   } catch (error) {
-    console.error("[ERROR] Failed to fetch settings:", error);
+    console.error("[ERROR] Failed to fetch admin settings", error instanceof Error ? error.message : "unknown error");
     return NextResponse.json({ error: "Erro ao buscar configurações" }, { status: 500 });
   }
 }
 
 export async function PUT(request: Request) {
   try {
-    const body = await request.json();
-    const { tenantId, ...rawUpdates } = body;
+    const session = await getVerifiedAdminSession(request);
+    if (!session) return unauthorized();
 
-    if (!tenantId) {
-      return NextResponse.json({ error: "tenantId obrigatório" }, { status: 400 });
+    let rawUpdates: unknown;
+    try {
+      rawUpdates = await request.json();
+    } catch {
+      return invalidJson();
     }
 
-    /* Whitelist only valid Tenant fields to prevent Prisma errors */
-    const allowedFields = [
-      "name", "logoUrl", "bannerUrl", "whatsapp", "pixKey",
-      "primaryColor", "secondaryColor", "backgroundColor",
-      "buttonColor", "shadowColor", "textColor",
-      "maxOrdersPerDay", "minLeadDays", "featuresConfig",
-    ];
+    const parsed = validateTenantSettingsUpdate(rawUpdates);
+    if (!parsed.ok) return validationError(parsed.issues);
+    const boundedImageIssues = imageIssues(parsed.value);
+    if (boundedImageIssues.length) return validationError(boundedImageIssues);
 
-    const sanitized: Record<string, unknown> = {};
-    for (const key of allowedFields) {
-      if (rawUpdates[key] !== undefined && key !== "shadowColor") {
-        if (key === "featuresConfig" && typeof rawUpdates[key] === "object") {
-          sanitized[key] = JSON.stringify(rawUpdates[key]);
-        } else {
-          sanitized[key] = rawUpdates[key];
-        }
-      }
-    }
+    const currentTheme = await prisma.tenant.findUnique({
+      where: { id: session.tenantId },
+      select: { backgroundColor: true, textColor: true, buttonColor: true },
+    });
+    if (!currentTheme) return unauthorized();
 
-    if (rawUpdates.shadowColor) {
-      await prisma.$executeRawUnsafe(
-        `UPDATE Tenant SET shadowColor = ? WHERE id = ?`,
-        String(rawUpdates.shadowColor),
-        tenantId
-      );
-    }
+    const theme = {
+      backgroundColor: parsed.value.backgroundColor ?? currentTheme.backgroundColor,
+      textColor: parsed.value.textColor ?? currentTheme.textColor,
+      buttonColor: parsed.value.buttonColor ?? currentTheme.buttonColor,
+    };
+    const unsafeContrast = contrastIssues(theme);
+    if (unsafeContrast.length) return validationError(unsafeContrast);
 
     const tenant = await prisma.tenant.update({
-      where: { id: tenantId },
-      data: sanitized,
+      where: { id: session.tenantId },
+      data: parsed.value,
+      omit: { adminPasswordHash: true, adminSessionVersion: true },
     });
 
-    const { adminPasswordHash, ...settings } = tenant;
-
-    return NextResponse.json({
-      settings: {
-        ...settings,
-        shadowColor: String(rawUpdates.shadowColor || (tenant as Record<string, unknown>).shadowColor || tenant.primaryColor || "#8B5CF6"),
-        featuresConfig: JSON.parse(tenant.featuresConfig),
-      },
-    });
+    return NextResponse.json({ settings: serializeSettings(tenant) });
   } catch (error) {
-    console.error("[ERROR] Failed to update settings:", error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    console.error("[ERROR] Failed to update admin settings", error instanceof Error ? error.message : "unknown error");
+    return NextResponse.json({ error: "Erro ao atualizar configurações" }, { status: 500 });
   }
 }

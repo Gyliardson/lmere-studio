@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./accessibility.css";
+import "./storefront-containment.css";
 
 export const metadata: Metadata = {
   title: "L'Mere Studio - Simulador de Encomendas para Confeitarias",

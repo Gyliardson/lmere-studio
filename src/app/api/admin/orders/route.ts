@@ -1,55 +1,55 @@
-import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { getVerifiedAdminSession } from "@/lib/admin-session";
+import { prisma } from "@/lib/prisma";
+
+const unauthorized = () => NextResponse.json({ error: "Sessão inválida ou expirada" }, { status: 401 });
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const tenantId = searchParams.get("tenantId");
-    const status = searchParams.get("status");
+    const session = await getVerifiedAdminSession(request);
+    if (!session) return unauthorized();
 
-    if (!tenantId) {
-      return NextResponse.json({ error: "tenantId obrigatorio" }, { status: 400 });
-    }
-
-    const where: Record<string, unknown> = { tenantId };
-    if (status && status !== "all") {
-      where.status = status;
-    }
-
+    const status = new URL(request.url).searchParams.get("status");
     const orders = await prisma.order.findMany({
-      where,
+      where: {
+        tenantId: session.tenantId,
+        ...(status && status !== "all" ? { status } : {}),
+      },
       include: { cakeSize: true },
       orderBy: { createdAt: "desc" },
     });
-
     return NextResponse.json({ orders });
   } catch (error) {
-    console.error("[ERROR] Failed to fetch orders:", error);
+    console.error("[ERROR] Failed to fetch admin orders", error instanceof Error ? error.message : "unknown error");
     return NextResponse.json({ error: "Erro ao buscar pedidos" }, { status: 500 });
   }
 }
 
-export async function PATCH(request: Request) {
+async function updateOrderStatus(request: Request) {
   try {
-    const { id, status } = await request.json();
+    const session = await getVerifiedAdminSession(request);
+    if (!session) return unauthorized();
 
-    if (!id || !status) {
-      return NextResponse.json({ error: "id e status obrigatorios" }, { status: 400 });
+    const body = await request.json();
+    const id = typeof body.id === "string" ? body.id : body.orderId;
+    const status = body.status;
+    if (typeof id !== "string" || typeof status !== "string" || !id || !status) {
+      return NextResponse.json({ error: "id e status obrigatórios" }, { status: 400 });
+    }
+    if (!["pending", "confirmed", "completed", "cancelled"].includes(status)) {
+      return NextResponse.json({ error: "Status inválido" }, { status: 400 });
     }
 
-    const validStatuses = ["pending", "confirmed", "completed", "cancelled"];
-    if (!validStatuses.includes(status)) {
-      return NextResponse.json({ error: "Status invalido" }, { status: 400 });
-    }
+    const ownedOrder = await prisma.order.findFirst({ where: { id, tenantId: session.tenantId } });
+    if (!ownedOrder) return NextResponse.json({ error: "Pedido não encontrado" }, { status: 404 });
 
-    const order = await prisma.order.update({
-      where: { id },
-      data: { status },
-    });
-
+    const order = await prisma.order.update({ where: { id: ownedOrder.id }, data: { status } });
     return NextResponse.json({ order });
   } catch (error) {
-    console.error("[ERROR] Failed to update order:", error);
+    console.error("[ERROR] Failed to update admin order", error instanceof Error ? error.message : "unknown error");
     return NextResponse.json({ error: "Erro ao atualizar pedido" }, { status: 500 });
   }
 }
+
+export const PATCH = updateOrderStatus;
+export const PUT = updateOrderStatus;

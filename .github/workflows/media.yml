@@ -1,0 +1,92 @@
+name: Media Capture
+
+on:
+  pull_request:
+    branches:
+      - portfolio/revamp-2026
+      - master
+    paths:
+      - "playwright.demo.config.ts"
+      - "tests/demo/**"
+      - "prisma/media-seed.sql"
+      - "docs/MEDIA.md"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/media.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: media-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    name: Reproducible portfolio capture
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: lmere_media
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d lmere_media"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      POSTGRES_PRISMA_URL: postgresql://postgres:postgres@127.0.0.1:5432/lmere_media?sslmode=disable
+      ADMIN_SESSION_SECRET: ci-media-admin-session-secret-at-least-32-bytes
+      RATE_LIMIT_SECRET: ci-media-rate-limit-secret-at-least-32-bytes
+      NODE_ENV: test
+      CI: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Apply migrations
+        run: npm run db:migrate
+
+      - name: Seed deterministic fixtures
+        run: npx prisma db execute --file prisma/ci-seed.sql --config=prisma.config.ts
+
+      - name: Apply presentation-safe media fixture overlay
+        run: npx prisma db execute --file prisma/media-seed.sql --config=prisma.config.ts
+
+      - name: Build application
+        run: npm run build
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Capture documentation media
+        run: npm run demo:capture
+
+      - name: Upload generated media
+        uses: actions/upload-artifact@v6
+        with:
+          name: portfolio-media
+          path: docs/media/generated
+          if-no-files-found: error
+          retention-days: 7

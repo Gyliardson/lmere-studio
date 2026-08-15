@@ -1,13 +1,14 @@
 import { PrismaClient } from "@prisma/client";
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { PrismaNeon } from '@prisma/adapter-neon';
-import ws from 'ws';
-
-neonConfig.webSocketConstructor = ws;
+import { PrismaPg } from "@prisma/adapter-pg";
 
 const prismaClientSingleton = () => {
-  const connectionString = process.env.POSTGRES_PRISMA_URL || "";
-  const adapter = new PrismaNeon({ connectionString });
+  const connectionString = process.env.POSTGRES_PRISMA_URL;
+
+  if (!connectionString) {
+    throw new Error("POSTGRES_PRISMA_URL is required");
+  }
+
+  const adapter = new PrismaPg({ connectionString });
   return new PrismaClient({ adapter });
 };
 
