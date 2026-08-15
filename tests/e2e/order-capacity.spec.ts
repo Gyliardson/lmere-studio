@@ -9,8 +9,14 @@ const base = {
   addonIds: [],
 };
 
+function capacityDate(projectName: string, retry: number) {
+  const projectOffset = projectName.includes("mobile") ? 7 : 0;
+  const date = new Date(Date.UTC(2036, 0, 7 + projectOffset + retry * 14));
+  return date.toISOString().slice(0, 10);
+}
+
 test("rejects orders above tenant daily capacity", async ({ request }, testInfo) => {
-  const eventDate = testInfo.project.name.includes("mobile") ? "2030-01-21" : "2030-01-14";
+  const eventDate = capacityDate(testInfo.project.name, testInfo.retry);
   for (let index = 0; index < 5; index += 1) {
     const response = await request.post("/api/orders", {
       data: { ...base, eventDate, customerName: `Capacity ${testInfo.project.name} ${index}` },
