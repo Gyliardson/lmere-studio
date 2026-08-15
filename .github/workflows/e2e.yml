@@ -55,8 +55,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install pinned axe scanner for E2E gate
-        run: npm install --no-save --package-lock=false --ignore-scripts @axe-core/playwright@4.12.1
+      - name: Install pinned axe runtime for E2E gate
+        run: npm install --no-save --package-lock=false --ignore-scripts axe-core@4.12.1
 
       - name: Generate Prisma client
         run: npm run db:generate
