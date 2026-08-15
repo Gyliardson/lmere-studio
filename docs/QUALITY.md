@@ -50,9 +50,11 @@ Allowing an external HTTPS image URL still means the viewing browser connects di
 
 ## Security gates
 
-The Quality workflow blocks high/critical production dependency findings. A separate read-only Gitleaks workflow scans pull-request changes for secrets.
+The Quality workflow blocks high/critical production dependency findings. A separate read-only Gitleaks workflow scans full reachable Git history for secrets.
 
 Admin authentication uses an expiry-bound signed HttpOnly cookie, and protected admin routes derive tenant identity from the verified session. Unit and PostgreSQL-backed E2E tests cover malformed/tampered/expired sessions, unauthenticated requests, valid synthetic login, authenticated tenant isolation, browser session restoration, and server-backed logout. Production session cookies are required to be `Secure`, `HttpOnly`, and `SameSite=Strict` and are scoped to `/api/admin`.
+
+The Next.js boundary also emits baseline browser hardening headers for every route: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, and a restrictive `Permissions-Policy` for camera, microphone and geolocation. Playwright verifies those headers on representative public and admin surfaces. A broad CSP is deliberately not asserted without a nonce-aware Next.js policy, avoiding a security header that looks strict while breaking or requiring unsafe script exceptions.
 
 Sensitive public writes are additionally throttled at the application boundary using two dimensions. Admin login has a broad 24-attempt/15-minute source ceiling plus an 8-attempt/15-minute source+tenant ceiling. Public order creation has a broad 60-attempt/10-minute source ceiling plus a 30-attempt/10-minute source+tenant ceiling. The broader ceiling prevents tenant cycling from becoming a bypass, while the narrower tenant dimension avoids one tenant unnecessarily consuming another tenant's normal allowance.
 
