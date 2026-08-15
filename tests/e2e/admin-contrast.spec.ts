@@ -1,12 +1,13 @@
 import { expect, test } from "@playwright/test";
 import { ADMIN_SESSION_COOKIE, createAdminSessionToken } from "../../src/lib/admin-session";
 
-function authHeaders() {
-  return { cookie: `${ADMIN_SESSION_COOKIE}=${createAdminSessionToken("ci-tenant-a")}` };
+function authHeaders(tenantId: string) {
+  return { cookie: `${ADMIN_SESSION_COOKIE}=${createAdminSessionToken(tenantId)}` };
 }
 
-test("admin branding rejects inaccessible critical contrast before persistence", async ({ request }) => {
-  const headers = authHeaders();
+test("admin branding rejects inaccessible critical contrast before persistence", async ({ request }, testInfo) => {
+  const tenantId = testInfo.project.name.includes("mobile") ? "ci-tenant-b" : "ci-tenant-a";
+  const headers = authHeaders(tenantId);
   const before = await request.get("/api/admin/settings", { headers });
   expect(before.status()).toBe(200);
   const initial = (await before.json()).settings;
