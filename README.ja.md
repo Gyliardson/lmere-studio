@@ -112,11 +112,14 @@ npm ci
 cp .env.example .env
 npm run db:generate
 npm run db:migrate
-npm run db:seed   # development/demo のみ任意
+# 任意の破壊的な合成 demo seed。local/disposable DB のみ:
+LMERE_ALLOW_DEMO_SEED=true npm run db:seed
 npm run dev
 ```
 
 `POSTGRES_PRISMA_URL` を開発 DB に設定し、`ADMIN_SESSION_SECRET` の placeholder を一意な秘密情報に置き換えてください。実際の credential を commit しないでください。
+
+`npm run db:seed` は本番 bootstrap ではありません。合成 `doce-arte` tenant を意図的に置き換える破壊的 demo seed であり、`NODE_ENV=production` では拒否され、`LMERE_ALLOW_DEMO_SEED=true` の明示 opt-in が必要です。本番 bootstrap は `npm run db:migrate` のみを使用します。
 
 ### 品質確認
 
@@ -129,7 +132,7 @@ CI/PostgreSQL の詳細は [`docs/QUALITY.md`](docs/QUALITY.md)、メディア�
 
 ## 品質証拠と制約
 
-リポジトリの gate は lint、typecheck、build、dependency audit、到達可能な Git 履歴の secret scan、unit test、空 PostgreSQL migration、Tenant A/B 分離、注文 negative path、idempotency/concurrency、管理セッション lifecycle、desktop/mobile Playwright、keyboard/focus/dialog/combobox 回帰、および手動確認される決定的 visual artifact を含みます。
+リポジトリの gate は lint、typecheck、build、dependency audit、到達可能な Git 履歴の secret scan、監査可能な SARIF を伴う CodeQL JavaScript/TypeScript、unit test、空 PostgreSQL migration、Tenant A/B 分離、注文 negative path、idempotency/concurrency、管理セッション lifecycle、desktop/mobile Playwright、代表的 axe scan、keyboard/focus/dialog/combobox 回帰、および手動確認される決定的 visual artifact を含みます。
 
 これはリスク重視の回帰証拠であり、完全な WCAG 認証を意味しません。デフォルトブランチへの昇格は意図的に手動で、[`docs/RELEASE.md`](docs/RELEASE.md) の checklist に従います。branch protection / ruleset はアプリケーションの正当性とは別の governance 設定として release 時に再確認します。
 
