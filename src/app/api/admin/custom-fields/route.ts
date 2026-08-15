@@ -4,7 +4,7 @@ import { CUSTOM_FIELD_LIMITS, normalizeCustomFields, validateCustomFieldWrite } 
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-const MAX_WRITE_RETRIES = 4;
+const MAX_WRITE_RETRIES = 6;
 const unauthorized = () => NextResponse.json({ error: "Sessão inválida ou expirada" }, { status: 401 });
 const invalidJson = () => NextResponse.json({ code: "INVALID_JSON", error: "Corpo JSON inválido" }, { status: 400 });
 const validationError = (issues: Array<{ field: string; message: string }>) => NextResponse.json({ code: "VALIDATION_ERROR", error: "Dados inválidos", issues }, { status: 422 });
@@ -28,7 +28,13 @@ function isUniqueConflict(error: unknown) {
 }
 
 function isRetryableWriteConflict(error: unknown) {
-  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034";
+  if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034") return true;
+  if (!(error instanceof Error)) return false;
+  return error.message.includes("TransactionWriteConflict") || error.message.includes("could not serialize access");
+}
+
+async function waitBeforeRetry(attempt: number) {
+  await new Promise((resolve) => setTimeout(resolve, 10 * (attempt + 1)));
 }
 
 export async function GET(request: Request) {
@@ -76,8 +82,13 @@ export async function POST(request: Request) {
         return NextResponse.json({ customFields: await serializedFields(tenantId) }, { status: 201 });
       } catch (error) {
         if (isUniqueConflict(error)) return duplicateLabel();
-        if (isRetryableWriteConflict(error) && attempt + 1 < MAX_WRITE_RETRIES) continue;
+        if (isRetryableWriteConflict(error) && attempt + 1 < MAX_WRITE_RETRIES) {
+          await waitBeforeRetry(attempt);
+          continue;
+        }
         if (isRetryableWriteConflict(error)) {
+          const count = await prisma.customField.count({ where: { tenantId } });
+          if (count >= CUSTOM_FIELD_LIMITS.fields) return fieldLimit();
           return NextResponse.json({ code: "CUSTOM_FIELD_RETRY_EXHAUSTED", error: "Não foi possível atualizar campos personalizados; tente novamente" }, { status: 503 });
         }
         throw error;
