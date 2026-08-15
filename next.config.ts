@@ -7,12 +7,21 @@ const securityHeaders = [
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
 ] as const;
 
+const adminImagePrivacyPolicy = {
+  key: "Content-Security-Policy",
+  value: "img-src 'self' data:;",
+} as const;
+
 const nextConfig: NextConfig = {
   async headers() {
     return [
       {
         source: "/:path*",
         headers: [...securityHeaders],
+      },
+      {
+        source: "/admin/:path*",
+        headers: [adminImagePrivacyPolicy],
       },
     ];
   },
