@@ -1,9 +1,7 @@
 export const DEMO_SEED_OPT_IN = "LMERE_ALLOW_DEMO_SEED";
-export const DEMO_SEED_PASSWORD = "LMERE_DEMO_ADMIN_PASSWORD";
 
 export interface DemoSeedPreflight {
   targetDatabase: string;
-  adminPassword: string;
 }
 
 export function safeDatabaseIdentity(rawUrl: string): string {
@@ -45,8 +43,5 @@ export function assertDemoSeedAllowed(env: NodeJS.ProcessEnv = process.env): Dem
     throw new Error("POSTGRES_PRISMA_URL is required for demo seeding");
   }
 
-  return {
-    targetDatabase: safeDatabaseIdentity(databaseUrl),
-    adminPassword: env[DEMO_SEED_PASSWORD] || "admin123",
-  };
+  return { targetDatabase: safeDatabaseIdentity(databaseUrl) };
 }
