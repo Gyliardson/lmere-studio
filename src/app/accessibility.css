@@ -13,28 +13,27 @@
 
 /*
  * Legacy muted copy used very low white alpha values that look intentional on the
- * dark glass UI but fall below WCAG AA for normal text. Keep the visual hierarchy
- * while establishing a readable floor across storefront and admin surfaces.
+ * dark glass UI but fall below WCAG AA for normal text. The persisted theme now
+ * guarantees brand-text against brand-bg, so that validated foreground is the
+ * safe authority for readable copy on both dark and light white-label themes.
  */
 .text-white\/30,
 .text-white\/40,
 .text-white\/50,
 .text-white\/60 {
-  color: rgba(255, 255, 255, 0.8) !important;
+  color: var(--color-brand-text) !important;
 }
 
-/* Brand colors are user-configurable. Small text cannot safely render the raw
- * accent on a dark surface, so blend it toward the foreground while preserving
- * the tenant hue. Interactive filled controls use the separately validated
- * button color, whose contract requires white-text AA contrast.
+/* Primary/secondary accents remain useful for decoration, borders and imagery,
+ * but arbitrary tenant accent hues are not guaranteed to contrast as small text.
+ * Textual accent utilities therefore inherit the validated foreground token.
+ * Filled controls use the separately validated button token, whose contract
+ * requires WCAG AA contrast with white text.
  */
 .text-brand-primary,
-.text-brand-primary\/90 {
-  color: color-mix(in srgb, var(--color-brand-primary) 55%, white 45%) !important;
-}
-
+.text-brand-primary\/90,
 .text-brand-secondary {
-  color: color-mix(in srgb, var(--color-brand-secondary) 55%, white 45%) !important;
+  color: var(--color-brand-text) !important;
 }
 
 .text-error\/80 {
