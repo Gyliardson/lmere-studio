@@ -25,6 +25,11 @@ type MenuAddonDraft = Omit<MenuAddonItem, "id"> & { id?: string };
 type MenuEditModal = { type: "size"; item: MenuSizeDraft } | { type: "flavor"; item: MenuFlavorDraft } | { type: "addon"; item: MenuAddonDraft };
 interface MenuData { sizes: MenuSizeItem[]; flavors: MenuFlavorItem[]; addons: MenuAddonItem[]; }
 
+async function responseError(response: Response, fallback: string) {
+  const data = await response.json().catch(() => null) as { error?: string } | null;
+  return data?.error || fallback;
+}
+
 export function AdminMenuSection({ tenantId, showToast }: { tenantId: string; showToast: (message: string) => void }) {
   const [menu, setMenu] = useState<MenuData>({ sizes: [], flavors: [], addons: [] });
   const [loading, setLoading] = useState(true);
@@ -37,9 +42,15 @@ export function AdminMenuSection({ tenantId, showToast }: { tenantId: string; sh
   const fetchMenu = useCallback(async () => {
     try {
       const response = await fetch(`/api/admin/menu?tenantId=${tenantId}`);
-      if (response.ok) setMenu(await response.json());
+      if (!response.ok) {
+        showToast(await responseError(response, "Não foi possível carregar cardápio"));
+        return false;
+      }
+      setMenu(await response.json());
+      return true;
     } catch {
-      showToast("Erro ao carregar cardapio");
+      showToast("Erro ao carregar cardápio");
+      return false;
     } finally {
       setLoading(false);
     }
@@ -49,9 +60,13 @@ export function AdminMenuSection({ tenantId, showToast }: { tenantId: string; sh
     async function loadMenu() {
       try {
         const response = await fetch(`/api/admin/menu?tenantId=${tenantId}`);
-        if (response.ok) setMenu(await response.json());
+        if (!response.ok) {
+          showToast(await responseError(response, "Não foi possível carregar cardápio"));
+          return;
+        }
+        setMenu(await response.json());
       } catch {
-        showToast("Erro ao carregar cardapio");
+        showToast("Erro ao carregar cardápio");
       } finally {
         setLoading(false);
       }
@@ -96,8 +111,7 @@ export function AdminMenuSection({ tenantId, showToast }: { tenantId: string; sh
         setEditModal(null);
         void fetchMenu();
       } else {
-        const errorData = await response.json().catch(() => ({}));
-        showToast(errorData.error || `Erro ao salvar (${response.status})`);
+        showToast(await responseError(response, `Erro ao salvar (${response.status})`));
       }
     } catch {
       showToast("Erro ao salvar item");
@@ -114,7 +128,7 @@ export function AdminMenuSection({ tenantId, showToast }: { tenantId: string; sh
         showToast("Item excluido com sucesso!");
         void fetchMenu();
       } else {
-        showToast("Erro ao excluir item");
+        showToast(await responseError(response, "Erro ao excluir item"));
       }
     } catch {
       showToast("Erro ao excluir item");
