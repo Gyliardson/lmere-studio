@@ -16,6 +16,7 @@
     "tests/admin-validation.test.ts",
     "tests/features-config.test.ts",
     "tests/image-reference.test.ts",
+    "tests/demo-seed-guard.test.ts",
     "src/lib/pricing.ts",
     "src/lib/types.ts",
     "src/lib/admin-session.ts",
@@ -23,6 +24,7 @@
     "src/lib/admin-validation.ts",
     "src/lib/features-config.ts",
     "src/lib/image-reference.ts",
+    "src/lib/demo-seed-guard.ts",
     "src/lib/utils.ts"
   ]
 }
