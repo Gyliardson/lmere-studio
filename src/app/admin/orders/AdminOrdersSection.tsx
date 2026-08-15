@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Clock, ShoppingBag, X } from "lucide-react";
 
 import { formatCurrency } from "@/lib/pricing";
@@ -51,6 +51,13 @@ function historicalCustomFields(snapshot?: string): CustomFieldSnapshot[] {
   }
 }
 
+async function requestOrders(tenantId: string): Promise<AdminOrder[]> {
+  const response = await fetch(`/api/admin/orders?tenantId=${tenantId}`);
+  if (!response.ok) throw new Error("Não foi possível carregar pedidos");
+  const data = await response.json() as { orders?: AdminOrder[] };
+  return data.orders || [];
+}
+
 export function AdminOrdersSection({ tenantId, showToast }: { tenantId: string; showToast: (message: string) => void }) {
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,25 +66,25 @@ export function AdminOrdersSection({ tenantId, showToast }: { tenantId: string; 
   const orderDialogTitleId = useId();
   const orderDialogRef = useModalFocus<HTMLDivElement>(Boolean(selectedOrder), () => setSelectedOrder(null));
 
-  const fetchOrders = useCallback(async () => {
+  useEffect(() => {
+    let active = true;
+    void requestOrders(tenantId)
+      .then((nextOrders) => { if (active) setOrders(nextOrders); })
+      .catch(() => { if (active) showToast("Erro ao carregar pedidos"); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [tenantId, showToast]);
+
+  const refreshOrders = async () => {
+    setLoading(true);
     try {
-      const response = await fetch(`/api/admin/orders?tenantId=${tenantId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setOrders(data.orders || []);
-      } else {
-        showToast("Não foi possível carregar pedidos");
-      }
+      setOrders(await requestOrders(tenantId));
     } catch {
       showToast("Erro ao carregar pedidos");
     } finally {
       setLoading(false);
     }
-  }, [tenantId, showToast]);
-
-  useEffect(() => {
-    void fetchOrders();
-  }, [fetchOrders]);
+  };
 
   const updateOrderStatus = async (orderId: string, status: string) => {
     try {
@@ -89,7 +96,7 @@ export function AdminOrdersSection({ tenantId, showToast }: { tenantId: string; 
       if (response.ok) {
         showToast("Status atualizado com sucesso!");
         if (selectedOrder) setSelectedOrder({ ...selectedOrder, status });
-        void fetchOrders();
+        await refreshOrders();
       } else {
         showToast("Não foi possível atualizar status");
       }
@@ -108,7 +115,7 @@ export function AdminOrdersSection({ tenantId, showToast }: { tenantId: string; 
           <h1 className="text-xl sm:text-2xl font-bold">Gestão de Pedidos</h1>
           <p className="text-white/50 text-xs sm:text-sm">Acompanhe as encomendas recebidas</p>
         </div>
-        <button onClick={() => { setLoading(true); void fetchOrders(); }} className="btn-secondary text-xs px-3 py-2 flex items-center gap-1.5">
+        <button onClick={() => void refreshOrders()} className="btn-secondary text-xs px-3 py-2 flex items-center gap-1.5">
           <Clock aria-hidden="true" className="w-3.5 h-3.5" /> Atualizar
         </button>
       </div>
