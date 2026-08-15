@@ -64,7 +64,10 @@ test.describe("storefront summary containment", () => {
     if (viewport?.width === 390) expect(viewport.height).toBe(844);
   });
 
-  test("boundary-valid customer text survives confirmed WhatsApp handoff", async ({ page }) => {
+  test("boundary-valid customer text survives confirmed WhatsApp handoff", async ({ page, context }) => {
+    await context.route("https://wa.me/**", async (route) => {
+      await route.fulfill({ status: 200, contentType: "text/plain", body: "WhatsApp handoff intercepted by E2E" });
+    });
     await reachSummary(page);
     const popupPromise = page.waitForEvent("popup");
     await page.locator("#btn-send-whatsapp").click();
