@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Clock, ShoppingBag, X } from "lucide-react";
 
 import { formatCurrency } from "@/lib/pricing";
+import type { CustomFieldSnapshot } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useModalFocus } from "../components/AdminControls";
 
@@ -24,6 +25,7 @@ export interface AdminOrder {
   cakeMessage: string;
   details: string;
   referenceImageUrl?: string;
+  selectionSnapshot?: string;
 }
 
 function depositLabel(mode?: string) {
@@ -31,6 +33,29 @@ function depositLabel(mode?: string) {
   if (mode === "100_percent") return "Pagamento integral";
   if (mode === "quote_only") return "Orçamento (sem sinal)";
   return "Sinal";
+}
+
+function historicalCustomFields(snapshot?: string): CustomFieldSnapshot[] {
+  if (!snapshot) return [];
+  try {
+    const parsed = JSON.parse(snapshot) as { customFields?: unknown };
+    if (!Array.isArray(parsed.customFields)) return [];
+    return parsed.customFields.filter((entry): entry is CustomFieldSnapshot => {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) return false;
+      const item = entry as Record<string, unknown>;
+      return typeof item.id === "string" && typeof item.label === "string" && typeof item.value === "string"
+        && (item.type === "text" || item.type === "select" || item.type === "number");
+    });
+  } catch {
+    return [];
+  }
+}
+
+async function requestOrders(tenantId: string): Promise<AdminOrder[]> {
+  const response = await fetch(`/api/admin/orders?tenantId=${tenantId}`);
+  if (!response.ok) throw new Error("Não foi possível carregar pedidos");
+  const data = await response.json() as { orders?: AdminOrder[] };
+  return data.orders || [];
 }
 
 export function AdminOrdersSection({ tenantId, showToast }: { tenantId: string; showToast: (message: string) => void }) {
@@ -41,36 +66,25 @@ export function AdminOrdersSection({ tenantId, showToast }: { tenantId: string; 
   const orderDialogTitleId = useId();
   const orderDialogRef = useModalFocus<HTMLDivElement>(Boolean(selectedOrder), () => setSelectedOrder(null));
 
-  const fetchOrders = useCallback(async () => {
+  useEffect(() => {
+    let active = true;
+    void requestOrders(tenantId)
+      .then((nextOrders) => { if (active) setOrders(nextOrders); })
+      .catch(() => { if (active) showToast("Erro ao carregar pedidos"); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [tenantId, showToast]);
+
+  const refreshOrders = async () => {
+    setLoading(true);
     try {
-      const response = await fetch(`/api/admin/orders?tenantId=${tenantId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setOrders(data.orders || []);
-      }
+      setOrders(await requestOrders(tenantId));
     } catch {
       showToast("Erro ao carregar pedidos");
     } finally {
       setLoading(false);
     }
-  }, [tenantId, showToast]);
-
-  useEffect(() => {
-    async function loadOrders() {
-      try {
-        const response = await fetch(`/api/admin/orders?tenantId=${tenantId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setOrders(data.orders || []);
-        }
-      } catch {
-        showToast("Erro ao carregar pedidos");
-      } finally {
-        setLoading(false);
-      }
-    }
-    void loadOrders();
-  }, [tenantId, showToast]);
+  };
 
   const updateOrderStatus = async (orderId: string, status: string) => {
     try {
@@ -82,7 +96,9 @@ export function AdminOrdersSection({ tenantId, showToast }: { tenantId: string; 
       if (response.ok) {
         showToast("Status atualizado com sucesso!");
         if (selectedOrder) setSelectedOrder({ ...selectedOrder, status });
-        void fetchOrders();
+        await refreshOrders();
+      } else {
+        showToast("Não foi possível atualizar status");
       }
     } catch {
       showToast("Erro ao atualizar status");
@@ -90,6 +106,7 @@ export function AdminOrdersSection({ tenantId, showToast }: { tenantId: string; 
   };
 
   const filteredOrders = orders.filter((order) => (filter === "all" ? true : order.status === filter));
+  const selectedCustomFields = historicalCustomFields(selectedOrder?.selectionSnapshot);
 
   return (
     <div className="space-y-6">
@@ -98,7 +115,7 @@ export function AdminOrdersSection({ tenantId, showToast }: { tenantId: string; 
           <h1 className="text-xl sm:text-2xl font-bold">Gestão de Pedidos</h1>
           <p className="text-white/50 text-xs sm:text-sm">Acompanhe as encomendas recebidas</p>
         </div>
-        <button onClick={() => { setLoading(true); void fetchOrders(); }} className="btn-secondary text-xs px-3 py-2 flex items-center gap-1.5">
+        <button onClick={() => void refreshOrders()} className="btn-secondary text-xs px-3 py-2 flex items-center gap-1.5">
           <Clock aria-hidden="true" className="w-3.5 h-3.5" /> Atualizar
         </button>
       </div>
@@ -159,8 +176,9 @@ export function AdminOrdersSection({ tenantId, showToast }: { tenantId: string; 
             </div>
             <div className="space-y-3 text-xs bg-white/5 p-4 rounded-xl border border-white/5">
               {selectedOrder.cakeMessage && <div><span className="text-white/40 block mb-0.5">Mensagem da Placa:</span><span className="font-semibold text-brand-primary text-sm">&quot;{selectedOrder.cakeMessage}&quot;</span></div>}
-              {selectedOrder.details && <div><span className="text-white/40 block mb-0.5">Observacoes:</span><p className="text-white/80 whitespace-pre-wrap">{selectedOrder.details}</p></div>}
-              {selectedOrder.referenceImageUrl && <div><span className="text-white/40 block mb-1">Foto de Referencia:</span><img src={selectedOrder.referenceImageUrl} alt="Referencia" referrerPolicy="no-referrer" className="w-full max-h-48 object-cover rounded-lg border border-white/10" /></div>}
+              {selectedOrder.details && <div><span className="text-white/40 block mb-0.5">Observações:</span><p className="text-white/80 whitespace-pre-wrap break-words">{selectedOrder.details}</p></div>}
+              {selectedCustomFields.length > 0 && <div><span className="text-white/40 block mb-1">Informações personalizadas:</span><dl className="space-y-1.5">{selectedCustomFields.map((field) => <div key={field.id} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] gap-3"><dt className="text-white/50 break-words">{field.label}</dt><dd className="text-white/90 break-words">{field.value}</dd></div>)}</dl></div>}
+              {selectedOrder.referenceImageUrl && <div><span className="text-white/40 block mb-1">Foto de Referência:</span><img src={selectedOrder.referenceImageUrl} alt="Referência" referrerPolicy="no-referrer" className="w-full max-h-48 object-cover rounded-lg border border-white/10" /></div>}
             </div>
             <div className="flex items-center justify-between border-t border-white/10 pt-4">
               <div><span className="text-xs text-white/50 block">Valor Total</span><span className="text-lg font-bold text-white">{formatCurrency(selectedOrder.subtotal)}</span></div>

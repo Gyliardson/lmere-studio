@@ -8,7 +8,7 @@ test("legacy empty feature config normalizes to the complete product defaults", 
   if (result.ok) assert.deepEqual(result.value, DEFAULT_FEATURES_CONFIG);
 });
 
-test("legacy partial known config preserves explicit values and fills missing keys", () => {
+test("legacy partial known config preserves explicit supported values and fills missing keys", () => {
   const result = normalizePersistedFeaturesConfig({ deposit_mode: "100_percent" });
   assert.equal(result.ok, true);
   if (result.ok) {
@@ -19,7 +19,21 @@ test("legacy partial known config preserves explicit values and fills missing ke
   }
 });
 
-test("persisted config does not normalize unsupported or invalid explicit values", () => {
+test("retired feature keys are ignored even when legacy values are malformed", () => {
+  const result = normalizePersistedFeaturesConfig({
+    deposit_mode: "quote_only",
+    enable_delivery_step: "historical-garbage",
+    custom_fields: { old: "non-array-value" },
+  });
+  assert.equal(result.ok, true);
+  if (result.ok) {
+    assert.equal(result.value.deposit_mode, "quote_only");
+    assert.equal(result.value.enable_delivery_step, false);
+    assert.deepEqual(result.value.custom_fields, []);
+  }
+});
+
+test("persisted config still rejects unsupported or invalid active values", () => {
   const unknown = normalizePersistedFeaturesConfig({ experimental_flag: true });
   assert.equal(unknown.ok, false);
 

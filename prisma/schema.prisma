@@ -148,6 +148,7 @@ model CustomField {
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  @@unique([tenantId, label])
   @@index([tenantId])
 }
 
