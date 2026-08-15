@@ -1,5 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 
+const BOUNDARY_NAME = "N".repeat(120);
+const BOUNDARY_MESSAGE = "M".repeat(200);
+const BOUNDARY_DETAILS = "D".repeat(2000);
+
 async function reachSummary(page: Page) {
   await page.goto("/ci-tenant-a");
 
@@ -16,16 +20,16 @@ async function reachSummary(page: Page) {
   await page.locator("#filling-ci-filling-a").click();
   await page.locator("#btn-next").click();
 
-  await page.locator("#input-cake-message").fill("Mensagem de demonstração deliberadamente longa para validar contenção visual no resumo final");
-  await page.locator("#input-details").fill("Observações extensas de demonstração para manter o fluxo representativo de conteúdo denso em uma viewport móvel curta.");
+  await page.locator("#input-cake-message").fill(BOUNDARY_MESSAGE);
+  await page.locator("#input-details").fill(BOUNDARY_DETAILS);
   await page.locator("#btn-next").click();
-  await page.locator("#input-name").fill("Cliente de Demonstração com Nome Longo");
+  await page.locator("#input-name").fill(BOUNDARY_NAME);
   await page.locator("#input-phone").fill("11999999999");
   await expect(page.getByRole("heading", { name: "Resumo do Pedido" })).toBeVisible();
 }
 
 test.describe("storefront summary containment", () => {
-  test("final summary and submission action remain clear of the Back navigation", async ({ page }) => {
+  test("final summary contains boundary-valid customer text without horizontal overflow", async ({ page }) => {
     await reachSummary(page);
 
     const submit = page.locator("#btn-send-whatsapp");
@@ -35,16 +39,18 @@ test.describe("storefront summary containment", () => {
     await submit.scrollIntoViewIfNeeded();
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
 
-    const [submitBox, navigationBox, navigationPosition] = await Promise.all([
+    const [submitBox, navigationBox, navigationPosition, widths] = await Promise.all([
       submit.boundingBox(),
       navigation.boundingBox(),
       navigation.evaluate((element) => getComputedStyle(element).position),
+      page.evaluate(() => ({ viewport: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth })),
     ]);
 
     expect(submitBox).not.toBeNull();
     expect(navigationBox).not.toBeNull();
     expect(navigationPosition).toBe("static");
     expect(submitBox!.y + submitBox!.height).toBeLessThanOrEqual(navigationBox!.y + 1);
+    expect(widths.scroll).toBeLessThanOrEqual(widths.viewport + 1);
 
     await expect(submit).toBeVisible();
     await expect(back).toBeVisible();
@@ -56,5 +62,21 @@ test.describe("storefront summary containment", () => {
     }));
     expect(scrollMetrics.top).toBeGreaterThanOrEqual(scrollMetrics.max - 2);
     if (viewport?.width === 390) expect(viewport.height).toBe(844);
+  });
+
+  test("boundary-valid customer text survives confirmed WhatsApp handoff", async ({ page }) => {
+    await reachSummary(page);
+    const popupPromise = page.waitForEvent("popup");
+    await page.locator("#btn-send-whatsapp").click();
+    const popup = await popupPromise;
+
+    await expect(page.locator("#order-submit-status")).toHaveAttribute("data-state", "confirmed");
+    await popup.waitForURL(/wa\.me\//);
+    const url = new URL(popup.url());
+    const message = url.searchParams.get("text") ?? "";
+    expect(message).toContain(`*Cliente:* ${BOUNDARY_NAME}`);
+    expect(message).toContain(`*Mensagem/Placa:* ${BOUNDARY_MESSAGE}`);
+    expect(message).toContain(`*Observações:* ${BOUNDARY_DETAILS}`);
+    await popup.close();
   });
 });
