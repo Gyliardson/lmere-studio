@@ -3,7 +3,7 @@ import {
   type ValidationIssue,
 } from "@/lib/admin-validation";
 import { getVerifiedAdminSession } from "@/lib/admin-session";
-import { meetsContrast, WCAG_AA_LARGE_TEXT, WCAG_AA_NORMAL_TEXT } from "@/lib/color-contrast";
+import { meetsContrast, WCAG_AA_NORMAL_TEXT } from "@/lib/color-contrast";
 import { normalizePersistedFeaturesConfig } from "@/lib/features-config";
 import { validateImageReference } from "@/lib/image-reference";
 import { prisma } from "@/lib/prisma";
@@ -49,8 +49,8 @@ function contrastIssues(theme: { backgroundColor: string; textColor: string; but
   if (!meetsContrast(theme.textColor, theme.backgroundColor, WCAG_AA_NORMAL_TEXT)) {
     issues.push({ field: "textColor", message: "texto e fundo precisam atingir contraste AA de 4.5:1" });
   }
-  if (!meetsContrast("#FFFFFF", theme.buttonColor, WCAG_AA_LARGE_TEXT)) {
-    issues.push({ field: "buttonColor", message: "botões precisam atingir contraste mínimo de 3:1 com o texto claro" });
+  if (!meetsContrast("#FFFFFF", theme.buttonColor, WCAG_AA_NORMAL_TEXT)) {
+    issues.push({ field: "buttonColor", message: "botões precisam atingir contraste AA de 4.5:1 com o texto claro" });
   }
   return issues;
 }
