@@ -13,7 +13,7 @@ const unauthorized = () => NextResponse.json({ error: "Sessão inválida ou expi
 const invalidJson = () => NextResponse.json({ code: "INVALID_JSON", error: "Corpo JSON inválido" }, { status: 400 });
 const validationError = (issues: ValidationIssue[]) => NextResponse.json({
   code: "VALIDATION_ERROR",
-  error: "Dados inválidos",
+  error: issues[0]?.message ? `Dados inválidos: ${issues[0].message}` : "Dados inválidos",
   issues,
 }, { status: 422 });
 
