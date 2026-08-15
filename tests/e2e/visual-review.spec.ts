@@ -16,7 +16,7 @@ async function saveEvidence(page: Page, testInfo: TestInfo, name: string) {
   });
 }
 
-async function reachStorefrontSummary(page: Page) {
+async function reachStorefrontReferenceStep(page: Page) {
   await page.goto("/ci-tenant-a");
 
   // February 2032 is deterministic and well beyond the configured lead time.
@@ -33,6 +33,11 @@ async function reachStorefrontSummary(page: Page) {
   await page.locator("#dough-ci-flavor-a").click();
   await page.locator("#filling-ci-filling-a").click();
   await page.locator("#btn-next").click();
+  await expect(page.locator("#input-file-photo")).toBeAttached();
+}
+
+async function reachStorefrontSummary(page: Page) {
+  await reachStorefrontReferenceStep(page);
   await page.locator("#btn-next").click();
   await page.locator("#input-name").fill("Cliente de Demonstração");
   await page.locator("#input-phone").fill("11999999999");
@@ -47,12 +52,19 @@ async function openAdminSection(page: Page, testInfo: TestInfo, label: string, h
 }
 
 test.describe("deterministic visual review evidence", () => {
-  test("storefront initial and summary states", async ({ page }, testInfo) => {
+  test("storefront initial, image-reference and summary states", async ({ page }, testInfo) => {
     await page.goto("/ci-tenant-a");
     await expect(page.getByRole("heading", { name: "CI Tenant A" })).toBeVisible();
     await saveEvidence(page, testInfo, "storefront-initial");
 
-    await reachStorefrontSummary(page);
+    await reachStorefrontReferenceStep(page);
+    await expect(page.getByText("Foto de Referência (opcional)")).toBeVisible();
+    await expect(page.getByText("PNG, JPG ou WEBP até 2 MB")).toBeVisible();
+    await saveEvidence(page, testInfo, "storefront-reference-image");
+
+    await page.locator("#btn-next").click();
+    await page.locator("#input-name").fill("Cliente de Demonstração");
+    await page.locator("#input-phone").fill("11999999999");
     await expect(page.getByRole("heading", { name: "Resumo do Pedido" })).toBeVisible();
     await saveEvidence(page, testInfo, "storefront-summary");
   });
@@ -70,6 +82,13 @@ test.describe("deterministic visual review evidence", () => {
 
     await openAdminSection(page, testInfo, "Cardápio", "Gestao do Cardapio");
     await saveEvidence(page, testInfo, "admin-menu");
+    await page.getByRole("tab", { name: /Massas & Recheios/ }).click();
+    await page.getByRole("button", { name: "Editar CI Flavor A" }).click();
+    const editor = page.getByRole("dialog", { name: "Editar Item" });
+    await expect(editor).toBeVisible();
+    await expect(editor.getByText("PNG, JPG ou WEBP até 2 MB")).toBeVisible();
+    await saveEvidence(page, testInfo, "admin-reference-image-editor");
+    await page.getByRole("button", { name: "Fechar edição do item" }).click();
 
     await openAdminSection(page, testInfo, "Agenda & Limites", "Agenda & Regras de Funcionamento");
     await saveEvidence(page, testInfo, "admin-calendar");
