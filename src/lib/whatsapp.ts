@@ -1,4 +1,5 @@
 import type { SimulatorState, TenantData, CakeFlavorData, AddonData } from "./types";
+import { ORDER_TEXT_LIMITS, orderTextWithinLimit } from "./order-validation";
 import { formatCurrency } from "./pricing";
 
 interface OrderPricing {
@@ -63,6 +64,30 @@ function newIdempotencyKey() {
     : `order-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+function assertTextLimits(state: SimulatorState) {
+  if (!orderTextWithinLimit(state.customerName.trim(), ORDER_TEXT_LIMITS.customerName)) {
+    throw new OrderSubmissionError(
+      `O nome do cliente deve ter no máximo ${ORDER_TEXT_LIMITS.customerName} caracteres.`,
+      "CUSTOMER_NAME_TOO_LONG",
+      422,
+    );
+  }
+  if (!orderTextWithinLimit(state.cakeMessage.trim(), ORDER_TEXT_LIMITS.cakeMessage)) {
+    throw new OrderSubmissionError(
+      `A mensagem do bolo deve ter no máximo ${ORDER_TEXT_LIMITS.cakeMessage} caracteres.`,
+      "CAKE_MESSAGE_TOO_LONG",
+      422,
+    );
+  }
+  if (!orderTextWithinLimit(state.details.trim(), ORDER_TEXT_LIMITS.details)) {
+    throw new OrderSubmissionError(
+      `As observações devem ter no máximo ${ORDER_TEXT_LIMITS.details} caracteres.`,
+      "ORDER_DETAILS_TOO_LONG",
+      422,
+    );
+  }
+}
+
 async function createServerOrder(
   state: SimulatorState,
   tenant: TenantData,
@@ -75,6 +100,7 @@ async function createServerOrder(
       400,
     );
   }
+  assertTextLimits(state);
 
   let response: Response;
   try {
