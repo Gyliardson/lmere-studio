@@ -7,6 +7,11 @@ import { COLOR_PRESETS, type ColorPreset, type CustomFieldData, type FeaturesCon
 import { cn, formatPhoneBR } from "@/lib/utils";
 import { ImageUploaderDropzone } from "../components/AdminControls";
 
+async function responseError(response: Response, fallback: string) {
+  const data = await response.json().catch(() => null) as { error?: string } | null;
+  return data?.error || fallback;
+}
+
 export function AdminBrandSection({ tenantId, showToast }: { tenantId: string; showToast: (message: string) => void }) {
   const [form, setForm] = useState({
     name: "", whatsapp: "", pixKey: "", logoUrl: "", bannerUrl: "",
@@ -19,17 +24,19 @@ export function AdminBrandSection({ tenantId, showToast }: { tenantId: string; s
     async function load() {
       try {
         const response = await fetch(`/api/admin/settings?tenantId=${tenantId}`);
-        if (response.ok) {
-          const data = await response.json();
-          const settings = data.settings;
-          setForm({
-            name: settings.name || "", whatsapp: settings.whatsapp || "", pixKey: settings.pixKey || "",
-            logoUrl: settings.logoUrl || "", bannerUrl: settings.bannerUrl || "",
-            primaryColor: settings.primaryColor || "#8B5CF6", secondaryColor: settings.secondaryColor || "#EC4899",
-            backgroundColor: settings.backgroundColor || "#0F0A1A", buttonColor: settings.buttonColor || "#8B5CF6",
-            shadowColor: settings.shadowColor || settings.primaryColor || "#8B5CF6", textColor: settings.textColor || "#FFFFFF",
-          });
+        if (!response.ok) {
+          showToast(await responseError(response, "Não foi possível carregar marca"));
+          return;
         }
+        const data = await response.json();
+        const settings = data.settings;
+        setForm({
+          name: settings.name || "", whatsapp: settings.whatsapp || "", pixKey: settings.pixKey || "",
+          logoUrl: settings.logoUrl || "", bannerUrl: settings.bannerUrl || "",
+          primaryColor: settings.primaryColor || "#8B5CF6", secondaryColor: settings.secondaryColor || "#EC4899",
+          backgroundColor: settings.backgroundColor || "#0F0A1A", buttonColor: settings.buttonColor || "#8B5CF6",
+          shadowColor: settings.shadowColor || settings.primaryColor || "#8B5CF6", textColor: settings.textColor || "#FFFFFF",
+        });
       } catch { showToast("Erro ao carregar marca"); }
       finally { setLoading(false); }
     }
@@ -46,7 +53,7 @@ export function AdminBrandSection({ tenantId, showToast }: { tenantId: string; s
     try {
       const response = await fetch("/api/admin/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tenantId, ...form }) });
       if (response.ok) showToast("Estilo e Marca salvos com sucesso!");
-      else showToast("Não foi possível salvar marca");
+      else showToast(await responseError(response, "Não foi possível salvar marca"));
     } catch { showToast("Erro ao salvar marca"); }
   };
 
@@ -139,13 +146,17 @@ export function AdminFeaturesSection({ tenantId, showToast }: { tenantId: string
     async function load() {
       try {
         const [settingsResponse, fieldsResponse] = await Promise.all([fetch(`/api/admin/settings?tenantId=${tenantId}`), fetch("/api/admin/custom-fields")]);
-        if (settingsResponse.ok) {
+        if (!settingsResponse.ok) {
+          showToast(await responseError(settingsResponse, "Não foi possível carregar funcionalidades"));
+        } else {
           const data = await settingsResponse.json();
           if (data.settings.featuresConfig) setConfig(data.settings.featuresConfig);
           if (data.settings.maxOrdersPerDay) setMaxOrdersPerDay(data.settings.maxOrdersPerDay);
           if (data.settings.minLeadDays) setMinLeadDays(data.settings.minLeadDays);
         }
-        if (fieldsResponse.ok) {
+        if (!fieldsResponse.ok) {
+          showToast(await responseError(fieldsResponse, "Não foi possível carregar campos personalizados"));
+        } else {
           const data = await fieldsResponse.json();
           setCustomFields(data.customFields || []);
         }
@@ -158,7 +169,8 @@ export function AdminFeaturesSection({ tenantId, showToast }: { tenantId: string
   const handleSave = async () => {
     try {
       const response = await fetch("/api/admin/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tenantId, featuresConfig: config, maxOrdersPerDay, minLeadDays }) });
-      if (response.ok) showToast("Funcionalidades salvas com sucesso!"); else showToast("Não foi possível salvar funcionalidades");
+      if (response.ok) showToast("Funcionalidades salvas com sucesso!");
+      else showToast(await responseError(response, "Não foi possível salvar funcionalidades"));
     } catch { showToast("Erro ao salvar funcionalidades"); }
   };
 
