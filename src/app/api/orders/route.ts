@@ -1,4 +1,6 @@
 import { Prisma } from "@prisma/client";
+import { normalizeCustomFields, validateCustomFieldAnswers } from "@/lib/custom-fields";
+import type { CustomFieldSnapshot } from "@/lib/types";
 import { normalizePersistedFeaturesConfig } from "@/lib/features-config";
 import { validateImageReference } from "@/lib/image-reference";
 import { prisma } from "@/lib/prisma";
@@ -15,17 +17,12 @@ const MAX_IDEMPOTENCY_KEY_LENGTH = 128;
 const MAX_TRANSACTION_RETRIES = 8;
 const PUBLIC_ORDER_SOURCE_RATE_LIMIT = { scope: "public-order-source", limit: 60, windowMs: 10 * 60 * 1000 } as const;
 const PUBLIC_ORDER_TENANT_RATE_LIMIT = { scope: "public-order-tenant", limit: 30, windowMs: 10 * 60 * 1000 } as const;
-const reject = (status: number, code: string, error: string, headers?: HeadersInit) => NextResponse.json({ code, error }, { status, headers });
+const reject = (status: number, code: string, error: string, headers?: HeadersInit, issues?: unknown) => NextResponse.json({ code, error, ...(issues ? { issues } : {}) }, { status, headers });
 const cents = (value: number) => Math.round(value * 100);
 const money = (value: number) => Math.round(value) / 100;
 
 function rateLimitedResponse(rateLimit: Awaited<ReturnType<typeof consumeRateLimit>>) {
-  return reject(
-    429,
-    "RATE_LIMITED",
-    "Muitas tentativas de pedido. Tente novamente em instantes.",
-    rateLimitHeaders(rateLimit),
-  );
+  return reject(429, "RATE_LIMITED", "Muitas tentativas de pedido. Tente novamente em instantes.", rateLimitHeaders(rateLimit));
 }
 
 function depositMode(config: string): "50_percent" | "100_percent" | "quote_only" | null {
@@ -51,11 +48,25 @@ function parseIdempotencyKey(request: Request, body: Record<string, unknown>) {
   return { key, valid: key.length > 0 && key.length <= MAX_IDEMPOTENCY_KEY_LENGTH };
 }
 
+function customFieldsFromSnapshot(snapshot: string): CustomFieldSnapshot[] {
+  try {
+    const parsed = JSON.parse(snapshot) as { customFields?: unknown };
+    if (!Array.isArray(parsed.customFields)) return [];
+    return parsed.customFields.filter((entry): entry is CustomFieldSnapshot => {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) return false;
+      const item = entry as Record<string, unknown>;
+      return typeof item.id === "string" && typeof item.label === "string" && typeof item.value === "string"
+        && (item.type === "text" || item.type === "select" || item.type === "number");
+    });
+  } catch {
+    return [];
+  }
+}
+
 function retryableTransactionError(error: unknown, hasIdempotencyKey: boolean) {
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     return error.code === "P2034" || (hasIdempotencyKey && error.code === "P2002");
   }
-
   return error instanceof Error && error.message.includes("TransactionWriteConflict");
 }
 
@@ -71,9 +82,7 @@ export async function POST(request: Request) {
     let body: Record<string, unknown>;
     try {
       const parsed = await request.json();
-      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-        return reject(400, "INVALID_JSON", "Corpo JSON inválido");
-      }
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return reject(400, "INVALID_JSON", "Corpo JSON inválido");
       body = parsed as Record<string, unknown>;
     } catch {
       return reject(400, "INVALID_JSON", "Corpo JSON inválido");
@@ -81,10 +90,7 @@ export async function POST(request: Request) {
 
     const tenantId = typeof body.tenantId === "string" ? body.tenantId.trim() : "";
     if (tenantId) {
-      const tenantLimit = await consumeRateLimit(request, {
-        ...PUBLIC_ORDER_TENANT_RATE_LIMIT,
-        subject: tenantId,
-      });
+      const tenantLimit = await consumeRateLimit(request, { ...PUBLIC_ORDER_TENANT_RATE_LIMIT, subject: tenantId });
       if (!tenantLimit.allowed) return rateLimitedResponse(tenantLimit);
     }
 
@@ -101,35 +107,20 @@ export async function POST(request: Request) {
     const flavorId = typeof body.flavorId === "string" ? body.flavorId.trim() : "";
     const fillingIds = parseIds(body.fillingIds);
     const addonIds = parseIds(body.addonIds ?? []);
+    const customFieldAnswers = body.customFieldAnswers ?? {};
     const idempotency = parseIdempotencyKey(request, body);
     const referenceImage = validateImageReference(body.referenceImageUrl ?? "");
 
-    if (!idempotency.valid) {
-      return reject(400, "INVALID_IDEMPOTENCY_KEY", `A chave de idempotência deve ter entre 1 e ${MAX_IDEMPOTENCY_KEY_LENGTH} caracteres`);
-    }
-    if (!referenceImage.ok) {
-      return reject(400, "INVALID_REFERENCE_IMAGE", referenceImage.message);
-    }
-    if (!tenantId || !customerName || !eventDate || !cakeSizeId || !flavorId || !fillingIds || !addonIds) {
-      return reject(400, "INVALID_REQUEST", "Campos obrigatórios ausentes ou inválidos");
-    }
-    if (!orderTextWithinLimit(customerNameRaw, ORDER_TEXT_LIMITS.customerName)) {
-      return reject(422, "CUSTOMER_NAME_TOO_LONG", `O nome do cliente deve ter no máximo ${ORDER_TEXT_LIMITS.customerName} caracteres`);
-    }
-    if (!orderTextWithinLimit(cakeMessageRaw, ORDER_TEXT_LIMITS.cakeMessage)) {
-      return reject(422, "CAKE_MESSAGE_TOO_LONG", `A mensagem do bolo deve ter no máximo ${ORDER_TEXT_LIMITS.cakeMessage} caracteres`);
-    }
-    if (!orderTextWithinLimit(detailsRaw, ORDER_TEXT_LIMITS.details)) {
-      return reject(422, "ORDER_DETAILS_TOO_LONG", `As observações devem ter no máximo ${ORDER_TEXT_LIMITS.details} caracteres`);
-    }
-    if (!customerPhone) {
-      return reject(400, "INVALID_CUSTOMER_PHONE", "Informe um telefone/WhatsApp válido com DDD");
-    }
+    if (!idempotency.valid) return reject(400, "INVALID_IDEMPOTENCY_KEY", `A chave de idempotência deve ter entre 1 e ${MAX_IDEMPOTENCY_KEY_LENGTH} caracteres`);
+    if (!referenceImage.ok) return reject(400, "INVALID_REFERENCE_IMAGE", referenceImage.message);
+    if (!tenantId || !customerName || !eventDate || !cakeSizeId || !flavorId || !fillingIds || !addonIds) return reject(400, "INVALID_REQUEST", "Campos obrigatórios ausentes ou inválidos");
+    if (!orderTextWithinLimit(customerNameRaw, ORDER_TEXT_LIMITS.customerName)) return reject(422, "CUSTOMER_NAME_TOO_LONG", `O nome do cliente deve ter no máximo ${ORDER_TEXT_LIMITS.customerName} caracteres`);
+    if (!orderTextWithinLimit(cakeMessageRaw, ORDER_TEXT_LIMITS.cakeMessage)) return reject(422, "CAKE_MESSAGE_TOO_LONG", `A mensagem do bolo deve ter no máximo ${ORDER_TEXT_LIMITS.cakeMessage} caracteres`);
+    if (!orderTextWithinLimit(detailsRaw, ORDER_TEXT_LIMITS.details)) return reject(422, "ORDER_DETAILS_TOO_LONG", `As observações devem ter no máximo ${ORDER_TEXT_LIMITS.details} caracteres`);
+    if (!customerPhone) return reject(400, "INVALID_CUSTOMER_PHONE", "Informe um telefone/WhatsApp válido com DDD");
     if (!/^\d{4}-\d{2}-\d{2}$/.test(eventDate)) return reject(400, "INVALID_EVENT_DATE", "Data do evento inválida");
     const event = new Date(`${eventDate}T12:00:00.000Z`);
-    if (Number.isNaN(event.getTime()) || event.toISOString().slice(0, 10) !== eventDate) {
-      return reject(400, "INVALID_EVENT_DATE", "Data do evento inválida");
-    }
+    if (Number.isNaN(event.getTime()) || event.toISOString().slice(0, 10) !== eventDate) return reject(400, "INVALID_EVENT_DATE", "Data do evento inválida");
 
     for (let attempt = 0; attempt < MAX_TRANSACTION_RETRIES; attempt += 1) {
       try {
@@ -142,11 +133,8 @@ export async function POST(request: Request) {
             if (existing) {
               return {
                 order: existing,
-                pricing: {
-                  subtotal: existing.subtotal,
-                  depositAmount: existing.depositAmount,
-                  depositMode: existing.depositMode,
-                },
+                pricing: { subtotal: existing.subtotal, depositAmount: existing.depositAmount, depositMode: existing.depositMode },
+                customFields: customFieldsFromSnapshot(existing.selectionSnapshot),
                 idempotentReplay: true,
               };
             }
@@ -155,9 +143,14 @@ export async function POST(request: Request) {
           const mode = depositMode(tenant.featuresConfig);
           if (!mode) return reject(500, "INVALID_TENANT_CONFIG", "Configuração financeira do ateliê inválida");
 
+          const persistedCustomFields = await tx.customField.findMany({ where: { tenantId }, orderBy: { id: "asc" } });
+          const definitions = normalizeCustomFields(persistedCustomFields);
+          if (!definitions.ok) return reject(500, "INVALID_TENANT_CONFIG", "Configuração de campos personalizados inválida");
+          const customAnswers = validateCustomFieldAnswers(definitions.value, customFieldAnswers);
+          if (!customAnswers.ok) return reject(422, "INVALID_CUSTOM_FIELDS", "Respostas de campos personalizados inválidas", undefined, customAnswers.issues);
+
           const size = await tx.cakeSize.findFirst({ where: { id: cakeSizeId, tenantId, active: true } });
           if (!size) return reject(400, "INVALID_CAKE_SIZE", "Tamanho inválido ou indisponível");
-
           const dough = await tx.cakeFlavor.findFirst({ where: { id: flavorId, tenantId, active: true, type: "MASSA" } });
           if (!dough) return reject(400, "INVALID_DOUGH", "Massa inválida ou indisponível");
           if (!fillingIds.length) return reject(400, "FILLING_REQUIRED", "Selecione ao menos um recheio");
@@ -170,9 +163,7 @@ export async function POST(request: Request) {
 
           const leadDays = calendarLeadDays(eventDate);
           if (leadDays == null) return reject(400, "INVALID_EVENT_DATE", "Data do evento inválida");
-          if (leadDays < tenant.minLeadDays) {
-            return reject(409, "LEAD_TIME_UNAVAILABLE", `A data exige antecedência mínima de ${tenant.minLeadDays} dias`);
-          }
+          if (leadDays < tenant.minLeadDays) return reject(409, "LEAD_TIME_UNAVAILABLE", `A data exige antecedência mínima de ${tenant.minLeadDays} dias`);
           if (await tx.blockedDate.findFirst({ where: { tenantId, date: eventDate } })) return reject(409, "DATE_BLOCKED", "A data selecionada está indisponível");
           const schedule = await tx.workSchedule.findFirst({ where: { tenantId, dayOfWeek: event.getUTCDay() } });
           if (schedule && !schedule.isOpen) return reject(409, "CLOSED_WEEKDAY", "O ateliê não atende neste dia da semana");
@@ -185,7 +176,7 @@ export async function POST(request: Request) {
           const subtotal = money(totalCents);
           const depositAmount = mode === "quote_only" ? 0 : mode === "100_percent" ? subtotal : money(Math.round(totalCents / 2));
           const selectionSnapshot = JSON.stringify({
-            version: 1,
+            version: 2,
             size: { id: size.id, name: size.name, basePrice: size.basePrice, maxFillings: size.maxFillings },
             dough: { id: dough.id, name: dough.name, additionalPrice: dough.additionalPrice },
             fillings: fillingIds.map((id) => {
@@ -196,6 +187,7 @@ export async function POST(request: Request) {
               const item = addons.find((candidate) => candidate.id === id)!;
               return { id: item.id, name: item.name, price: item.price };
             }),
+            customFields: customAnswers.value,
             pricing: { subtotal, depositAmount, depositMode: mode },
           });
 
@@ -217,17 +209,15 @@ export async function POST(request: Request) {
             status: "pending",
             idempotencyKey: idempotency.key,
             selectionSnapshot,
-          }});
-          return { order, pricing: { subtotal, depositAmount, depositMode: mode }, idempotentReplay: false };
+          } });
+          return { order, pricing: { subtotal, depositAmount, depositMode: mode }, customFields: customAnswers.value, idempotentReplay: false };
         }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
         if (result instanceof NextResponse) return result;
         return NextResponse.json(result, { status: result.idempotentReplay ? 200 : 201 });
       } catch (error) {
         if (retryableTransactionError(error, Boolean(idempotency.key))) {
-          if (attempt + 1 >= MAX_TRANSACTION_RETRIES) {
-            return reject(503, "ORDER_RETRY_EXHAUSTED", "Não foi possível confirmar o pedido; tente novamente");
-          }
+          if (attempt + 1 >= MAX_TRANSACTION_RETRIES) return reject(503, "ORDER_RETRY_EXHAUSTED", "Não foi possível confirmar o pedido; tente novamente");
           await retryDelay(attempt);
           continue;
         }
