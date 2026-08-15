@@ -11,14 +11,14 @@ const validOrder = {
   addonIds: [],
 };
 
-function sourceFor(testInfo: Parameters<Parameters<typeof test>[1]>[1]) {
-  return `198.51.100.${testInfo.project.name.startsWith("mobile") ? 42 : 41}`;
+function sourceFor(projectName: string) {
+  return `198.51.100.${projectName.startsWith("mobile") ? 42 : 41}`;
 }
 
 test("public order rejects unsupported embedded image data before persistence", async ({ request }, testInfo) => {
   const response = await request.post("/api/orders", {
     headers: {
-      "x-forwarded-for": sourceFor(testInfo),
+      "x-forwarded-for": sourceFor(testInfo.project.name),
       "idempotency-key": `image-gif-${testInfo.project.name}`,
     },
     data: {
@@ -39,7 +39,7 @@ test("public order rejects insecure or credential-bearing image URLs", async ({ 
   ].entries()) {
     const response = await request.post("/api/orders", {
       headers: {
-        "x-forwarded-for": sourceFor(testInfo),
+        "x-forwarded-for": sourceFor(testInfo.project.name),
         "idempotency-key": `image-url-${testInfo.project.name}-${index}`,
       },
       data: { ...validOrder, referenceImageUrl },
@@ -53,7 +53,7 @@ test("public order rejects insecure or credential-bearing image URLs", async ({ 
 test("public order accepts a bounded HTTPS image URL", async ({ request }, testInfo) => {
   const response = await request.post("/api/orders", {
     headers: {
-      "x-forwarded-for": sourceFor(testInfo),
+      "x-forwarded-for": sourceFor(testInfo.project.name),
       "idempotency-key": `image-valid-${testInfo.project.name}`,
     },
     data: {
