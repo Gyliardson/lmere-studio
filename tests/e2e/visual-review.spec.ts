@@ -16,17 +16,16 @@ async function saveEvidence(page: Page, testInfo: TestInfo, name: string) {
   });
 }
 
-async function reachStorefrontReferenceStep(page: Page) {
-  await page.goto("/ci-tenant-a");
-
-  // February 2032 is deterministic and well beyond the configured lead time.
-  // CI tenant A is open on Mondays (dayOfWeek=1), so use Monday 09/02/2032.
-  const target = { year: 2032, month: 1, day: 9 };
+async function navigateToDate(page: Page, target: { year: number; month: number; day: number }) {
   const now = await page.evaluate(() => ({ year: new Date().getFullYear(), month: new Date().getMonth() }));
   const monthsForward = (target.year - now.year) * 12 + (target.month - now.month);
   for (let index = 0; index < monthsForward; index += 1) await page.locator("#cal-next").click();
-
   await page.locator(`#cal-day-${target.day}`).click();
+}
+
+async function reachStorefrontReferenceStep(page: Page) {
+  await page.goto("/ci-tenant-a");
+  await navigateToDate(page, { year: 2032, month: 1, day: 9 });
   await page.locator("#btn-next").click();
   await page.locator("#size-ci-size-a").click();
   await page.locator("#btn-next").click();
@@ -36,11 +35,16 @@ async function reachStorefrontReferenceStep(page: Page) {
   await expect(page.locator("#input-file-photo")).toBeAttached();
 }
 
-async function reachStorefrontSummary(page: Page) {
-  await reachStorefrontReferenceStep(page);
+async function reachCustomFieldStep(page: Page) {
+  await page.goto("/ci-custom-a");
+  await navigateToDate(page, { year: 2032, month: 1, day: 9 });
   await page.locator("#btn-next").click();
-  await page.locator("#input-name").fill("Cliente de Demonstração");
-  await page.locator("#input-phone").fill("11999999999");
+  await page.locator("#size-ci-custom-size-a").click();
+  await page.locator("#btn-next").click();
+  await page.locator("#dough-ci-custom-dough-a").click();
+  await page.locator("#filling-ci-custom-filling-a").click();
+  await page.locator("#btn-next").click();
+  await expect(page.getByLabel("Tema da festa *")).toBeVisible();
 }
 
 async function openAdminSection(page: Page, testInfo: TestInfo, label: string, heading: string) {
@@ -49,6 +53,14 @@ async function openAdminSection(page: Page, testInfo: TestInfo, label: string, h
   }
   await page.getByRole("button", { name: label, exact: true }).click();
   await expect(page.getByRole("heading", { name: heading })).toBeVisible();
+}
+
+async function loginAdmin(page: Page, slug: string) {
+  await page.goto("/admin");
+  await page.locator("#admin-slug").fill(slug);
+  await page.locator("#admin-password").fill("ci-admin-password");
+  await page.locator("#admin-login-btn").click();
+  await expect(page.getByRole("heading", { name: "Gestão de Pedidos" })).toBeVisible();
 }
 
 test.describe("deterministic visual review evidence", () => {
@@ -67,6 +79,20 @@ test.describe("deterministic visual review evidence", () => {
     await page.locator("#input-phone").fill("11999999999");
     await expect(page.getByRole("heading", { name: "Resumo do Pedido" })).toBeVisible();
     await saveEvidence(page, testInfo, "storefront-summary");
+  });
+
+  test("custom-field storefront details and summary", async ({ page }, testInfo) => {
+    await reachCustomFieldStep(page);
+    await saveEvidence(page, testInfo, "storefront-custom-fields");
+
+    await page.getByLabel("Tema da festa *").fill("Jardim encantado");
+    await page.getByLabel("Estilo *").selectOption("Moderno");
+    await page.getByLabel("Convidados extras").fill("12");
+    await page.locator("#btn-next").click();
+    await page.locator("#input-name").fill("Cliente de Demonstração");
+    await page.locator("#input-phone").fill("11999999999");
+    await expect(page.getByText("Informações personalizadas")).toBeVisible();
+    await saveEvidence(page, testInfo, "storefront-custom-fields-summary");
   });
 
   test("admin login and representative authenticated sections", async ({ page }, testInfo) => {
@@ -98,5 +124,14 @@ test.describe("deterministic visual review evidence", () => {
 
     await openAdminSection(page, testInfo, "Funcionalidades", "Funcionalidades & Regras do Ateliê");
     await saveEvidence(page, testInfo, "admin-features");
+  });
+
+  test("admin custom-field configuration", async ({ page }, testInfo) => {
+    await loginAdmin(page, "ci-custom-a");
+    await openAdminSection(page, testInfo, "Funcionalidades", "Funcionalidades & Regras do Ateliê");
+    await expect(page.getByRole("heading", { name: "Campos personalizados" })).toBeVisible();
+    await expect(page.getByText("Tema da festa")).toBeVisible();
+    await expect(page.getByText("Seleção: Clássico · Moderno")).toBeVisible();
+    await saveEvidence(page, testInfo, "admin-custom-fields");
   });
 });
