@@ -18,9 +18,9 @@ Small custom-order businesses often coordinate availability, configurable produc
 
 The portfolio case highlights:
 
-- tenant-scoped catalog, schedule, branding and admin operations;
+- tenant-scoped catalog, schedule, branding, custom fields and admin operations;
 - server-authoritative order pricing and availability validation;
-- HMAC-signed admin sessions and ownership checks;
+- HMAC-signed, revocable admin sessions and ownership checks;
 - PostgreSQL migrations and deterministic two-tenant fixtures;
 - risk-focused unit, integration and Playwright coverage;
 - reproducible desktop/mobile documentation captures.
@@ -60,13 +60,14 @@ The four images below are a compact selection from the deterministic capture pip
 1. **Calendar:** tenant work schedule, blocked dates and minimum lead time.
 2. **Size:** tenant-defined portions, weight, base price and filling limits.
 3. **Flavors & add-ons:** active doughs, fillings, special-price options and extras.
-4. **Customization:** plaque message, notes and optional reference image.
-5. **Confirmed handoff:** the server revalidates catalog/date/capacity rules, recalculates subtotal/deposit, persists the order and only then provides confirmed values for WhatsApp handoff.
+4. **Customization:** plaque message, notes, optional reference image and canonical tenant-defined text/select/number fields.
+5. **Confirmed handoff:** the server revalidates catalog/date/capacity/custom-field rules, recalculates subtotal/deposit, persists the order and only then provides confirmed values for WhatsApp handoff.
 
 ### Authenticated admin (`/admin`)
 
 - order status management;
 - size/flavor/add-on CRUD;
+- tenant custom-field CRUD;
 - weekly schedule and blocked-date management;
 - tenant branding and contact configuration;
 - feature/deposit/capacity/lead-time settings;
@@ -99,10 +100,11 @@ flowchart TD
 - Admin authentication creates an expiry-bound HMAC-SHA256 session stored in an HttpOnly, `SameSite=Strict` cookie; production cookies are `Secure`.
 - `ADMIN_SESSION_SECRET` is required and must contain at least 32 bytes of unique secret material.
 - Protected admin routes derive tenant identity from the verified session, not request-provided tenant IDs.
+- Logout advances a persisted tenant session generation so copied tokens from the prior generation are rejected by protected admin routes.
 - Cross-tenant resource mutations verify ownership.
 - Public order creation treats browser subtotal, deposit, availability and related IDs as untrusted.
-- The server re-resolves active catalog resources, validates business dates/capacity, recalculates financials and uses serializable PostgreSQL transactions with bounded retry.
-- Public login/order abuse controls use persistent rate-limit buckets.
+- The server re-resolves active catalog resources and canonical custom-field definitions, validates business dates/capacity, recalculates financials and uses serializable PostgreSQL transactions with bounded retry.
+- Public login/order abuse controls use persistent privacy-preserving rate-limit buckets.
 
 ## Tech stack
 
@@ -164,16 +166,17 @@ For the complete disposable-PostgreSQL CI contract, see [`docs/QUALITY.md`](docs
 The repository-owned gates cover, among other checks:
 
 - ESLint, TypeScript and production build;
-- production dependency audit and read-only full-history secret scanning;
+- production dependency audit, read-only full-history secret scanning and CodeQL JavaScript/TypeScript SAST with auditable post-processed SARIF;
 - unit tests for pricing, business dates, sessions, validation and configuration;
 - empty PostgreSQL migrations, deterministic Tenant A/B fixtures and relational assertions;
 - application smoke against disposable PostgreSQL;
 - server-authoritative order negative paths, idempotency and concurrency;
 - authenticated Tenant A/B admin isolation and cross-tenant mutation rejection;
-- login/session restoration/logout behavior;
+- login/session restoration/logout/revocation behavior;
 - responsive desktop/mobile Playwright checks;
-- keyboard/focus/dialog/combobox regressions and reduced-motion behavior;
-- deterministic visual-review artifacts that are manually inspected for UI issues.
+- representative axe scans plus keyboard/focus/dialog/combobox regressions and reduced-motion behavior;
+- deterministic visual-review artifacts that are manually inspected for UI issues;
+- exact-candidate clean-room verification from fresh checkout through PostgreSQL, build, runtime and E2E.
 
 This is risk-focused regression evidence, not a claim of complete WCAG certification or a substitute for final release review.
 
@@ -181,13 +184,14 @@ This is risk-focused regression evidence, not a claim of complete WCAG certifica
 
 | Endpoint | Methods | Intent |
 | --- | --- | --- |
-| `/api/tenants/[slug]` | `GET` | Public tenant branding, menu and schedule |
+| `/api/tenants/[slug]` | `GET` | Public tenant branding, menu, schedule and validated custom-field definitions |
 | `/api/orders` | `POST` | Server-authoritative order validation/pricing/persistence |
 | `/api/admin/auth` | `POST`, `GET`, `DELETE` | Login, session validation and logout |
 | `/api/admin/orders` | `GET`, `PUT` | Tenant-scoped order management |
 | `/api/admin/menu` | `GET`, `POST`, `PUT`, `DELETE` | Tenant-scoped catalog CRUD |
 | `/api/admin/calendar` | `GET`, `POST`, `PUT`, `DELETE` | Tenant-scoped schedule management |
 | `/api/admin/settings` | `GET`, `PUT` | Tenant-scoped branding/configuration |
+| `/api/admin/custom-fields` | `GET`, `POST`, `PUT`, `DELETE` | Tenant-scoped canonical custom-field CRUD |
 
 ## Limitations / release status
 
