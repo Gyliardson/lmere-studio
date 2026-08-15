@@ -1,8 +1,31 @@
-import { expect, test, type Page } from "@playwright/test";
+import { createHmac } from "node:crypto";
+import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
 const BOUNDARY_NAME = "N".repeat(120);
 const BOUNDARY_MESSAGE = "M".repeat(200);
 const BOUNDARY_DETAILS = "D".repeat(2000);
+const SESSION_SECRET = process.env.ADMIN_SESSION_SECRET || "lmere-ci-admin-session-secret-at-least-32-bytes";
+
+function adminToken() {
+  const payload = Buffer.from(JSON.stringify({
+    version: 1,
+    tenantId: "ci-tenant-a",
+    expiresAt: Math.floor(Date.now() / 1000) + 3600,
+    sessionVersion: 0,
+  }), "utf8").toString("base64url");
+  return `${payload}.${createHmac("sha256", SESSION_SECRET).update(payload).digest("base64url")}`;
+}
+
+async function installAdminSession(context: BrowserContext) {
+  await context.addCookies([{
+    name: "lmere_admin_session",
+    value: adminToken(),
+    domain: "127.0.0.1",
+    path: "/api/admin",
+    httpOnly: true,
+    sameSite: "Strict",
+  }]);
+}
 
 async function reachSummary(page: Page) {
   await page.goto("/ci-tenant-a");
@@ -20,9 +43,12 @@ async function reachSummary(page: Page) {
   await page.locator("#filling-ci-filling-a").click();
   await page.locator("#btn-next").click();
 
+  await expect(page.locator("#input-cake-message")).toHaveAttribute("maxlength", "200");
+  await expect(page.locator("#input-details")).toHaveAttribute("maxlength", "2000");
   await page.locator("#input-cake-message").fill(BOUNDARY_MESSAGE);
   await page.locator("#input-details").fill(BOUNDARY_DETAILS);
   await page.locator("#btn-next").click();
+  await expect(page.locator("#input-name")).toHaveAttribute("maxlength", "120");
   await page.locator("#input-name").fill(BOUNDARY_NAME);
   await page.locator("#input-phone").fill("11999999999");
   await expect(page.getByRole("heading", { name: "Resumo do Pedido" })).toBeVisible();
@@ -64,7 +90,7 @@ test.describe("storefront summary containment", () => {
     if (viewport?.width === 390) expect(viewport.height).toBe(844);
   });
 
-  test("boundary-valid customer text survives confirmed WhatsApp handoff", async ({ page, context }) => {
+  test("boundary-valid customer text survives WhatsApp handoff and admin rendering", async ({ page, context }) => {
     await context.route("https://wa.me/**", async (route) => {
       await route.fulfill({ status: 200, contentType: "text/plain", body: "WhatsApp handoff intercepted by E2E" });
     });
@@ -81,5 +107,17 @@ test.describe("storefront summary containment", () => {
     expect(message).toContain(`*Mensagem/Placa:* ${BOUNDARY_MESSAGE}`);
     expect(message).toContain(`*Observações:* ${BOUNDARY_DETAILS}`);
     await popup.close();
+
+    await installAdminSession(context);
+    await page.goto("/admin");
+    await expect(page.getByRole("heading", { name: "Gestão de Pedidos" })).toBeVisible();
+    const orderCard = page.getByRole("button").filter({ hasText: BOUNDARY_NAME }).first();
+    await expect(orderCard).toBeVisible();
+    await orderCard.click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toContainText(BOUNDARY_MESSAGE);
+    await expect(dialog).toContainText(BOUNDARY_DETAILS);
+    const widths = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth }));
+    expect(widths.scroll).toBeLessThanOrEqual(widths.viewport + 1);
   });
 });
