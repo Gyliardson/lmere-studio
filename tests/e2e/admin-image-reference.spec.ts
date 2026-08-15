@@ -1,12 +1,17 @@
 import { expect, test } from "@playwright/test";
 import { ADMIN_SESSION_COOKIE, createAdminSessionToken } from "../../src/lib/admin-session";
+import { IMAGE_REFERENCE_LIMITS } from "../../src/lib/image-reference";
 
 function authHeaders() {
   return { cookie: `${ADMIN_SESSION_COOKIE}=${createAdminSessionToken("ci-tenant-a")}` };
 }
 
+function oversizedPngDataUrl() {
+  return `data:image/png;base64,${Buffer.alloc(IMAGE_REFERENCE_LIMITS.maxBytes + 1, 0x41).toString("base64")}`;
+}
+
 test.describe("bounded admin image references", () => {
-  test("branding rejects insecure and credential-bearing image URLs without mutation", async ({ request }) => {
+  test("branding rejects insecure, credential-bearing and oversized images without mutation", async ({ request }) => {
     const headers = authHeaders();
     const before = await request.get("/api/admin/settings", { headers });
     expect(before.status()).toBe(200);
@@ -15,6 +20,7 @@ test.describe("bounded admin image references", () => {
     for (const data of [
       { logoUrl: "http://example.com/logo.png" },
       { bannerUrl: "https://user:secret@example.com/banner.webp" },
+      { logoUrl: oversizedPngDataUrl() },
     ]) {
       const response = await request.put("/api/admin/settings", { headers, data });
       expect(response.status()).toBe(422);
