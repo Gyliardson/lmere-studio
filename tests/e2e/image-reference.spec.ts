@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type APIRequestContext } from "@playwright/test";
 import { ADMIN_SESSION_COOKIE, createAdminSessionToken } from "../../src/lib/admin-session";
 
 const validOrder = {
@@ -20,7 +20,7 @@ function adminHeaders() {
   return { cookie: `${ADMIN_SESSION_COOKIE}=${createAdminSessionToken("ci-tenant-a")}` };
 }
 
-async function expectOrderAbsent(request: Parameters<Parameters<typeof test>[1]>[0]["request"], customerName: string) {
+async function expectOrderAbsent(request: APIRequestContext, customerName: string) {
   const response = await request.get("/api/admin/orders", { headers: adminHeaders() });
   expect(response.status()).toBe(200);
   const body = await response.json();
