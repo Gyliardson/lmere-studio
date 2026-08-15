@@ -23,8 +23,14 @@ test("admin UI restores a valid cookie-backed session after reload", async ({ co
 });
 
 test("admin logout revokes a captured token and allows a fresh session", async ({ context, page }) => {
-  const capturedToken = createSessionToken("ci-tenant-session", 0);
-  await context.addCookies([{ name: "lmere_admin_session", value: capturedToken, domain: "127.0.0.1", path: "/api/admin", httpOnly: true, sameSite: "Strict" }]);
+  const initialLogin = await context.request.post("/api/admin/auth", {
+    data: { slug: "ci-tenant-session", password: "ci-admin-password" },
+  });
+  expect(initialLogin.status()).toBe(200);
+
+  const issuedCookies = await context.cookies("http://127.0.0.1:3000/api/admin/auth");
+  const capturedToken = issuedCookies.find((cookie) => cookie.name === "lmere_admin_session")?.value;
+  expect(capturedToken).toBeTruthy();
 
   const beforeLogout = await context.request.get("/api/admin/orders", {
     headers: { cookie: `lmere_admin_session=${capturedToken}` },
@@ -44,8 +50,8 @@ test("admin logout revokes a captured token and allows a fresh session", async (
 
   await expect(page.getByRole("heading", { name: "Painel Admin" })).toBeVisible();
 
-  const cookies = await context.cookies("http://127.0.0.1:3000/api/admin/auth");
-  expect(cookies.some((cookie) => cookie.name === "lmere_admin_session")).toBe(false);
+  const cookiesAfterLogout = await context.cookies("http://127.0.0.1:3000/api/admin/auth");
+  expect(cookiesAfterLogout.some((cookie) => cookie.name === "lmere_admin_session")).toBe(false);
 
   for (const route of ["/api/admin/orders", "/api/admin/menu", "/api/admin/calendar", "/api/admin/settings"]) {
     const replay = await context.request.get(route, {
