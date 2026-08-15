@@ -21,10 +21,6 @@ function extractSessionToken(setCookie: string) {
   return decodeURIComponent(match[1]);
 }
 
-async function installSessionCookie(context: Parameters<typeof test>[0] extends never ? never : never) {
-  return context;
-}
-
 test("admin UI restores a valid cookie-backed session after reload", async ({ context, page }) => {
   await context.addCookies([{ name: SESSION_COOKIE, value: createSessionToken("ci-tenant-a"), domain: "127.0.0.1", path: "/api/admin", httpOnly: true, sameSite: "Strict" }]);
   await page.goto("/admin");
