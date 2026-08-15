@@ -125,4 +125,46 @@ test.describe("tenant custom fields", () => {
     const cleanup = await request.delete(`/api/admin/custom-fields?id=${created!.id}`, { headers: tenantAHeaders });
     expect(cleanup.status()).toBe(200);
   });
+
+  test("field-count bound survives concurrent creates", async ({ request }, testInfo) => {
+    const tenantId = testInfo.project.name.includes("mobile") ? "ci-custom-b" : "ci-custom-a";
+    const headers = authHeaders(tenantId);
+    const prefix = `Capacity ${testInfo.project.name}`;
+
+    const list = async () => {
+      const response = await request.get("/api/admin/custom-fields", { headers });
+      expect(response.status()).toBe(200);
+      return (await response.json()).customFields as Array<{ id: string; label: string }>;
+    };
+
+    const cleanup = async () => {
+      for (const field of (await list()).filter((item) => item.label.startsWith(prefix))) {
+        const response = await request.delete(`/api/admin/custom-fields?id=${field.id}`, { headers });
+        expect(response.status()).toBe(200);
+      }
+    };
+
+    await cleanup();
+    try {
+      let current = await list();
+      for (let index = current.length; index < CUSTOM_FIELD_LIMITS.fields - 1; index += 1) {
+        const response = await request.post("/api/admin/custom-fields", {
+          headers,
+          data: { label: `${prefix} seed ${testInfo.retry}-${index}`, type: "text", required: false, options: [] },
+        });
+        expect(response.status()).toBe(201);
+      }
+
+      const race = await Promise.all(["A", "B"].map((suffix) => request.post("/api/admin/custom-fields", {
+        headers,
+        data: { label: `${prefix} race ${testInfo.retry}-${suffix}`, type: "text", required: false, options: [] },
+      })));
+      expect(race.map((response) => response.status()).sort((a, b) => a - b)).toEqual([201, 422]);
+
+      current = await list();
+      expect(current).toHaveLength(CUSTOM_FIELD_LIMITS.fields);
+    } finally {
+      await cleanup();
+    }
+  });
 });

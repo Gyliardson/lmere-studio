@@ -4,10 +4,12 @@ import { CUSTOM_FIELD_LIMITS, normalizeCustomFields, validateCustomFieldWrite } 
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
+const MAX_WRITE_RETRIES = 4;
 const unauthorized = () => NextResponse.json({ error: "Sessão inválida ou expirada" }, { status: 401 });
 const invalidJson = () => NextResponse.json({ code: "INVALID_JSON", error: "Corpo JSON inválido" }, { status: 400 });
 const validationError = (issues: Array<{ field: string; message: string }>) => NextResponse.json({ code: "VALIDATION_ERROR", error: "Dados inválidos", issues }, { status: 422 });
 const duplicateLabel = () => validationError([{ field: "label", message: "já existe um campo com este rótulo" }]);
+const fieldLimit = () => validationError([{ field: "$", message: `máximo de ${CUSTOM_FIELD_LIMITS.fields} campos personalizados` }]);
 
 async function sessionTenant(request: Request) {
   const session = await getVerifiedAdminSession(request);
@@ -23,6 +25,10 @@ async function serializedFields(tenantId: string) {
 
 function isUniqueConflict(error: unknown) {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
+}
+
+function isRetryableWriteConflict(error: unknown) {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034";
 }
 
 export async function GET(request: Request) {
@@ -45,21 +51,40 @@ export async function POST(request: Request) {
     const parsed = validateCustomFieldWrite(body);
     if (!parsed.ok) return validationError(parsed.issues);
 
-    const [count, duplicate] = await Promise.all([
-      prisma.customField.count({ where: { tenantId } }),
-      prisma.customField.findFirst({ where: { tenantId, label: { equals: parsed.value.label, mode: "insensitive" } } }),
-    ]);
-    if (count >= CUSTOM_FIELD_LIMITS.fields) return validationError([{ field: "$", message: `máximo de ${CUSTOM_FIELD_LIMITS.fields} campos personalizados` }]);
-    if (duplicate) return duplicateLabel();
+    for (let attempt = 0; attempt < MAX_WRITE_RETRIES; attempt += 1) {
+      try {
+        const result = await prisma.$transaction(async (tx) => {
+          const [count, duplicate] = await Promise.all([
+            tx.customField.count({ where: { tenantId } }),
+            tx.customField.findFirst({ where: { tenantId, label: { equals: parsed.value.label, mode: "insensitive" } } }),
+          ]);
+          if (count >= CUSTOM_FIELD_LIMITS.fields) return "limit" as const;
+          if (duplicate) return "duplicate" as const;
 
-    await prisma.customField.create({ data: {
-      tenantId,
-      label: parsed.value.label,
-      type: parsed.value.type,
-      required: parsed.value.required,
-      options: JSON.stringify(parsed.value.options),
-    } });
-    return NextResponse.json({ customFields: await serializedFields(tenantId) }, { status: 201 });
+          await tx.customField.create({ data: {
+            tenantId,
+            label: parsed.value.label,
+            type: parsed.value.type,
+            required: parsed.value.required,
+            options: JSON.stringify(parsed.value.options),
+          } });
+          return "created" as const;
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+
+        if (result === "limit") return fieldLimit();
+        if (result === "duplicate") return duplicateLabel();
+        return NextResponse.json({ customFields: await serializedFields(tenantId) }, { status: 201 });
+      } catch (error) {
+        if (isUniqueConflict(error)) return duplicateLabel();
+        if (isRetryableWriteConflict(error) && attempt + 1 < MAX_WRITE_RETRIES) continue;
+        if (isRetryableWriteConflict(error)) {
+          return NextResponse.json({ code: "CUSTOM_FIELD_RETRY_EXHAUSTED", error: "Não foi possível atualizar campos personalizados; tente novamente" }, { status: 503 });
+        }
+        throw error;
+      }
+    }
+
+    return NextResponse.json({ code: "CUSTOM_FIELD_RETRY_EXHAUSTED", error: "Não foi possível atualizar campos personalizados; tente novamente" }, { status: 503 });
   } catch (error) {
     if (isUniqueConflict(error)) return duplicateLabel();
     console.error("[ERROR] Failed to create custom field", error instanceof Error ? error.message : "unknown error");
