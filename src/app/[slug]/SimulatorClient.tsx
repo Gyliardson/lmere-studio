@@ -227,6 +227,7 @@ export function SimulatorClient({ slug }: { slug: string }) {
         <div
           className="h-1 bg-white/5 rounded-full overflow-hidden"
           role="progressbar"
+          aria-label="Progresso da encomenda"
           aria-valuemin={1}
           aria-valuemax={TOTAL_STEPS}
           aria-valuenow={state.step}
@@ -431,7 +432,7 @@ function StepCalendar({
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-1" role="grid" aria-label={`${monthNames[viewMonth]} de ${viewYear}`}>
+        <div className="grid grid-cols-7 gap-1" role="group" aria-label={`${monthNames[viewMonth]} de ${viewYear}`}>
           {Array.from({ length: firstDay }).map((_, i) => (
             <div key={`empty-${i}`} aria-hidden="true" />
           ))}
