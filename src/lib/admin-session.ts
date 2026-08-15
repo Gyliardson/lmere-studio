@@ -1,5 +1,4 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { prisma } from "@/lib/prisma";
 
 export const ADMIN_SESSION_COOKIE = "lmere_admin_session";
 export const ADMIN_SESSION_TTL_SECONDS = 8 * 60 * 60;
@@ -104,6 +103,9 @@ export async function getVerifiedAdminSession(request: Request, nowMs = Date.now
   const session = getAdminSession(request, nowMs);
   if (!session) return null;
 
+  // Keep the pure HMAC/expiry helpers independently unit-testable: only the
+  // server-verified path needs to initialize the database adapter.
+  const { prisma } = await import("@/lib/prisma");
   const tenant = await prisma.tenant.findUnique({
     where: { id: session.tenantId },
     select: { adminSessionVersion: true },
