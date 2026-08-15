@@ -52,6 +52,7 @@ test.describe("tenant custom fields", () => {
       { name: "invalid-number", answers: { "ci-custom-theme-a": "Tema", "ci-custom-style-a": "Clássico", "ci-custom-guests-a": "abc" } },
       { name: "cross-tenant", answers: { "ci-custom-theme-a": "Tema", "ci-custom-style-a": "Clássico", "ci-custom-note-b": "forged" } },
       { name: "oversized-text", answers: { "ci-custom-theme-a": "x".repeat(CUSTOM_FIELD_LIMITS.textAnswer + 1), "ci-custom-style-a": "Clássico" } },
+      { name: "oversized-raw-text", answers: { "ci-custom-theme-a": `${" ".repeat(CUSTOM_FIELD_LIMITS.textAnswer)}x`, "ci-custom-style-a": "Clássico" } },
     ];
 
     for (const item of cases) {
