@@ -50,7 +50,7 @@ export async function GET(request: Request) {
 
     const tenant = await prisma.tenant.findUnique({
       where: { id: session.tenantId },
-      omit: { adminPasswordHash: true },
+      omit: { adminPasswordHash: true, adminSessionVersion: true },
     });
     if (!tenant) return unauthorized();
 
@@ -81,7 +81,7 @@ export async function PUT(request: Request) {
     const tenant = await prisma.tenant.update({
       where: { id: session.tenantId },
       data: parsed.value,
-      omit: { adminPasswordHash: true },
+      omit: { adminPasswordHash: true, adminSessionVersion: true },
     });
 
     return NextResponse.json({ settings: serializeSettings(tenant) });
