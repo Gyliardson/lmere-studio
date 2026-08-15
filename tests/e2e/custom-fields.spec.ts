@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { ADMIN_SESSION_COOKIE, createAdminSessionToken } from "../../src/lib/admin-session";
+import { CUSTOM_FIELD_LIMITS } from "../../src/lib/custom-fields";
 
 const authHeaders = (tenantId: string) => ({ cookie: `${ADMIN_SESSION_COOKIE}=${createAdminSessionToken(tenantId)}` });
 
@@ -40,7 +41,7 @@ test.describe("tenant custom fields", () => {
     expect(bodyB.customFields.map((field: { id: string }) => field.id)).toEqual(["ci-custom-note-b"]);
   });
 
-  test("missing, forged and invalid answers are rejected before persistence", async ({ request }, testInfo) => {
+  test("missing, forged, invalid and oversized answers are rejected before persistence", async ({ request }, testInfo) => {
     const before = await request.get("/api/admin/orders", { headers: authHeaders("ci-custom-a") });
     expect(before.status()).toBe(200);
     const beforeCount = (await before.json()).orders.length as number;
@@ -50,6 +51,7 @@ test.describe("tenant custom fields", () => {
       { name: "invalid-select", answers: { "ci-custom-theme-a": "Tema", "ci-custom-style-a": "Inexistente" } },
       { name: "invalid-number", answers: { "ci-custom-theme-a": "Tema", "ci-custom-style-a": "Clássico", "ci-custom-guests-a": "abc" } },
       { name: "cross-tenant", answers: { "ci-custom-theme-a": "Tema", "ci-custom-style-a": "Clássico", "ci-custom-note-b": "forged" } },
+      { name: "oversized-text", answers: { "ci-custom-theme-a": "x".repeat(CUSTOM_FIELD_LIMITS.textAnswer + 1), "ci-custom-style-a": "Clássico" } },
     ];
 
     for (const item of cases) {

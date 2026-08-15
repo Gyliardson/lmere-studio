@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  CUSTOM_FIELD_LIMITS,
   normalizeCustomFields,
   validateCustomFieldAnswers,
   validateCustomFieldWrite,
@@ -43,6 +44,28 @@ test("accepts valid tenant answers and creates historical snapshots", () => {
     { id: "field-style", label: "Estilo", type: "select", value: "Moderno" },
     { id: "field-guests", label: "Convidados extras", type: "number", value: "12" },
   ]);
+});
+
+test("enforces the server-owned custom text boundary exactly", () => {
+  const definitions = normalizeCustomFields(fields);
+  assert.equal(definitions.ok, true);
+  if (!definitions.ok) return;
+
+  const boundary = validateCustomFieldAnswers(definitions.value, {
+    "field-theme": "x".repeat(CUSTOM_FIELD_LIMITS.textAnswer),
+    "field-style": "Clássico",
+  });
+  assert.equal(boundary.ok, true);
+  if (boundary.ok) {
+    const theme = boundary.value.find((field) => field.id === "field-theme");
+    assert.equal(theme?.value.length, CUSTOM_FIELD_LIMITS.textAnswer);
+  }
+
+  const overBoundary = validateCustomFieldAnswers(definitions.value, {
+    "field-theme": "x".repeat(CUSTOM_FIELD_LIMITS.textAnswer + 1),
+    "field-style": "Clássico",
+  });
+  assert.equal(overBoundary.ok, false);
 });
 
 test("rejects missing required, forged, invalid select and invalid number answers", () => {
