@@ -113,6 +113,6 @@ test.describe("bounded image upload clients", () => {
     });
     await expect(dialog.getByRole("alert")).toContainText("no máximo 2 MB");
     expect(await fileReaderCount(page)).toBe(0);
-    await expect(dialog.getByText("PNG, JPG, WEBP ate 2 MB")).toBeVisible();
+    await expect(dialog.getByText("PNG, JPG ou WEBP até 2 MB")).toBeVisible();
   });
 });
