@@ -32,6 +32,22 @@ The storefront labels browser calculations as estimates until the POST succeeds.
 
 PostgreSQL/API/browser coverage includes manipulated client pricing, cross-tenant/stale catalog IDs, inactive/invalid catalog paths, filling limits, deposit modes, blocked dates, closed weekdays, lead time, capacity, concurrent submissions, idempotent retries, later intentional identical submissions, invalid phones, one-POST/one-handoff double-submit behavior, and recoverable server rejection feedback.
 
+## Reference image contract
+
+Reference images and tenant-managed catalog/branding images use one bounded validation contract across browser and server boundaries.
+
+- embedded images are limited to PNG, JPEG or WEBP;
+- embedded payloads are limited to 2 MiB decoded size;
+- external references are limited to 2048 characters, must use HTTPS and cannot embed URL credentials;
+- storefront and admin upload controls reject invalid MIME/size metadata before constructing a `FileReader`, so oversized files are not needlessly converted into larger base64 strings in browser memory;
+- URL fields keep incomplete/invalid input as a local draft and expose recoverable inline feedback instead of committing it into persisted/application image state;
+- API persistence paths revalidate the same contract rather than trusting browser validation;
+- external image previews use `referrerPolicy="no-referrer"` where the URL can originate from customer-controlled reference data.
+
+Browser regressions instrument `FileReader` to prove unsupported/oversized files are rejected before `readAsDataURL`, and API regressions verify invalid references do not leave persisted orders/settings/catalog records behind.
+
+Allowing an external HTTPS image URL still means the viewing browser connects directly to that host, which can observe normal network metadata such as the viewer IP address and user agent. The application does not fetch these URLs server-side, so this is not an SSRF path; the direct-browser privacy tradeoff is retained as an explicit limitation rather than hidden behind a proxy architecture.
+
 ## Security gates
 
 The Quality workflow blocks high/critical production dependency findings. A separate read-only Gitleaks workflow scans pull-request changes for secrets.
