@@ -11,7 +11,7 @@ export async function GET(
 
     const tenant = await prisma.tenant.findUnique({
       where: { slug },
-      omit: { adminPasswordHash: true },
+      omit: { adminPasswordHash: true, adminSessionVersion: true },
       include: {
         cakeSizes: { where: { active: true }, orderBy: { sortOrder: "asc" } },
         cakeFlavors: { where: { active: true }, orderBy: { sortOrder: "asc" } },
