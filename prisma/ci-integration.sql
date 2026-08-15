@@ -109,6 +109,19 @@ BEGIN
   IF EXISTS (SELECT 1 FROM "CustomField" WHERE "id" = 'ci-custom-duplicate-label') THEN
     RAISE EXCEPTION 'Custom-field unique-constraint assertion left duplicate data behind';
   END IF;
+
+  BEGIN
+    INSERT INTO "CustomField" ("id", "tenantId", "label", "type", "required", "options")
+    VALUES ('ci-custom-case-duplicate-label', 'ci-custom-a', 'tEMA DA FESTA', 'text', false, '[]');
+    RAISE EXCEPTION 'Expected case-insensitive unique violation for duplicate tenant/custom-field label';
+  EXCEPTION
+    WHEN unique_violation THEN
+      NULL;
+  END;
+
+  IF EXISTS (SELECT 1 FROM "CustomField" WHERE "id" = 'ci-custom-case-duplicate-label') THEN
+    RAISE EXCEPTION 'Case-insensitive custom-field unique assertion left duplicate data behind';
+  END IF;
 END
 $$;
 
