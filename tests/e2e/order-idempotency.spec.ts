@@ -12,7 +12,7 @@ const baseOrder = {
 };
 
 test("replays the same order instead of persisting a duplicate", async ({ request }) => {
-  const idempotencyKey = `pw-idempotency-${test.info().project.name}`;
+  const idempotencyKey = `pw-idempotency-${test.info().project.name}-retry-${test.info().retry}`;
 
   const first = await request.post("/api/orders", {
     headers: { "Idempotency-Key": idempotencyKey },
@@ -27,10 +27,11 @@ test("replays the same order instead of persisting a duplicate", async ({ reques
 
   const snapshot = JSON.parse(firstBody.order.selectionSnapshot);
   expect(snapshot).toMatchObject({
-    version: 1,
+    version: 2,
     size: { id: "ci-size-a", name: "CI Size A", basePrice: 100 },
     dough: { id: "ci-flavor-a", name: "CI Flavor A", additionalPrice: 0 },
     pricing: { subtotal: 125, depositAmount: 62.5, depositMode: "50_percent" },
+    customFields: [],
   });
   expect(snapshot.fillings).toEqual([
     { id: "ci-filling-a", name: "CI Filling A", additionalPrice: 10 },
