@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Admin architecture**: decomposed the former monolithic admin page into an authenticated shell plus focused orders, menu, calendar, settings and shared-control modules.
 - **Storefront handoff**: WhatsApp handoff now follows confirmed server persistence/pricing rather than treating browser calculations as authoritative.
 - **Documentation media**: replaced the historical video/FFmpeg and screenshot corpus with a deterministic Playwright capture pipeline and four curated portfolio images.
-- **README state**: reconciled EN/PT-BR/ES/JA documentation with the implemented stack, security model, test strategy and manual release-promotion contract.
+- **README state**: reconciled EN/PT-BR/ES/JA documentation with the implemented stack, security model, test strategy, completed PR #27 promotion and durable future release/verification contract.
 - **Public-repository hygiene**: preserved explicit local-secret/private-key ignore rules and proprietary wording compatible with publicly visible source.
 - **Demo seed safety**: destructive synthetic demo seeding now fails closed in production, requires explicit opt-in and no longer prints the demo password value.
 

@@ -10,7 +10,7 @@
 
 L'Mere Studio é uma aplicação white-label e multi-tenant para ateliês de confeitaria e cake designers. Combina um simulador público de encomendas em cinco etapas com um painel administrativo autenticado para pedidos, catálogo, agenda, marca e configurações do tenant.
 
-> **Baseline de engenharia do portfólio:** a documentação descreve comportamento implementado e coberto pelos gates reproduzíveis de qualidade abaixo. A promoção para a branch padrão permanece uma decisão de revisão manual.
+> **Baseline de engenharia do portfólio:** a PR #27 já promoveu o trabalho de professionalization para a branch padrão `master`. A documentação descreve comportamento implementado e coberto pelos gates reproduzíveis abaixo; futuras releases permanecem decisões manuais do mantenedor conforme [`docs/RELEASE.md`](docs/RELEASE.md).
 
 ## Problema → solução
 
@@ -149,11 +149,11 @@ Isso é cobertura de regressão orientada a risco, não certificação WCAG comp
 
 ## Status / limitações
 
-- A promoção para a branch padrão é intencionalmente manual e segue o checklist de [`docs/RELEASE.md`](docs/RELEASE.md).
+- A PR #27 já promoveu o baseline de professionalization para `master`; mudanças futuras seguem o contrato durável de release/verificação por SHA exato em [`docs/RELEASE.md`](docs/RELEASE.md) e continuam sujeitas a merge manual pelo mantenedor.
 - Mídia gerada precisa de inspeção manual antes de publicação.
 - Acessibilidade é coberta de forma representativa, não como certificação integral.
 - Proteção/rulesets das branches é uma configuração de governança fora da correção da aplicação e deve ser revalidada no release.
 
 ## Licença
 
-Software sob **Licença Proprietária (Todos os Direitos Reservados)**. Uso comercial, redistribuição, hospedagem SaaS ou cópia de código exige autorização explícita. Consulte [LICENSE](LICENSE).
+O código de propriedade da L'Mere permanece **Proprietário / Todos os Direitos Reservados**. Uso comercial, redistribuição, hospedagem SaaS ou cópia desse código exige autorização explícita. Material de terceiros retido continua sujeito às próprias licenças; as atribuições aplicáveis estão em [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Consulte [LICENSE](LICENSE).

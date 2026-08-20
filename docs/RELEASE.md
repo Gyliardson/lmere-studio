@@ -1,6 +1,12 @@
 # Release and clean-room verification
 
-This document defines the repository-owned release proof for L'Mere Studio. It does **not** authorize merging `portfolio/revamp-2026` into `master`; the final promotion remains a manual review step.
+This document defines the durable repository-owned release and verification contract for future changes targeting `master`. PR #27 completed the historical professionalization promotion to `master`; this guide governs later candidates and does not authorize any merge. Final merge remains an explicit maintainer decision.
+
+## Exact-SHA release principle
+
+Release evidence belongs to an immutable candidate commit, not merely to a branch or pull request name. After the last intended commit, capture the full candidate SHA and evaluate required checks on that exact SHA. Any subsequent file or commit change creates a new candidate and invalidates check/review conclusions tied to the previous SHA.
+
+A successful run from an earlier SHA must not be used as evidence for a later candidate. External deployment status, when available, is recorded separately and does not replace repository-owned gates.
 
 ## What clean-room means here
 
@@ -98,35 +104,39 @@ External deployment configuration is intentionally not stored as secret material
 
 ## Media evidence contract
 
-Final certification must use the reproducible media path documented in `docs/MEDIA.md`. Generated capture output and the curated `docs/media/portfolio/` subset are the only current visual-evidence surfaces. Superseded historical screenshot corpora must be removed once the curated evidence replaces them, so reviewers are not presented with conflicting or obsolete UI states.
+Documentation media must use the reproducible path documented in `docs/MEDIA.md`. Generated capture output and the curated `docs/media/portfolio/` subset are the current visual-evidence surfaces. When a change affects those surfaces, deterministic capture must remain reproducible and the resulting evidence must be manually inspected before publication.
 
-Deleting obsolete documentation media is not itself visual approval: the current deterministic capture/evidence still needs to remain reproducible and intact.
+Media evidence is supplemental to behavioral verification: a successful capture does not replace functional, security, database or clean-room gates.
 
-## GitHub governance
+## GitHub governance and merge policy
 
-The live repository state must be rechecked immediately before the final `portfolio/revamp-2026 → master` PR.
+Future release candidates are proposed through pull requests targeting `master`. Immediately before certification, revalidate the live base ref, pull-request head SHA and applicable workflow results so that review evidence cannot silently drift from the candidate being considered.
 
-At the time this release guide was introduced:
+Repository branch protection/rulesets are governance controls outside application correctness. Their live state may be rechecked at release time, but absence or configuration changes must not be treated as permission to bypass the exact-SHA verification contract.
 
-- `master` was reported by GitHub as `protected: false`;
-- the repository rulesets API returned no rulesets.
+Merge is always a manual maintainer decision. Automated checks certify evidence; they do not authorize merge by themselves.
 
-Therefore the repository currently relies on process discipline rather than an enforced branch rule to prevent direct writes/premature promotion. Before final certification, prefer a GitHub ruleset/branch-protection policy for `master` that requires pull requests and the relevant exact-head status checks when the account/repository plan supports it. If enforcement cannot be configured through the available plan or tooling, record that limitation explicitly in the final PR and keep the final merge manual.
+## Candidate release checklist
 
-## Release checklist
+Before a maintainer considers merge:
 
-Before final certification:
-
-- [ ] clean-room workflow is green on the exact candidate integration SHA;
+- [ ] the full candidate SHA was captured after the final intended commit;
+- [ ] all repository-owned workflows applicable to the pull request are green on that exact candidate SHA;
 - [ ] Quality is green on that SHA;
 - [ ] full-history Secret Scan is green on that SHA;
 - [ ] E2E is green on that SHA;
-- [ ] CodeQL JavaScript/TypeScript analysis completed on that SHA and post-processed SARIF was inspected for material findings;
-- [ ] deterministic visual/media evidence has been inspected where applicable;
-- [ ] only the current reproducible/curated media contract remains; superseded screenshot corpora are removed;
+- [ ] CodeQL JavaScript/TypeScript analysis completed on that SHA and post-processed SARIF has no unresolved material P0/P1 finding;
+- [ ] Clean Room is green on that SHA;
+- [ ] Media Capture is green on that SHA when the workflow is applicable, and deterministic visual evidence has been inspected where relevant;
 - [ ] live deployment/environment requirements are documented and no production secret appears in repository history/artifacts;
-- [ ] live branch/ruleset state has been rechecked;
+- [ ] any observed Vercel preview/status is recorded separately for the same candidate SHA;
 - [ ] no open P0/P1 or release blocker remains;
-- [ ] integration-vs-`master` diff has received an adversarial final audit;
-- [ ] final PR documents residual risks and any manual external steps;
-- [ ] final PR remains unmerged for independent/user review.
+- [ ] the final candidate-vs-`master` diff has received review appropriate to its change risk;
+- [ ] residual P2 items, if any, are documented without expanding the release scope;
+- [ ] the pull request remains unmerged until explicit maintainer authorization.
+
+## Post-merge exact-master proof
+
+A future merge does not complete release verification by itself. Capture the new full `master` SHA produced by the merge and require every repository-owned workflow configured for `push` to `master` to complete successfully on that exact SHA before branch/ref cleanup or retirement of an integration branch begins.
+
+With the current workflow topology, that post-merge proof consists of Quality, E2E, Secret Scan, Clean Room and CodeQL. Media Capture is pull-request/manual only and is therefore not required as a `push`-to-`master` gate. If Vercel publishes a deployment status for the new `master` SHA, record it separately; it does not substitute for repository-owned checks.

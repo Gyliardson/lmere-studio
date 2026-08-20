@@ -10,7 +10,7 @@
 
 L'Mere Studio is a white-label, multi-tenant web application for artisan bakeries and cake designers. It combines a five-step public order simulator with an authenticated admin dashboard for orders, catalog, schedule, branding and tenant configuration.
 
-> **Portfolio engineering baseline:** the repository documents behavior that is implemented and covered by the reproducible quality gates described below. Release promotion to the default branch remains a manual review decision.
+> **Portfolio engineering baseline:** PR #27 promoted the professionalization work to the default `master` branch. The repository documents behavior that is implemented and covered by the reproducible quality gates described below; future releases remain manual maintainer review decisions under [`docs/RELEASE.md`](docs/RELEASE.md).
 
 ## Problem → solution
 
@@ -195,11 +195,11 @@ This is risk-focused regression evidence, not a claim of complete WCAG certifica
 
 ## Limitations / release status
 
-- Promotion to the default branch is intentionally manual and requires the release checklist in [`docs/RELEASE.md`](docs/RELEASE.md).
+- PR #27 has already promoted the professionalization baseline to `master`; future changes follow the durable exact-SHA release/verification contract in [`docs/RELEASE.md`](docs/RELEASE.md) and remain manual maintainer merge decisions.
 - Generated documentation media must be manually inspected before publication.
 - The accessibility suite is representative risk coverage, not comprehensive WCAG certification.
 - Repository branch/ruleset enforcement is a governance setting outside application correctness and must be checked at release time.
 
 ## License
 
-This software is licensed under a **Proprietary License (All Rights Reserved)**. Commercial usage, distribution, SaaS hosting or code copying requires explicit permission. See [LICENSE](LICENSE).
+L'Mere-owned source is **Proprietary / All Rights Reserved**. Commercial usage, distribution, SaaS hosting or copying of L'Mere-owned code requires explicit permission. Retained third-party material remains governed by its own licenses; applicable attributions are recorded in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). See [LICENSE](LICENSE).
