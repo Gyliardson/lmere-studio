@@ -3,7 +3,6 @@ name: Clean Room
 on:
   pull_request:
     branches:
-      - portfolio/revamp-2026
       - master
     paths:
       - ".github/workflows/clean-room.yml"
@@ -19,7 +18,7 @@ on:
       - "playwright.config.ts"
   push:
     branches:
-      - portfolio/revamp-2026
+      - master
   workflow_dispatch:
 
 permissions:

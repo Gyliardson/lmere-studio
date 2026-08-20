@@ -4,11 +4,9 @@ on:
   push:
     branches:
       - master
-      - portfolio/revamp-2026
   pull_request:
     branches:
       - master
-      - portfolio/revamp-2026
 
 permissions:
   contents: read

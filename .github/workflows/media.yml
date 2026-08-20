@@ -3,7 +3,6 @@ name: Media Capture
 on:
   pull_request:
     branches:
-      - portfolio/revamp-2026
       - master
     paths:
       - "playwright.demo.config.ts"
