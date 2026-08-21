@@ -8,7 +8,7 @@ on:
       - "playwright.demo.config.ts"
       - "tests/demo/**"
       - "prisma/media-seed.sql"
-      - "docs/MEDIA.md"
+      - "docs/operations/MEDIA.md"
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/media.yml"
