@@ -81,7 +81,7 @@ npm run db:migrate
 npm run dev
 ```
 
-Configure `POSTGRES_PRISMA_URL` and replace the `ADMIN_SESSION_SECRET` placeholder with unique secret material before running the application. The optional demo seed is destructive and intentionally requires explicit opt-in; see the [operations documentation](docs/README.md#operations) before using it.
+Configure `POSTGRES_PRISMA_URL` and replace the `ADMIN_SESSION_SECRET` placeholder with unique secret material before running the application. The optional demo seed is destructive and intentionally requires explicit opt-in; review [.env.example](.env.example) and the [quality documentation](docs/assurance/QUALITY.md) before using it.
 
 ## Quality & assurance
 
