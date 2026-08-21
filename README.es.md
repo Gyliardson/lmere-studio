@@ -10,7 +10,7 @@
 
 L'Mere Studio es una aplicación white-label y multi-tenant para pastelerías artesanales y diseñadores de tartas. Combina un simulador público de pedidos en cinco pasos con un panel administrativo autenticado para pedidos, catálogo, agenda, marca y configuración del tenant.
 
-> **Baseline de ingeniería del portfolio:** la documentación describe comportamiento implementado y cubierto por los gates reproducibles de calidad indicados abajo. La promoción a la rama por defecto sigue siendo una decisión de revisión manual.
+> **Baseline de ingeniería del portfolio:** la PR #27 ya promovió el trabajo de professionalization a la rama por defecto `master`. La documentación describe comportamiento implementado y cubierto por los gates reproducibles indicados abajo; las futuras releases siguen siendo decisiones manuales del mantenedor conforme a [`docs/RELEASE.md`](docs/RELEASE.md).
 
 ## Problema → solución
 
@@ -125,8 +125,8 @@ Consulta [`docs/QUALITY.md`](docs/QUALITY.md) para el contrato completo de CI y 
 
 Los gates del repositorio cubren lint, typecheck, build, dependency audit, secret scan del historial alcanzable, CodeQL JavaScript/TypeScript con SARIF auditable, tests unitarios, migraciones sobre PostgreSQL vacío, aislamiento Tenant A/B, reglas negativas de pedidos, idempotencia/concurrencia, lifecycle de sesión, Playwright desktop/mobile, axe representativo y regresiones de teclado/foco/dialog/combobox con artifacts visuales deterministas inspeccionados manualmente.
 
-Esto es cobertura orientada a riesgo, no certificación WCAG completa. La promoción a la rama por defecto es intencionalmente manual y sigue el checklist de [`docs/RELEASE.md`](docs/RELEASE.md); la protección/rulesets de branches es una configuración de gobernanza que se revalida en el release.
+Esto es cobertura orientada a riesgo, no certificación WCAG completa. La PR #27 ya promovió el baseline de professionalization a `master`; los cambios futuros siguen el contrato durable de release/verificación por SHA exacto de [`docs/RELEASE.md`](docs/RELEASE.md) y continúan sujetos a merge manual del mantenedor. La protección/rulesets de branches es una configuración de gobernanza que se revalida en el release.
 
 ## Licencia
 
-Software bajo **Licencia Propietaria (Todos los Derechos Reservados)**. Uso comercial, redistribución, hosting SaaS o copia de código requiere autorización explícita. Consulta [LICENSE](LICENSE).
+El código propiedad de L'Mere sigue siendo **Propietario / Todos los Derechos Reservados**. El uso comercial, la redistribución, el hosting SaaS o la copia de ese código requieren autorización explícita. El material de terceros retenido sigue sujeto a sus propias licencias; las atribuciones aplicables se registran en [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Consulta [LICENSE](LICENSE).

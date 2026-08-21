@@ -1,6 +1,6 @@
 # Quality and test gates
 
-The portfolio professionalization branch uses reproducible automated gates rather than manual confidence.
+The repository uses reproducible automated gates rather than manual confidence.
 
 ## Local static checks
 
@@ -66,7 +66,7 @@ Allowing an external HTTPS image URL still means the viewing browser connects di
 
 The Quality workflow blocks high/critical production dependency findings. A separate read-only Gitleaks workflow scans full reachable Git history for secrets.
 
-A dedicated CodeQL workflow performs GitHub's standard `security-and-quality` JavaScript/TypeScript analysis on pull requests targeting `portfolio/revamp-2026` or `master`, and on pushes to those branches. It uses only `contents: read` plus the `security-events: write` permission required for code-scanning upload. The analyze step waits for SARIF processing and writes the post-processed SARIF to a repository-owned artifact retained for seven days, so the exact analysis can still be inspected independently of the Security tab. CodeQL is a supplemental SAST signal rather than a proof that vulnerabilities are absent; material findings must be triaged and P0/P1 findings block certification.
+A dedicated CodeQL workflow performs GitHub's standard `security-and-quality` JavaScript/TypeScript analysis on pull requests targeting `master` and on pushes to `master`. It uses only `contents: read` plus the `security-events: write` permission required for code-scanning upload. The analyze step waits for SARIF processing and writes the post-processed SARIF to a repository-owned artifact retained for seven days, so the exact analysis can still be inspected independently of the Security tab. CodeQL is a supplemental SAST signal rather than a proof that vulnerabilities are absent; material findings must be triaged and P0/P1 findings block certification.
 
 Admin authentication uses an expiry-bound signed HttpOnly cookie, and protected admin routes derive tenant identity from a session that is both cryptographically valid and checked against a server-stored tenant session generation. Logout atomically advances that generation before clearing the current browser cookie, invalidating previously copied tokens from the prior generation across protected admin routes. This intentionally revokes all concurrently issued admin sessions for that tenant; a subsequent successful login receives a token bound to the new generation. Unit and PostgreSQL-backed E2E tests cover malformed/tampered/expired sessions, unauthenticated requests, valid synthetic login, authenticated tenant isolation, browser session restoration, captured-token replay after logout, and fresh login after revocation. Production session cookies are required to be `Secure`, `HttpOnly`, and `SameSite=Strict` and are scoped to `/api/admin`.
 

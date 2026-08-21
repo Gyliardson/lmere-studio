@@ -1,6 +1,6 @@
 # Architecture boundaries
 
-This document records the maintainability boundaries used by the portfolio integration branch. It is intentionally small: the goal is to make ownership and authority clear without introducing a framework around a compact Next.js application.
+This document records the repository's maintainability boundaries. It is intentionally small: the goal is to make ownership and authority clear without introducing a framework around a compact Next.js application.
 
 ## Runtime shape
 

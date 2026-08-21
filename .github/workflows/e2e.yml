@@ -3,11 +3,10 @@ name: E2E
 on:
   pull_request:
     branches:
-      - portfolio/revamp-2026
       - master
   push:
     branches:
-      - portfolio/revamp-2026
+      - master
 
 permissions:
   contents: read
