@@ -59,13 +59,20 @@ El navegador no es la fuente de verdad para precios persistidos, importe del dep
 
 ## Vistas del portafolio
 
-| Resumen de la tienda | Pedidos en administración |
-| --- | --- |
-| ![Resumen de escritorio del pedido](../../media/portfolio/desktop-storefront-summary.webp) | ![Área de escritorio de pedidos administrativos](../../media/portfolio/desktop-admin-orders.webp) |
+### Tienda en escritorio
 
-| Tienda móvil | Catálogo administrativo móvil |
-| --- | --- |
-| ![Flujo móvil de pedidos](../../media/portfolio/mobile-storefront.webp) | ![Catálogo administrativo móvil](../../media/portfolio/mobile-admin-menu.webp) |
+[![Resumen de escritorio del pedido](../../media/portfolio/desktop-storefront-summary.png)](../../media/portfolio/desktop-storefront-summary.png)
+
+### Administración en escritorio
+
+[![Área de escritorio de pedidos administrativos](../../media/portfolio/desktop-admin-orders.png)](../../media/portfolio/desktop-admin-orders.png)
+
+### Tienda y catálogo administrativo en móvil
+
+<p align="center">
+  <a href="../../media/portfolio/mobile-storefront.png"><img src="../../media/portfolio/mobile-storefront.png" alt="Flujo móvil de pedidos" width="360"></a>
+  <a href="../../media/portfolio/mobile-admin-menu.png"><img src="../../media/portfolio/mobile-admin-menu.png" alt="Catálogo administrativo móvil" width="360"></a>
+</p>
 
 ## Inicio rápido
 

@@ -59,13 +59,20 @@ flowchart LR
 
 ## ポートフォリオ表示
 
-| ストアフロントの注文概要 | 管理画面の注文一覧 |
-| --- | --- |
-| ![Desktop storefront summary](../../media/portfolio/desktop-storefront-summary.webp) | ![Desktop admin orders](../../media/portfolio/desktop-admin-orders.webp) |
+### デスクトップのストアフロント
 
-| モバイルのストアフロント | モバイルの管理カタログ |
-| --- | --- |
-| ![Mobile storefront](../../media/portfolio/mobile-storefront.webp) | ![Mobile admin catalog](../../media/portfolio/mobile-admin-menu.webp) |
+[![Desktop storefront summary](../../media/portfolio/desktop-storefront-summary.png)](../../media/portfolio/desktop-storefront-summary.png)
+
+### デスクトップの管理画面
+
+[![Desktop admin orders](../../media/portfolio/desktop-admin-orders.png)](../../media/portfolio/desktop-admin-orders.png)
+
+### モバイルのストアフロントと管理カタログ
+
+<p align="center">
+  <a href="../../media/portfolio/mobile-storefront.png"><img src="../../media/portfolio/mobile-storefront.png" alt="Mobile storefront" width="360"></a>
+  <a href="../../media/portfolio/mobile-admin-menu.png"><img src="../../media/portfolio/mobile-admin-menu.png" alt="Mobile admin catalog" width="360"></a>
+</p>
 
 ## クイックスタート
 
