@@ -59,13 +59,20 @@ O navegador não é a fonte de verdade para preços persistidos, valor do sinal,
 
 ## Vistas do portfólio
 
-| Resumo da loja | Pedidos no admin |
-| --- | --- |
-| ![Resumo desktop da encomenda](../../media/portfolio/desktop-storefront-summary.webp) | ![Área desktop de pedidos administrativos](../../media/portfolio/desktop-admin-orders.webp) |
+### Loja em desktop
 
-| Loja mobile | Catálogo admin mobile |
-| --- | --- |
-| ![Fluxo mobile de encomenda](../../media/portfolio/mobile-storefront.webp) | ![Catálogo administrativo mobile](../../media/portfolio/mobile-admin-menu.webp) |
+[![Resumo desktop da encomenda](../../media/portfolio/desktop-storefront-summary.png)](../../media/portfolio/desktop-storefront-summary.png)
+
+### Administração em desktop
+
+[![Área desktop de pedidos administrativos](../../media/portfolio/desktop-admin-orders.png)](../../media/portfolio/desktop-admin-orders.png)
+
+### Loja e catálogo administrativo em mobile
+
+<p align="center">
+  <a href="../../media/portfolio/mobile-storefront.png"><img src="../../media/portfolio/mobile-storefront.png" alt="Fluxo mobile de encomenda" width="360"></a>
+  <a href="../../media/portfolio/mobile-admin-menu.png"><img src="../../media/portfolio/mobile-admin-menu.png" alt="Catálogo administrativo mobile" width="360"></a>
+</p>
 
 ## Início rápido
 

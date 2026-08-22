@@ -59,13 +59,20 @@ The browser is not authoritative for persisted pricing, deposit amounts, availab
 
 ## Portfolio views
 
-| Storefront summary | Admin orders |
-| --- | --- |
-| ![Desktop storefront order summary](docs/media/portfolio/desktop-storefront-summary.webp) | ![Desktop admin orders workspace](docs/media/portfolio/desktop-admin-orders.webp) |
+### Desktop storefront
 
-| Mobile storefront | Mobile admin catalog |
-| --- | --- |
-| ![Mobile storefront ordering flow](docs/media/portfolio/mobile-storefront.webp) | ![Mobile admin catalog workspace](docs/media/portfolio/mobile-admin-menu.webp) |
+[![Desktop storefront order summary](docs/media/portfolio/desktop-storefront-summary.png)](docs/media/portfolio/desktop-storefront-summary.png)
+
+### Desktop admin
+
+[![Desktop admin orders workspace](docs/media/portfolio/desktop-admin-orders.png)](docs/media/portfolio/desktop-admin-orders.png)
+
+### Mobile storefront and admin catalog
+
+<p align="center">
+  <a href="docs/media/portfolio/mobile-storefront.png"><img src="docs/media/portfolio/mobile-storefront.png" alt="Mobile storefront ordering flow" width="360"></a>
+  <a href="docs/media/portfolio/mobile-admin-menu.png"><img src="docs/media/portfolio/mobile-admin-menu.png" alt="Mobile admin catalog workspace" width="360"></a>
+</p>
 
 ## Quick Start
 

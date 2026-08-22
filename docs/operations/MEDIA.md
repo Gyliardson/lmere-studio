@@ -51,14 +51,30 @@ Generated screenshots should be visually inspected before they replace README me
 
 `docs/media/generated/` is the reproducible capture output and CI artifact contract. It is intentionally broader than the README presentation set.
 
-After visual inspection, a small representative subset may be resized/compressed and committed under `docs/media/portfolio/`. The current README intentionally publishes only four representative views:
+After DOM validation, a small representative subset may be committed under `docs/media/portfolio/` for manual visual review. The README publishes four full-fidelity PNG views, each linked to its original asset:
 
-- `desktop-storefront-summary.webp`
-- `desktop-admin-orders.webp`
-- `mobile-storefront.webp`
-- `mobile-admin-menu.webp`
+- `desktop-storefront-summary.png` (`1440x1205`, desktop viewport `1440x900`)
+- `desktop-admin-orders.png` (`1440x900`, desktop viewport `1440x900`)
+- `mobile-storefront.png` (`390x885`, mobile viewport `390x844`)
+- `mobile-admin-menu.png` (`390x844`, mobile viewport `390x844`)
 
-These committed files are presentation evidence derived from the deterministic capture, not a second source of product truth. When UI behavior materially changes, regenerate the full capture first, inspect it, and then refresh the curated subset. Historical screenshot assets should not remain alongside current evidence once superseded.
+These files are direct Chromium PNG screenshots with no resize, lossy recompression, or format conversion. They are presentation evidence derived from the deterministic capture, not a second source of product truth.
+
+### Published PNG provenance
+
+The current PNG set was captured locally from source SHA `d9bab05108867f227f76b07c0cb513bb3aa2d4b8`. No workflow artifact was used. PostgreSQL 16 was loaded with `prisma/ci-seed.sql` and `prisma/media-seed.sql`, the production build was started locally, and an ephemeral Playwright driver reused the routes, selectors, credentials, locale, timezone, color scheme, viewports, and synthetic order from `tests/demo/portfolio-capture.spec.ts` and `playwright.demo.config.ts`.
+
+Before each `page.screenshot({ type: "png", fullPage: true, animations: "disabled" })` call, the driver asserted the expected URL and heading, absence of a persistent loading or application-error state, and no relevant failed document/fetch/XHR response, console error, or page error. The mobile admin capture additionally asserted the `390x844` viewport, authenticated admin state, mobile navigation trigger, `Cardápio` selection, and `Gestao do Cardapio` heading.
+
+## Refresh process
+
+1. Run the clean capture sequence above against a disposable database; `npm run demo:capture` remains the canonical broad capture and CI artifact command.
+2. Use the same Playwright state transitions and assertions in `tests/demo/portfolio-capture.spec.ts` to write the four curated paths directly as PNG with `fullPage: true`; do not resize or transcode generated JPEG/WebP files into the curated PNGs.
+3. Validate each PNG signature, decoder readability, dimensions, byte size, SHA-256, and Git blob locally.
+4. Manually inspect all four images for overflow, typography, spacing, hierarchy, sensitive data, and current product behavior before publication.
+5. Replace the complete curated set atomically and remove superseded formats so stale media cannot remain referenced.
+
+Manual pixel review remains required for every refresh. Automated DOM and byte validation prove capture state and file integrity, but do not evaluate visual composition.
 
 ## Deliberate exclusions
 
