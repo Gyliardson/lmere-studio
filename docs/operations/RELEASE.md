@@ -104,7 +104,7 @@ External deployment configuration is intentionally not stored as secret material
 
 ## Media evidence contract
 
-Documentation media must use the reproducible path documented in `docs/MEDIA.md`. Generated capture output and the curated `docs/media/portfolio/` subset are the current visual-evidence surfaces. When a change affects those surfaces, deterministic capture must remain reproducible and the resulting evidence must be manually inspected before publication.
+Documentation media must use the reproducible path documented in [`MEDIA.md`](MEDIA.md). Generated capture output and the curated `docs/media/portfolio/` subset are the current visual-evidence surfaces. When a change affects those surfaces, deterministic capture must remain reproducible and the resulting evidence must be manually inspected before publication.
 
 Media evidence is supplemental to behavioral verification: a successful capture does not replace functional, security, database or clean-room gates.
 

@@ -1,132 +1,75 @@
-# L'Mere Studio — Multi-Tenant Cake Order Simulator & CMS
+<div align="center">
 
-[![Version](https://img.shields.io/badge/version-1.2.0-purple.svg)](CHANGELOG.md)
-[![Next.js](https://img.shields.io/badge/Next.js-16.3.0-black.svg)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19.2.4-blue.svg)](https://react.dev/)
-[![Prisma](https://img.shields.io/badge/Prisma-7.9.1-darkblue.svg)](https://www.prisma.io/)
-[![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
+# L'Mere Studio
 
-[English](README.md) | [Português](README.pt-BR.md) | [日本語](README.ja.md) | [Español](README.es.md)
+**Tenant-aware ordering with server-authoritative business rules.**
 
-L'Mere Studio is a white-label, multi-tenant web application for artisan bakeries and cake designers. It combines a five-step public order simulator with an authenticated admin dashboard for orders, catalog, schedule, branding and tenant configuration.
+L'Mere Studio is a white-label, multi-tenant ordering application for artisan bakeries and cake designers. It combines a configurable public storefront with an authenticated administration workspace while keeping pricing, availability, tenant ownership, and order persistence under server-side authority.
 
-> **Portfolio engineering baseline:** PR #27 promoted the professionalization work to the default `master` branch. The repository documents behavior that is implemented and covered by the reproducible quality gates described below; future releases remain manual maintainer review decisions under [`docs/RELEASE.md`](docs/RELEASE.md).
+[English](README.md) · [Português](docs/i18n/pt-BR/README.md) · [日本語](docs/i18n/ja/README.md) · [Español](docs/i18n/es/README.md)
 
-## Problem → solution
+[![Quality](https://github.com/Gyliardson/lmere-studio/actions/workflows/quality.yml/badge.svg?branch=master)](https://github.com/Gyliardson/lmere-studio/actions/workflows/quality.yml)
+[![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
 
-Small custom-order businesses often coordinate availability, configurable products, pricing and customer handoff across disconnected messages and spreadsheets. L'Mere centralizes those rules in a tenant-aware storefront while keeping critical pricing, availability and persistence authoritative on the server.
+</div>
 
-The portfolio case highlights:
+## Overview
 
-- tenant-scoped catalog, schedule, branding, custom fields and admin operations;
-- server-authoritative order pricing and availability validation;
-- HMAC-signed, revocable admin sessions and ownership checks;
-- PostgreSQL migrations and deterministic two-tenant fixtures;
-- risk-focused unit, integration and Playwright coverage;
-- reproducible desktop/mobile documentation captures.
+The public flow lets each tenant expose its own catalog, schedule, branding, capacity, lead-time rules, deposit configuration, and custom order fields. The authenticated admin surface manages those same tenant-scoped resources. Critical order decisions are revalidated by the API against persisted PostgreSQL data before an order is committed or handed off to WhatsApp.
 
-## Reproducible demonstration media
+## Why L'Mere Studio?
 
-README evidence no longer depends on prerecorded videos, fake cursors, narration, subtitles, background music or ffmpeg post-production. Current portfolio screenshots are produced from synthetic PostgreSQL fixtures with a dedicated Playwright command that is intentionally separate from behavioral E2E tests:
+| Tenant-aware commerce | Authoritative ordering | Reproducible assurance |
+| --- | --- | --- |
+| Tenant-scoped catalog, schedule, branding, configuration, custom fields, and admin operations. | Active catalog, business dates, capacity, pricing, deposits, and ownership are resolved or verified server-side. | Versioned migrations, deterministic PostgreSQL fixtures, risk-focused tests, and clean-room CI provide bounded evidence for the documented contracts. |
 
-```bash
-npm run demo:capture
-```
+## Core capabilities
 
-See [`docs/MEDIA.md`](docs/MEDIA.md) for the clean capture sequence, prerequisites, deterministic data contract and expected outputs under `docs/media/generated/`.
-
-The normal browser gate remains separate:
-
-```bash
-npm run test:e2e
-```
-
-### Curated portfolio evidence
-
-The four images below are a compact selection from the deterministic capture pipeline. They use synthetic fixtures only and were manually reviewed for containment, hierarchy, spacing and obvious responsive regressions before publication.
-
-| Storefront — desktop summary | Admin — desktop orders |
-| --- | --- |
-| ![Desktop storefront order summary with estimated pricing and handoff controls](docs/media/portfolio/desktop-storefront-summary.webp) | ![Desktop admin orders workspace with operational order cards](docs/media/portfolio/desktop-admin-orders.webp) |
-
-| Storefront — mobile | Admin — mobile catalog |
-| --- | --- |
-| ![Mobile storefront calendar and tenant-branded ordering flow](docs/media/portfolio/mobile-storefront.webp) | ![Mobile admin catalog management interface](docs/media/portfolio/mobile-admin-menu.webp) |
-
-## Key features
-
-### Public order simulator (`/[slug]`)
-
-1. **Calendar:** tenant work schedule, blocked dates and minimum lead time.
-2. **Size:** tenant-defined portions, weight, base price and filling limits.
-3. **Flavors & add-ons:** active doughs, fillings, special-price options and extras.
-4. **Customization:** plaque message, notes, optional reference image and canonical tenant-defined text/select/number fields.
-5. **Confirmed handoff:** the server revalidates catalog/date/capacity/custom-field rules, recalculates subtotal/deposit, persists the order and only then provides confirmed values for WhatsApp handoff.
-
-### Authenticated admin (`/admin`)
-
-- order status management;
-- size/flavor/add-on CRUD;
-- tenant custom-field CRUD;
-- weekly schedule and blocked-date management;
-- tenant branding and contact configuration;
-- feature/deposit/capacity/lead-time settings;
-- responsive desktop/mobile navigation and keyboard-focused accessibility regressions.
+- five-step public ordering flow under `/<tenant-slug>`;
+- tenant-defined sizes, doughs, fillings, add-ons, schedule, blocked dates, capacity, lead time, branding, and contact settings;
+- canonical tenant custom fields with historical order snapshots;
+- authenticated admin management for orders, catalog, calendar, custom fields, and settings;
+- confirmed WhatsApp handoff only after server validation, pricing, and persistence;
+- deterministic desktop/mobile browser verification and reproducible portfolio capture tooling.
 
 ## Architecture
 
 ```mermaid
-flowchart TD
-    Customer[Customer] --> Storefront[Next.js public storefront]
-    Admin[Admin] --> Dashboard[Next.js admin dashboard]
-    Storefront --> PublicAPI[Public API routes]
-    Dashboard --> AdminAPI[Authenticated admin API routes]
-    PublicAPI --> Prisma[Prisma 7]
-    AdminAPI --> Prisma
-    Prisma --> PostgreSQL[(PostgreSQL / Neon-compatible)]
+flowchart LR
+    Customer["Customer"] --> Storefront["Next.js storefront"]
+    Admin["Admin"] --> AdminUI["Next.js admin"]
+    Storefront --> PublicAPI["Public API"]
+    AdminUI --> AdminAPI["Authenticated admin API"]
+    PublicAPI --> Domain["Validation + business rules"]
+    AdminAPI --> Domain
+    Domain --> Prisma["Prisma / adapter-pg"]
+    Prisma --> PostgreSQL[("PostgreSQL")]
 ```
 
-### Database/runtime contract
+The browser is not authoritative for persisted pricing, deposit amounts, availability, tenant ownership, or cross-resource authorization. Detailed boundaries are documented in [Architecture](docs/architecture/ARCHITECTURE.md).
 
-- Prisma provider: **PostgreSQL**.
-- Canonical connection variable: `POSTGRES_PRISMA_URL`.
-- Runtime adapter: `@prisma/adapter-pg`.
-- Production may use Neon; local/CI uses ordinary PostgreSQL TCP.
-- Empty databases are bootstrapped with committed `prisma migrate deploy` migrations.
-- CI uses disposable PostgreSQL 16 and deterministic Tenant A/Tenant B fixtures.
+## Technical highlights
 
-### Security model
+- **Multi-tenancy.** Core relational resources carry `tenantId`; protected admin routes derive tenant identity from the verified admin session, and cross-tenant resource mutations are checked against ownership.
+- **Server-authoritative pricing and availability.** `/api/orders` reloads active tenant/catalog data, validates lead time, blocked dates, weekly schedule, daily capacity, custom fields, and related IDs, then computes subtotal and deposit from persisted values.
+- **Revocable admin sessions.** Admin tokens are HMAC-SHA256 signed, expiry-bound, stored in an HttpOnly `SameSite=Strict` cookie, and validated against the tenant's persisted session generation; logout advances that generation.
+- **Transactional order confirmation.** Order creation uses a PostgreSQL serializable transaction with bounded retry for write conflicts and tenant-scoped idempotency keys for retry identity.
+- **Historical order meaning.** Confirmed selections, custom-field answers, and financial values are persisted in a server-created snapshot instead of being reconstructed from mutable current catalog state.
+- **Deterministic verification.** CI provisions PostgreSQL 16, applies committed migrations, loads deterministic Tenant A/Tenant B fixtures, and exercises static, database, API, browser, security-analysis, and clean-room gates.
 
-- Admin authentication creates an expiry-bound HMAC-SHA256 session stored in an HttpOnly, `SameSite=Strict` cookie; production cookies are `Secure`.
-- `ADMIN_SESSION_SECRET` is required and must contain at least 32 bytes of unique secret material.
-- Protected admin routes derive tenant identity from the verified session, not request-provided tenant IDs.
-- Logout advances a persisted tenant session generation so copied tokens from the prior generation are rejected by protected admin routes.
-- Cross-tenant resource mutations verify ownership.
-- Public order creation treats browser subtotal, deposit, availability and related IDs as untrusted.
-- The server re-resolves active catalog resources and canonical custom-field definitions, validates business dates/capacity, recalculates financials and uses serializable PostgreSQL transactions with bounded retry.
-- Public login/order abuse controls use persistent privacy-preserving rate-limit buckets.
+## Portfolio views
 
-## Tech stack
-
-| Area | Technology |
+| Storefront summary | Admin orders |
 | --- | --- |
-| Framework | Next.js 16.3.0 App Router |
-| UI | React 19.2.4, Tailwind CSS v4, Lucide React |
-| Language | TypeScript 5 |
-| Database | PostgreSQL, Prisma 7.9.1, `@prisma/adapter-pg` |
-| Password hashing | bcryptjs |
-| Browser verification | Playwright |
-| CI database | Disposable PostgreSQL 16 |
+| ![Desktop storefront order summary](docs/media/portfolio/desktop-storefront-summary.webp) | ![Desktop admin orders workspace](docs/media/portfolio/desktop-admin-orders.webp) |
 
-## Getting started
+| Mobile storefront | Mobile admin catalog |
+| --- | --- |
+| ![Mobile storefront ordering flow](docs/media/portfolio/mobile-storefront.webp) | ![Mobile admin catalog workspace](docs/media/portfolio/mobile-admin-menu.webp) |
 
-### Prerequisites
+## Quick Start
 
-- Node.js **22+**
-- npm compatible with the selected Node release
-- PostgreSQL or a PostgreSQL-compatible hosted database such as Neon
-
-### Development
+Requirements: Node.js **22+** and PostgreSQL or a PostgreSQL-compatible hosted service.
 
 ```bash
 git clone https://github.com/Gyliardson/lmere-studio.git
@@ -135,71 +78,40 @@ npm ci
 cp .env.example .env
 npm run db:generate
 npm run db:migrate
-# Optional destructive synthetic demo data, local/disposable database only:
-LMERE_ALLOW_DEMO_SEED=true npm run db:seed
 npm run dev
 ```
 
-Set `POSTGRES_PRISMA_URL` to your development database and replace the placeholder `ADMIN_SESSION_SECRET` with unique secret material. Never commit real credentials.
+Configure `POSTGRES_PRISMA_URL` and replace the `ADMIN_SESSION_SECRET` placeholder with unique secret material before running the application. The optional demo seed is destructive and intentionally requires explicit opt-in; review [.env.example](.env.example) and the [quality documentation](docs/assurance/QUALITY.md) before using it.
 
-`npm run db:seed` is **not** a production/bootstrap step. It deliberately replaces the synthetic `doce-arte` tenant and installs a known demo-only admin credential, so the command fails closed in `NODE_ENV=production` and requires `LMERE_ALLOW_DEMO_SEED=true` before the destructive seed process is launched. The preflight prints only `host[:port]/database`; usernames, passwords and connection query parameters are never echoed. Production/bootstrap uses `npm run db:migrate` only.
+## Quality & assurance
 
-### Quality commands
+The repository separates behavior checks from documentation capture. `npm run quality` covers lint, typechecking, unit tests, Prisma validation, and the production build; Playwright E2E, disposable-PostgreSQL integration, dependency audit, full-history secret scanning, CodeQL, and exact-candidate clean-room verification run in GitHub Actions.
 
-```bash
-npm run quality
-npm run test:e2e
-```
+These checks provide evidence for specific repository contracts. They are not a claim of complete WCAG conformance, universal vulnerability absence, or production readiness. See [Quality and test gates](docs/assurance/QUALITY.md) and [Release and clean-room verification](docs/operations/RELEASE.md).
 
-For the complete disposable-PostgreSQL CI contract, see [`docs/QUALITY.md`](docs/QUALITY.md). For documentation capture, see [`docs/MEDIA.md`](docs/MEDIA.md).
+## Documentation
 
-### Database commands
+[Technical documentation](docs/README.md) is organized by architecture, assurance, operations, internationalized project overviews, and media assets.
 
-- `npm run db:generate` — generate Prisma Client.
-- `npm run db:migrate` — apply committed migrations with `prisma migrate deploy`; this is the production/bootstrap database command.
-- `npm run db:validate` — validate Prisma schema/config.
-- `LMERE_ALLOW_DEMO_SEED=true npm run db:seed` — optional **destructive synthetic** local/demo seed; refused in production and without explicit opt-in.
-- `npm run db:push` — development-only schema synchronization; not the CI/production bootstrap strategy.
+Useful entry points:
 
-## Quality evidence
+- [Architecture boundaries](docs/architecture/ARCHITECTURE.md)
+- [Quality and test gates](docs/assurance/QUALITY.md)
+- [Release and clean-room verification](docs/operations/RELEASE.md)
+- [Reproducible portfolio media](docs/operations/MEDIA.md)
 
-The repository-owned gates cover, among other checks:
+## Limitations / operational boundaries
 
-- ESLint, TypeScript and production build;
-- production dependency audit, read-only full-history secret scanning and CodeQL JavaScript/TypeScript SAST with auditable post-processed SARIF;
-- unit tests for pricing, business dates, sessions, validation and configuration;
-- empty PostgreSQL migrations, deterministic Tenant A/B fixtures and relational assertions;
-- application smoke against disposable PostgreSQL;
-- server-authoritative order negative paths, idempotency and concurrency;
-- authenticated Tenant A/B admin isolation and cross-tenant mutation rejection;
-- login/session restoration/logout/revocation behavior;
-- responsive desktop/mobile Playwright checks;
-- representative axe scans plus keyboard/focus/dialog/combobox regressions and reduced-motion behavior;
-- deterministic visual-review artifacts that are manually inspected for UI issues;
-- exact-candidate clean-room verification from fresh checkout through PostgreSQL, build, runtime and E2E.
-
-This is risk-focused regression evidence, not a claim of complete WCAG certification or a substitute for final release review.
-
-## API surface
-
-| Endpoint | Methods | Intent |
-| --- | --- | --- |
-| `/api/tenants/[slug]` | `GET` | Public tenant branding, menu, schedule and validated custom-field definitions |
-| `/api/orders` | `POST` | Server-authoritative order validation/pricing/persistence |
-| `/api/admin/auth` | `POST`, `GET`, `DELETE` | Login, session validation and logout |
-| `/api/admin/orders` | `GET`, `PUT` | Tenant-scoped order management |
-| `/api/admin/menu` | `GET`, `POST`, `PUT`, `DELETE` | Tenant-scoped catalog CRUD |
-| `/api/admin/calendar` | `GET`, `POST`, `PUT`, `DELETE` | Tenant-scoped schedule management |
-| `/api/admin/settings` | `GET`, `PUT` | Tenant-scoped branding/configuration |
-| `/api/admin/custom-fields` | `GET`, `POST`, `PUT`, `DELETE` | Tenant-scoped canonical custom-field CRUD |
-
-## Limitations / release status
-
-- PR #27 has already promoted the professionalization baseline to `master`; future changes follow the durable exact-SHA release/verification contract in [`docs/RELEASE.md`](docs/RELEASE.md) and remain manual maintainer merge decisions.
-- Generated documentation media must be manually inspected before publication.
-- The accessibility suite is representative risk coverage, not comprehensive WCAG certification.
-- Repository branch/ruleset enforcement is a governance setting outside application correctness and must be checked at release time.
+- Automated accessibility checks are representative regression coverage, not complete WCAG certification.
+- Generated portfolio media requires manual visual inspection before publication.
+- External HTTPS image references can expose ordinary network metadata to the referenced host when a browser renders them; the application does not fetch those URLs server-side.
+- Repository branch protection and rulesets are governance controls outside the application's correctness model and must be checked independently when release evidence requires them.
+- A successful CI run proves the bounded checks implemented by the repository; it does not prove every deployment environment or external service configuration.
 
 ## License
 
-L'Mere-owned source is **Proprietary / All Rights Reserved**. Commercial usage, distribution, SaaS hosting or copying of L'Mere-owned code requires explicit permission. Retained third-party material remains governed by its own licenses; applicable attributions are recorded in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). See [LICENSE](LICENSE).
+L'Mere-owned source, architecture, design assets, database schemas, and documentation are **Proprietary / All Rights Reserved**. Copying, redistribution, hosting, modification, or commercial use requires explicit permission except where applicable third-party licenses independently grant rights to retained third-party material. See [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+## Author
+
+**Gyliardson Keitison** · [GitHub](https://github.com/Gyliardson)
