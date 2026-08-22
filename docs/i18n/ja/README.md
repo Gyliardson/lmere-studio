@@ -6,7 +6,7 @@
 
 L'Mere Studio は、洋菓子店やケーキデザイナー向けのホワイトラベル型マルチテナント注文アプリケーションです。設定可能な公開ストアフロントと認証済みの管理画面を組み合わせ、価格、空き状況、テナントの所有関係、注文の永続化に関する重要な判断をサーバー側を正として管理します。
 
-[English](../../../README.md) · [Português](../pt-BR/README.md) · [日本語](README.md) · [Español](../es/README.md)
+<a href="../../../README.md">English</a> · <a href="../pt-BR/README.md">Português</a> · <strong>日本語</strong> · <a href="../es/README.md">Español</a>
 
 [![Quality](https://github.com/Gyliardson/lmere-studio/actions/workflows/quality.yml/badge.svg?branch=master)](https://github.com/Gyliardson/lmere-studio/actions/workflows/quality.yml)
 [![License](https://img.shields.io/badge/license-Proprietary-red.svg)](../../../LICENSE)

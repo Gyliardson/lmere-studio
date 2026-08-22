@@ -6,7 +6,7 @@
 
 L'Mere Studio is a white-label, multi-tenant ordering application for artisan bakeries and cake designers. It combines a configurable public storefront with an authenticated administration workspace while keeping pricing, availability, tenant ownership, and order persistence under server-side authority.
 
-[English](README.md) · [Português](docs/i18n/pt-BR/README.md) · [日本語](docs/i18n/ja/README.md) · [Español](docs/i18n/es/README.md)
+<strong>English</strong> · <a href="docs/i18n/pt-BR/README.md">Português</a> · <a href="docs/i18n/ja/README.md">日本語</a> · <a href="docs/i18n/es/README.md">Español</a>
 
 [![Quality](https://github.com/Gyliardson/lmere-studio/actions/workflows/quality.yml/badge.svg?branch=master)](https://github.com/Gyliardson/lmere-studio/actions/workflows/quality.yml)
 [![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
