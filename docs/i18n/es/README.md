@@ -6,7 +6,7 @@
 
 L'Mere Studio es una aplicación white-label y multi-tenant para pastelerías artesanales y diseñadores de tartas. Combina una tienda pública configurable con un panel administrativo autenticado, manteniendo precios, disponibilidad, pertenencia al tenant y persistencia de pedidos bajo autoridad del servidor.
 
-[English](../../../README.md) · [Português](../pt-BR/README.md) · [日本語](../ja/README.md) · [Español](README.md)
+<a href="../../../README.md">English</a> · <a href="../pt-BR/README.md">Português</a> · <a href="../ja/README.md">日本語</a> · <strong>Español</strong>
 
 [![Quality](https://github.com/Gyliardson/lmere-studio/actions/workflows/quality.yml/badge.svg?branch=master)](https://github.com/Gyliardson/lmere-studio/actions/workflows/quality.yml)
 [![Licencia](https://img.shields.io/badge/licencia-Propietaria-red.svg)](../../../LICENSE)
