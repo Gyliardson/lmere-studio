@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "vercel-build": "if [ \"$VERCEL_ENV\" = \"production\" ]; then npm run db:migrate && npx prisma db execute --file prisma/production-bootstrap.sql --config=prisma.config.ts; fi && next build",
+    "vercel-build": "if [ \"$VERCEL_ENV\" = \"production\" ]; then npm run db:migrate; fi && next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
